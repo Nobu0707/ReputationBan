@@ -9,6 +9,8 @@ import dev.modplugin.reputationban.command.ReportsTabCompleter;
 import dev.modplugin.reputationban.config.PluginConfig;
 import dev.modplugin.reputationban.database.DatabaseManager;
 import dev.modplugin.reputationban.listener.PlayerJoinListener;
+import dev.modplugin.reputationban.notification.NotificationEventType;
+import dev.modplugin.reputationban.notification.NotificationService;
 import dev.modplugin.reputationban.service.PlayerDataService;
 import dev.modplugin.reputationban.service.PunishmentService;
 import dev.modplugin.reputationban.service.ReportService;
@@ -32,11 +34,13 @@ public final class ReputationBanPlugin extends JavaPlugin {
     private ScoreService scoreService;
     private ReportService reportService;
     private PunishmentService punishmentService;
+    private NotificationService notificationService;
 
     @Override
     public void onEnable() {
         saveDefaultConfig();
         pluginConfig = PluginConfig.load(getConfig());
+        notificationService = new NotificationService(this, this::pluginConfig);
         databaseManager = new DatabaseManager(this, pluginConfig);
         try {
             databaseManager.initialize();
@@ -60,7 +64,7 @@ public final class ReputationBanPlugin extends JavaPlugin {
         );
         registerCommand("reports", new ReportsCommand(this, reportService, punishmentService), new ReportsTabCompleter());
         startScoreRecoveryTask();
-        getLogger().info("ReputationBan v0.5.0 enabled.");
+        getLogger().info("ReputationBan v0.6.0 enabled.");
     }
 
     @Override
@@ -116,17 +120,19 @@ public final class ReputationBanPlugin extends JavaPlugin {
     }
 
     public void notifyStaff(String message) {
-        if (pluginConfig.notifyConsole()) {
-            getLogger().info(message);
-        }
-        if (!pluginConfig.notifyInGameStaff()) {
-            return;
-        }
-        for (Player player : Bukkit.getOnlinePlayers()) {
-            if (player.hasPermission(pluginConfig.staffPermission())) {
-                player.sendMessage(PREFIX + message);
-            }
-        }
+        notificationService.notifyStaff(message);
+    }
+
+    public void notifyStaff(NotificationEventType type, String message) {
+        notificationService.notifyStaff(type, message);
+    }
+
+    public void notifyStaff(NotificationEventType type, String staffMessage, String discordContent) {
+        notificationService.notifyStaff(type, staffMessage, discordContent);
+    }
+
+    public void notifyDiscord(NotificationEventType type, String discordContent) {
+        notificationService.notifyDiscord(type, discordContent);
     }
 
     private void registerCommand(
@@ -145,8 +151,13 @@ public final class ReputationBanPlugin extends JavaPlugin {
         Bukkit.getScheduler().runTaskTimer(this, () -> scoreService.runRecovery()
                 .thenAccept(result -> {
                     if (result.recoveredPlayers() > 0) {
-                        getLogger().info("Score recovery completed: "
-                                + result.recoveredPlayers() + "/" + result.checkedPlayers() + " players recovered.");
+                        String message = "Score recovery completed: "
+                                + result.recoveredPlayers() + "/" + result.checkedPlayers() + " players recovered.";
+                        getLogger().info(message);
+                        notifyDiscord(NotificationEventType.RECOVERY_SUMMARY, """
+                                **スコア回復**
+                                対象人数: %d / チェック対象: %d
+                                """.formatted(result.recoveredPlayers(), result.checkedPlayers()).trim());
                     }
                 })
                 .exceptionally(throwable -> {

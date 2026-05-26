@@ -1,6 +1,7 @@
 package dev.modplugin.reputationban.config;
 
 import dev.modplugin.reputationban.model.ReportCategory;
+import dev.modplugin.reputationban.notification.DiscordWebhookConfig;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Locale;
@@ -28,6 +29,7 @@ public final class PluginConfig {
     private final boolean notifyConsole;
     private final boolean notifyInGameStaff;
     private final String staffPermission;
+    private final DiscordWebhookConfig discordWebhookConfig;
     private final boolean reporterPenaltyEnabled;
     private final int falseReportThreshold;
     private final int reportBanDays;
@@ -58,6 +60,7 @@ public final class PluginConfig {
         notifyConsole = config.getBoolean("notify.console", true);
         notifyInGameStaff = config.getBoolean("notify.in-game-staff", true);
         staffPermission = config.getString("notify.staff-permission", "reputationban.notify");
+        discordWebhookConfig = DiscordWebhookConfig.fromConfiguration(config.getConfigurationSection("notify"));
         reporterPenaltyEnabled = config.getBoolean("reporter-penalty.enabled", true);
         falseReportThreshold = config.getInt("reporter-penalty.false-report-threshold", 5);
         reportBanDays = config.getInt("reporter-penalty.report-ban-days", 7);
@@ -168,6 +171,10 @@ public final class PluginConfig {
 
     public String staffPermission() {
         return staffPermission;
+    }
+
+    public DiscordWebhookConfig discordWebhookConfig() {
+        return discordWebhookConfig;
     }
 
     public boolean reporterPenaltyEnabled() {

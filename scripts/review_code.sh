@@ -2,7 +2,7 @@
 set -euo pipefail
 
 PROJECT_NAME="ReputationBan"
-EXPECTED_VERSION="0.5.0"
+EXPECTED_VERSION="0.6.0"
 EXPECTED_MAIN="dev.modplugin.reputationban.ReputationBanPlugin"
 EXPECTED_API_VERSION="26.1.2"
 EXPECTED_PACKAGE_DIR="src/main/java/dev/modplugin/reputationban"
@@ -39,7 +39,7 @@ require_dir "$EXPECTED_PACKAGE_DIR"
 [[ -x ./scripts/make-review-archive.sh ]] || fail "make-review-archive.sh is not executable"
 
 grep -q "io.papermc.paper:paper-api:26.1.2.build" build.gradle.kts || fail "Paper API 26.1.2 dependency not found"
-grep -q 'version = "0.5.0"' build.gradle.kts || fail "build.gradle.kts version is not 0.5.0"
+grep -q 'version = "0.6.0"' build.gradle.kts || fail "build.gradle.kts version is not 0.6.0"
 grep -q "JavaLanguageVersion.of(25)" build.gradle.kts || fail "Java 25 toolchain not found"
 grep -q "options.release.set(25)" build.gradle.kts || fail "Java release 25 not found"
 
@@ -65,6 +65,11 @@ grep -q "global-report-seconds" "$CFG" || fail "Missing global-report-seconds"
 grep -q "threshold:[[:space:]]*0" "$CFG" || fail "Missing ban threshold 0"
 grep -q "^score-recovery:" "$CFG" || fail "Missing score-recovery config"
 grep -q "^reporter-penalty:" "$CFG" || fail "Missing reporter-penalty config"
+grep -q "discord-webhook:" "$CFG" || fail "Missing discord-webhook config section"
+grep -q "url:[[:space:]]*\"\"" "$CFG" || fail "Default discord webhook URL must be empty"
+for event_key in report-created report-approved report-rejected score-threshold-crossed auto-ban unban pardon reporter-penalty recovery-summary; do
+  grep -q "$event_key:" "$CFG" || fail "Missing discord webhook event key: $event_key"
+done
 
 grep -R "extends JavaPlugin" src/main/java >/dev/null || fail "Main JavaPlugin class not found"
 grep -R "PlayerJoinEvent" src/main/java >/dev/null || fail "PlayerJoinEvent handling not found"
@@ -105,6 +110,21 @@ grep -R "categories().keySet()" src/main/java/dev/modplugin/reputationban/comman
 grep -R "repSubcommands" src/main/java/dev/modplugin/reputationban/command/RepTabCompleter.java src/main/java/dev/modplugin/reputationban/util/CommandSuggestionUtil.java >/dev/null || fail "/rep subcommand completion not found"
 grep -R "reportStatuses\\|reportsSecondArgumentSuggestions" src/main/java/dev/modplugin/reputationban/command/ReportsTabCompleter.java src/main/java/dev/modplugin/reputationban/util/CommandSuggestionUtil.java >/dev/null || fail "/reports list status completion not found"
 grep -R "CommandArgumentParser.parseLimit" src/main/java/dev/modplugin/reputationban/command >/dev/null || fail "explicit limit parsing not found"
+grep -R "class NotificationService" src/main/java/dev/modplugin/reputationban/notification >/dev/null || fail "NotificationService not found"
+grep -R "class DiscordWebhookClient" src/main/java/dev/modplugin/reputationban/notification >/dev/null || fail "DiscordWebhookClient not found"
+grep -R "enum NotificationEventType" src/main/java/dev/modplugin/reputationban/notification >/dev/null || fail "NotificationEventType not found"
+grep -R "java.net.http.HttpClient\\|HttpClient.newHttpClient" src/main/java/dev/modplugin/reputationban/notification >/dev/null || fail "HttpClient usage not found"
+grep -R "sendAsync" src/main/java/dev/modplugin/reputationban/notification >/dev/null || fail "HttpClient sendAsync usage not found"
+grep -R "JsonEscaper\\|escape(String" src/main/java/dev/modplugin/reputationban/notification >/dev/null || fail "JSON escaping not found"
+grep -R "MAX_CONTENT_LENGTH\\|truncateContent" src/main/java/dev/modplugin/reputationban/notification >/dev/null || fail "Discord content length limit not found"
+grep -R "lastFailureLogAt\\|rateLimitFailureLogSeconds" src/main/java/dev/modplugin/reputationban/notification >/dev/null || fail "Discord failure log rate limiting not found"
+grep -R "REPORT_CREATED" src/main/java/dev/modplugin/reputationban/command/ReportBadCommand.java >/dev/null || fail "report-created notification not found"
+grep -R "REPORT_APPROVED" src/main/java/dev/modplugin/reputationban/command/ReportsCommand.java >/dev/null || fail "report-approved notification not found"
+grep -R "REPORT_REJECTED" src/main/java/dev/modplugin/reputationban/command/ReportsCommand.java >/dev/null || fail "report-rejected notification not found"
+grep -R "AUTO_BAN" src/main/java/dev/modplugin/reputationban/service/PunishmentService.java >/dev/null || fail "auto-ban notification not found"
+grep -R "UNBAN" src/main/java/dev/modplugin/reputationban/command/RepCommand.java >/dev/null || fail "unban notification not found"
+grep -R "PARDON" src/main/java/dev/modplugin/reputationban/command/RepCommand.java >/dev/null || fail "pardon notification not found"
+grep -R "REPORTER_PENALTY" src/main/java/dev/modplugin/reputationban/command/ReportsCommand.java >/dev/null || fail "reporter-penalty notification not found"
 grep -R "setAutoCommit(false)" src/main/java >/dev/null || fail "Transactional setAutoCommit(false) pattern not found"
 grep -R "commit()" src/main/java >/dev/null || fail "Transactional commit() pattern not found"
 grep -R "rollback()" src/main/java >/dev/null || fail "Transactional rollback() pattern not found"
@@ -117,6 +137,12 @@ if grep -R "BanList.Type.NAME\|getBanList(BanList.Type\|@SuppressWarnings(\"depr
 fi
 if grep -R "profileBanList\.pardon[[:space:]]*(.*targetName\|profileBanList\.pardon[[:space:]]*(.*Name\|profileBanList\.pardon[[:space:]]*(.*String" src/main/java >/dev/null; then
   fail "Deprecated name pardon API usage detected"
+fi
+if grep -R "discord\.com/api/webhooks" src/main/java >/dev/null; then
+  fail "Hard-coded Discord webhook URL detected in Java sources"
+fi
+if grep -R "logger\.\(info\|warning\|severe\|log\).*url\|url.*logger\.\(info\|warning\|severe\|log\)" src/main/java/dev/modplugin/reputationban/notification >/dev/null; then
+  fail "Possible webhook URL logging detected"
 fi
 
 ./gradlew clean test build --warning-mode all

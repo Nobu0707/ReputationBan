@@ -2,6 +2,8 @@ package dev.modplugin.reputationban.command;
 
 import dev.modplugin.reputationban.ReputationBanPlugin;
 import dev.modplugin.reputationban.model.PlayerRecord;
+import dev.modplugin.reputationban.notification.DiscordWebhookConfig;
+import dev.modplugin.reputationban.notification.NotificationEventType;
 import dev.modplugin.reputationban.service.PlayerDataService;
 import dev.modplugin.reputationban.service.PunishmentService;
 import dev.modplugin.reputationban.service.ScoreService;
@@ -443,6 +445,10 @@ public final class RepCommand implements CommandExecutor {
                     } else {
                         sender.sendMessage(ReputationBanPlugin.PREFIX + "DB上の有効BANはありませんでした。");
                     }
+                    plugin.notifyDiscord(
+                            NotificationEventType.UNBAN,
+                            unbanDiscord(result.record().get(), sender.getName(), reason, result.profileResult(), result.dbResult())
+                    );
                 }))
                 .exceptionally(throwable -> {
                     plugin.getLogger().severe("Failed to unban player: " + throwable.getMessage());
@@ -492,6 +498,10 @@ public final class RepCommand implements CommandExecutor {
                     sender.sendMessage(ReputationBanPlugin.PREFIX + "スコア: " + result.pardonResult().oldScore()
                             + " -> " + result.pardonResult().newScore()
                             + " (" + signed(result.pardonResult().delta()) + ")");
+                    plugin.notifyDiscord(
+                            NotificationEventType.PARDON,
+                            pardonDiscord(result.record().get(), sender.getName(), reason, result.profileResult(), result.pardonResult())
+                    );
                 }))
                 .exceptionally(throwable -> {
                     plugin.getLogger().severe("Failed to pardon player: " + throwable.getMessage());
@@ -561,6 +571,61 @@ public final class RepCommand implements CommandExecutor {
             return BanAuditMetadata.actorId(player.getUniqueId());
         }
         return BanAuditMetadata.CONSOLE_ACTOR;
+    }
+
+    private String unbanDiscord(
+            PlayerRecord target,
+            String actorName,
+            String reason,
+            PunishmentService.ProfileUnbanResult profileResult,
+            PunishmentService.UnbanResult dbResult
+    ) {
+        DiscordWebhookConfig discord = plugin.pluginConfig().discordWebhookConfig();
+        StringBuilder message = new StringBuilder();
+        message.append("**BAN解除**\n");
+        appendPlayer(message, "対象", target.name(), target.uuid(), discord);
+        message.append("実行者: ").append(actorName).append('\n');
+        if (discord.includeReasons()) {
+            message.append("理由: ").append(reason).append('\n');
+        }
+        message.append("Profile BAN解除: ").append(profileResult.wasProfileBanned()).append('\n');
+        message.append("DB有効BAN更新数: ").append(dbResult.updatedActiveBans());
+        return message.toString();
+    }
+
+    private String pardonDiscord(
+            PlayerRecord target,
+            String actorName,
+            String reason,
+            PunishmentService.ProfileUnbanResult profileResult,
+            PunishmentService.PardonResult pardonResult
+    ) {
+        DiscordWebhookConfig discord = plugin.pluginConfig().discordWebhookConfig();
+        StringBuilder message = new StringBuilder();
+        message.append("**Pardon**\n");
+        appendPlayer(message, "対象", target.name(), target.uuid(), discord);
+        message.append("実行者: ").append(actorName).append('\n');
+        if (discord.includeReasons()) {
+            message.append("理由: ").append(reason).append('\n');
+        }
+        message.append("Profile BAN解除: ").append(profileResult.wasProfileBanned()).append('\n');
+        message.append("スコア: ").append(pardonResult.oldScore()).append(" -> ").append(pardonResult.newScore()).append('\n');
+        message.append("DB有効BAN更新数: ").append(pardonResult.updatedActiveBans());
+        return message.toString();
+    }
+
+    private static void appendPlayer(
+            StringBuilder message,
+            String label,
+            String playerName,
+            UUID playerUuid,
+            DiscordWebhookConfig discord
+    ) {
+        message.append(label).append(": ").append(playerName);
+        if (discord.includePlayerUuids()) {
+            message.append(" (").append(playerUuid).append(")");
+        }
+        message.append('\n');
     }
 
     private record HistoryResult(Optional<PlayerRecord> record, java.util.List<ScoreService.ScoreHistoryEntry> history) {

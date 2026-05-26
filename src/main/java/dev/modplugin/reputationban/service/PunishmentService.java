@@ -2,6 +2,8 @@ package dev.modplugin.reputationban.service;
 
 import dev.modplugin.reputationban.ReputationBanPlugin;
 import dev.modplugin.reputationban.config.PluginConfig;
+import dev.modplugin.reputationban.notification.DiscordWebhookConfig;
+import dev.modplugin.reputationban.notification.NotificationEventType;
 import dev.modplugin.reputationban.util.BanManagementPolicy;
 import dev.modplugin.reputationban.util.DurationParser;
 import java.sql.Connection;
@@ -149,7 +151,27 @@ public final class PunishmentService {
         } else {
             offlinePlayer.ban(reason, expiresAt, config.banSource());
         }
-        plugin.notifyStaff("自動BAN: " + targetName + " / 理由: " + reason);
+        plugin.notifyStaff(
+                NotificationEventType.AUTO_BAN,
+                "自動BAN: " + targetName + " / 理由: " + reason,
+                autoBanDiscord(targetName, targetUuid, reason, expiresAt)
+        );
+    }
+
+    private String autoBanDiscord(String targetName, UUID targetUuid, String reason, Instant expiresAt) {
+        DiscordWebhookConfig discord = config.discordWebhookConfig();
+        StringBuilder message = new StringBuilder();
+        message.append("**自動BAN**\n");
+        message.append("対象: ").append(targetName);
+        if (discord.includePlayerUuids()) {
+            message.append(" (").append(targetUuid).append(")");
+        }
+        message.append('\n');
+        message.append("期限: ").append(expiresAt == null ? "permanent" : expiresAt);
+        if (discord.includeReasons()) {
+            message.append('\n').append("理由: ").append(reason);
+        }
+        return message.toString();
     }
 
     public CompletableFuture<List<BanHistoryEntry>> banHistory(UUID targetUuid, int limit) {

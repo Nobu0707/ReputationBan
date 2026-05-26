@@ -81,8 +81,25 @@ ban:
 notify:
   in-game-staff: true
   console: true
-  discord-webhook: false
   staff-permission: "reputationban.notify"
+  discord-webhook:
+    enabled: false
+    url: ""
+    username: "ReputationBan"
+    timeout-seconds: 5
+    rate-limit-failure-log-seconds: 60
+    include-reasons: true
+    include-player-uuids: false
+    events:
+      report-created: true
+      report-approved: true
+      report-rejected: true
+      score-threshold-crossed: true
+      auto-ban: true
+      unban: true
+      pardon: true
+      reporter-penalty: true
+      recovery-summary: false
 
 reporter-penalty:
   enabled: true

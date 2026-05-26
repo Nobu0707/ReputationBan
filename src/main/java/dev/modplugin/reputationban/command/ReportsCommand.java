@@ -2,6 +2,8 @@ package dev.modplugin.reputationban.command;
 
 import dev.modplugin.reputationban.ReputationBanPlugin;
 import dev.modplugin.reputationban.model.ReportStatus;
+import dev.modplugin.reputationban.notification.DiscordWebhookConfig;
+import dev.modplugin.reputationban.notification.NotificationEventType;
 import dev.modplugin.reputationban.service.PunishmentService;
 import dev.modplugin.reputationban.service.ReportService;
 import dev.modplugin.reputationban.util.CommandArgumentParser;
@@ -151,7 +153,9 @@ public final class ReportsCommand implements CommandExecutor {
 
         review.thenCompose(result -> {
                     if (!result.success() || result.rejected() || result.scoreChange() == null || !result.scoreChange().crossedBanThreshold()) {
-                        return java.util.concurrent.CompletableFuture.completedFuture(new ReviewCompletion(result, false));
+                        return java.util.concurrent.CompletableFuture.completedFuture(
+                                new ReviewCompletion(result, false, moderatorName, note)
+                        );
                     }
                     return punishmentService.punishIfNeeded(
                             result.scoreChange().targetUuid(),
@@ -159,7 +163,7 @@ public final class ReportsCommand implements CommandExecutor {
                             result.scoreChange().oldScore(),
                             result.scoreChange().newScore(),
                             "Approved report #" + id + " reached " + result.scoreChange().newScore()
-                    ).thenApply(banned -> new ReviewCompletion(result, banned));
+                    ).thenApply(banned -> new ReviewCompletion(result, banned, moderatorName, note));
                 })
                 .thenAccept(completion -> plugin.runSync(() -> sendReviewResult(sender, completion)))
                 .exceptionally(throwable -> {
@@ -202,16 +206,84 @@ public final class ReportsCommand implements CommandExecutor {
         if (result.rejected()) {
             sender.sendMessage(ReputationBanPlugin.PREFIX + "通報 #" + result.report().id() + " を却下しました。");
             sender.sendMessage(ReputationBanPlugin.PREFIX + "通報者の虚偽通報回数: " + result.falseReportCount());
+            plugin.notifyDiscord(
+                    NotificationEventType.REPORT_REJECTED,
+                    rejectedDiscord(result, completion.moderatorName(), completion.note())
+            );
             if (result.reportBannedUntil() != null) {
                 sender.sendMessage(ReputationBanPlugin.PREFIX + "通報者は一時的に通報停止されました。解除予定: "
                         + FORMATTER.format(Instant.ofEpochMilli(result.reportBannedUntil())));
+                plugin.notifyDiscord(
+                        NotificationEventType.REPORTER_PENALTY,
+                        reporterPenaltyDiscord(result)
+                );
             }
             return;
         }
         sender.sendMessage(ReputationBanPlugin.PREFIX + "通報 #" + result.report().id() + " を承認しました。対象スコア: "
                 + result.scoreChange().oldScore() + " -> " + result.scoreChange().newScore());
+        plugin.notifyDiscord(
+                NotificationEventType.REPORT_APPROVED,
+                approvedDiscord(result, completion.moderatorName(), completion.note())
+        );
         if (completion.banned()) {
             sender.sendMessage(ReputationBanPlugin.PREFIX + "対象プレイヤーは評判スコアによりBAN処理されました。");
+        }
+    }
+
+    private String approvedDiscord(ReportService.ReviewResult result, String moderatorName, String note) {
+        DiscordWebhookConfig discord = plugin.pluginConfig().discordWebhookConfig();
+        StringBuilder message = new StringBuilder();
+        message.append("**通報承認**\n");
+        message.append("Report ID: #").append(result.report().id()).append('\n');
+        appendPlayer(message, "対象", result.report().targetName(), result.report().targetUuid(), discord);
+        message.append("スコア: ").append(result.scoreChange().oldScore())
+                .append(" -> ").append(result.scoreChange().newScore()).append('\n');
+        message.append("審査者: ").append(moderatorName);
+        appendNote(message, note, discord);
+        return message.toString();
+    }
+
+    private String rejectedDiscord(ReportService.ReviewResult result, String moderatorName, String note) {
+        DiscordWebhookConfig discord = plugin.pluginConfig().discordWebhookConfig();
+        StringBuilder message = new StringBuilder();
+        message.append("**通報却下**\n");
+        message.append("Report ID: #").append(result.report().id()).append('\n');
+        appendPlayer(message, "通報者", result.report().reporterName(), result.report().reporterUuid(), discord);
+        appendPlayer(message, "対象", result.report().targetName(), result.report().targetUuid(), discord);
+        message.append("審査者: ").append(moderatorName).append('\n');
+        message.append("虚偽通報回数: ").append(result.falseReportCount());
+        appendNote(message, note, discord);
+        return message.toString();
+    }
+
+    private String reporterPenaltyDiscord(ReportService.ReviewResult result) {
+        DiscordWebhookConfig discord = plugin.pluginConfig().discordWebhookConfig();
+        StringBuilder message = new StringBuilder();
+        message.append("**通報者ペナルティ**\n");
+        appendPlayer(message, "通報者", result.report().reporterName(), result.report().reporterUuid(), discord);
+        message.append("虚偽通報回数: ").append(result.falseReportCount()).append('\n');
+        message.append("解除予定: ").append(FORMATTER.format(Instant.ofEpochMilli(result.reportBannedUntil())));
+        return message.toString();
+    }
+
+    private static void appendPlayer(
+            StringBuilder message,
+            String label,
+            String playerName,
+            UUID playerUuid,
+            DiscordWebhookConfig discord
+    ) {
+        message.append(label).append(": ").append(playerName);
+        if (discord.includePlayerUuids()) {
+            message.append(" (").append(playerUuid).append(")");
+        }
+        message.append('\n');
+    }
+
+    private static void appendNote(StringBuilder message, String note, DiscordWebhookConfig discord) {
+        if (discord.includeReasons() && note != null && !note.isBlank()) {
+            message.append('\n').append("メモ: ").append(note.trim());
         }
     }
 
@@ -250,6 +322,6 @@ public final class ReportsCommand implements CommandExecutor {
         return offline.isOp();
     }
 
-    private record ReviewCompletion(ReportService.ReviewResult result, boolean banned) {
+    private record ReviewCompletion(ReportService.ReviewResult result, boolean banned, String moderatorName, String note) {
     }
 }

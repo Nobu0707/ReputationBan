@@ -105,7 +105,23 @@
 - limit / ID の入力エラー明確化
 - review_code.sh / make-review-archive.sh Phase 5対応
 
-## Phase 6以降: 外部連携・高度な悪用対策
+## Phase 6 / v0.6.0: Discord Webhook通知
+
+目的: サーバー外でも通報・審査・BAN状況を追えるよう、秘匿性を保ったDiscord Webhook通知を追加する。
+
+実装範囲:
+
+- notify.discord-webhook セクション設定
+- 旧 boolean 形式の後方互換
+- 通知イベント種別ごとのON/OFF
+- Java HttpClient の sendAsync による非同期Webhook送信
+- 通報作成、承認、却下、自動BAN、BAN解除、pardon、通報者ペナルティ、回復サマリー通知
+- Webhook URLのログ出力禁止
+- JSONエスケープとcontent長制限
+- 失敗ログのレート制限
+- review_code.sh / make-review-archive.sh Phase 6対応
+
+## Phase 7以降: 外部連携・高度な悪用対策
 
 実装候補:
 

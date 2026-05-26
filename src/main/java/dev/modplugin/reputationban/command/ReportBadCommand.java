@@ -3,6 +3,8 @@ package dev.modplugin.reputationban.command;
 import dev.modplugin.reputationban.ReputationBanPlugin;
 import dev.modplugin.reputationban.model.PlayerRecord;
 import dev.modplugin.reputationban.model.ReportCategory;
+import dev.modplugin.reputationban.notification.DiscordWebhookConfig;
+import dev.modplugin.reputationban.notification.NotificationEventType;
 import dev.modplugin.reputationban.service.PlayerDataService;
 import dev.modplugin.reputationban.service.PunishmentService;
 import dev.modplugin.reputationban.service.ReportService;
@@ -142,7 +144,11 @@ public final class ReportBadCommand implements CommandExecutor {
                     if (result.staffReviewRequired() || result.deduction() <= 0) {
                         plugin.runSync(() -> {
                             reporter.sendMessage(ReputationBanPlugin.PREFIX + "通報を受け付けました。スタッフ審査待ちです。");
-                            plugin.notifyStaff("審査待ち通報 #" + result.reportId() + ": " + reporterName + " -> " + value.name());
+                            plugin.notifyStaff(
+                                    NotificationEventType.REPORT_CREATED,
+                                    "審査待ち通報 #" + result.reportId() + ": " + reporterName + " -> " + value.name(),
+                                    reportCreatedDiscord(result, reporterName, reporterUuid, value, category, reason)
+                            );
                         });
                         return CompletableFuture.completedFuture(null);
                     }
@@ -161,15 +167,52 @@ public final class ReportBadCommand implements CommandExecutor {
                         plugin.runSync(() -> {
                             reporter.sendMessage(ReputationBanPlugin.PREFIX + "通報を受け付けました。対象スコア: "
                                     + result.oldScore() + " -> " + result.newScore());
-                            plugin.notifyStaff("自動承認通報 #" + result.reportId() + ": " + value.name()
-                                    + " -" + result.deduction() + " (" + result.newScore() + ")");
-                            if (banned) {
-                                plugin.notifyStaff(value.name() + " は評判スコアによりBAN処理されました。");
-                            }
+                            plugin.notifyStaff(
+                                    NotificationEventType.REPORT_CREATED,
+                                    "自動承認通報 #" + result.reportId() + ": " + value.name()
+                                            + " -" + result.deduction() + " (" + result.newScore() + ")",
+                                    reportCreatedDiscord(result, reporterName, reporterUuid, value, category, reason)
+                            );
                         });
                         return null;
                     });
                 });
+    }
+
+    private String reportCreatedDiscord(
+            ReportService.ReportResult result,
+            String reporterName,
+            UUID reporterUuid,
+            Target target,
+            ReportCategory category,
+            String reason
+    ) {
+        DiscordWebhookConfig discord = plugin.pluginConfig().discordWebhookConfig();
+        StringBuilder message = new StringBuilder();
+        message.append("**通報作成**\n");
+        appendPlayer(message, "通報者", reporterName, reporterUuid, discord);
+        appendPlayer(message, "対象", target.name(), target.uuid(), discord);
+        message.append("カテゴリ: ").append(category.key()).append('\n');
+        message.append("減点: -").append(result.deduction()).append('\n');
+        message.append("状態: ").append(result.status());
+        if (discord.includeReasons()) {
+            message.append('\n').append("理由: ").append(reason);
+        }
+        return message.toString();
+    }
+
+    private static void appendPlayer(
+            StringBuilder message,
+            String label,
+            String playerName,
+            UUID playerUuid,
+            DiscordWebhookConfig discord
+    ) {
+        message.append(label).append(": ").append(playerName);
+        if (discord.includePlayerUuids()) {
+            message.append(" (").append(playerUuid).append(")");
+        }
+        message.append('\n');
     }
 
     private CompletableFuture<Boolean> isTargetProtected(UUID targetUuid) {

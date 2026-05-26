@@ -8,6 +8,7 @@ ReputationBan is a PaperMC moderation plugin that tracks player reputation score
 - Java 25
 - Gradle wrapper included
 - SQLite JDBC loaded through `plugin.yml` libraries
+- Optional Discord webhook for moderation notifications
 
 ## Commands
 
@@ -50,11 +51,11 @@ ReputationBan is a PaperMC moderation plugin that tracks player reputation score
 ./scripts/review_code.sh
 ```
 
-The plugin jar is written to `build/libs/ReputationBan-0.5.0.jar`.
+The plugin jar is written to `build/libs/ReputationBan-0.6.0.jar`.
 
 ## Current Limitations
 
-- Discord integration, GUI menus, permissions plugin integration, and protection plugin integrations are not implemented.
+- GUI menus, permissions plugin integration, and protection plugin integrations are not implemented.
 - Offline bypass detection is limited to OP status; online players with `reputationban.bypass` are protected.
 - Appeal and automatic unban workflows are deferred.
 - Folia support is not included.
