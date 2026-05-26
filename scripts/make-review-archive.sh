@@ -4,7 +4,7 @@ set -euo pipefail
 # ReputationBan review archive generator.
 # Usage:
 #   bash scripts/make-review-archive.sh
-#   bash scripts/make-review-archive.sh "Phase 2"
+#   bash scripts/make-review-archive.sh "Phase 5"
 #
 # The optional argument is an expected substring of HEAD's commit subject.
 # If it does not match, the script exits before producing an archive, which
@@ -74,7 +74,7 @@ done < "$OUTDIR/meta/changed-files.txt"
 # Lightweight command outputs useful for review. These should never print secrets.
 {
   echo "## rg ban and report paths"
-  rg -n "punishIfNeeded|OfflinePlayer|\\.ban\\(|isBanned|ban_count|score_history|setAutoCommit|commit\\(|rollback\\(" src/main/java/dev/modplugin/reputationban || true
+  rg -n "punishIfNeeded|OfflinePlayer|\\.ban\\(|isBanned|ban_count|unban_reason|unbanned_by|score_history|TabCompleter|onTabComplete|setAutoCommit|commit\\(|rollback\\(" src/main/java/dev/modplugin/reputationban || true
   echo
   echo "## rg review workflow"
   rg -n "ReputationBan|diff-tree --root|Zone.Identifier|gitattributes|review_code" .gitattributes .gitignore scripts || true
@@ -116,8 +116,8 @@ fi
 
 if [[ -d "$ROOT/build/libs" ]]; then
   find "$ROOT/build/libs" -maxdepth 1 -type f -print | sort > "$OUTDIR/checks/built-jars.txt"
-  if [[ -f "$ROOT/build/libs/ReputationBan-0.4.0.jar" ]]; then
-    (cd "$ROOT" && sha256sum build/libs/ReputationBan-0.4.0.jar) > "$OUTDIR/checks/jar-sha256.txt"
+  if [[ -f "$ROOT/build/libs/ReputationBan-0.5.0.jar" ]]; then
+    (cd "$ROOT" && sha256sum build/libs/ReputationBan-0.5.0.jar) > "$OUTDIR/checks/jar-sha256.txt"
   fi
 fi
 

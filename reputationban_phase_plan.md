@@ -89,7 +89,23 @@
 - pardon の score_history 記録
 - review_code.sh / make-review-archive.sh Phase 4対応
 
-## Phase 5以降: 外部連携・高度な悪用対策
+## Phase 5 / v0.5.0: 運用性・監査性強化
+
+目的: 外部連携に進む前に、日常運用で使うコマンドの発見性とBAN解除監査情報を改善する。
+
+実装範囲:
+
+- /reportbad, /rep, /reports のTAB補完
+- /rep help
+- /reports help
+- bans.unban_reason 追加と既存DB向けマイグレーション
+- unbanned_by と unban_reason の分離
+- /rep unban と /rep pardon の表示メッセージ改善
+- /rep banhistory への解除者・解除理由表示
+- limit / ID の入力エラー明確化
+- review_code.sh / make-review-archive.sh Phase 5対応
+
+## Phase 6以降: 外部連携・高度な悪用対策
 
 実装候補:
 

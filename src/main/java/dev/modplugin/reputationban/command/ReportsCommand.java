@@ -4,10 +4,12 @@ import dev.modplugin.reputationban.ReputationBanPlugin;
 import dev.modplugin.reputationban.model.ReportStatus;
 import dev.modplugin.reputationban.service.PunishmentService;
 import dev.modplugin.reputationban.service.ReportService;
+import dev.modplugin.reputationban.util.CommandArgumentParser;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
+import java.util.OptionalInt;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import org.bukkit.Bukkit;
@@ -42,6 +44,10 @@ public final class ReportsCommand implements CommandExecutor {
             listReports(sender, args);
             return true;
         }
+        if ("help".equalsIgnoreCase(args[0])) {
+            sendHelp(sender);
+            return true;
+        }
         if ("view".equalsIgnoreCase(args[0])) {
             viewReport(sender, args);
             return true;
@@ -55,9 +61,15 @@ public final class ReportsCommand implements CommandExecutor {
             return true;
         }
 
-        sender.sendMessage(ReputationBanPlugin.PREFIX + "使い方: /reports list [pending|approved|rejected|auto_accepted|cancelled|all] [limit]");
-        sender.sendMessage(ReputationBanPlugin.PREFIX + "使い方: /reports view <id>, /reports approve <id> [note], /reports reject <id> [note]");
+        sender.sendMessage(ReputationBanPlugin.PREFIX + "不明なサブコマンドです。/reports help を確認してください。");
         return true;
+    }
+
+    private static void sendHelp(CommandSender sender) {
+        sender.sendMessage(ReputationBanPlugin.PREFIX + "/reports list [status] [limit] - 通報一覧");
+        sender.sendMessage(ReputationBanPlugin.PREFIX + "/reports view <id> - 通報詳細");
+        sender.sendMessage(ReputationBanPlugin.PREFIX + "/reports approve <id> [note] - 通報承認");
+        sender.sendMessage(ReputationBanPlugin.PREFIX + "/reports reject <id> [note] - 通報却下");
     }
 
     private void listReports(CommandSender sender, String[] args) {
@@ -66,7 +78,12 @@ public final class ReportsCommand implements CommandExecutor {
             sender.sendMessage(ReputationBanPlugin.PREFIX + "使い方: /reports list [pending|approved|rejected|auto_accepted|cancelled|all] [limit]");
             return;
         }
-        int limit = parseLimit(args.length >= 3 ? args[2] : "10", 10);
+        OptionalInt parsedLimit = args.length >= 3 ? CommandArgumentParser.parseLimit(args[2], 50) : OptionalInt.of(10);
+        if (parsedLimit.isEmpty()) {
+            sender.sendMessage(ReputationBanPlugin.PREFIX + "limit は 1〜50 の数値で指定してください。");
+            return;
+        }
+        int limit = parsedLimit.getAsInt();
         reportService.listReports(status, limit)
                 .thenAccept(reports -> plugin.runSync(() -> {
                     sender.sendMessage(ReputationBanPlugin.PREFIX + "通報一覧 [" + status + "] " + reports.size() + "件");
@@ -212,15 +229,6 @@ public final class ReportsCommand implements CommandExecutor {
         }
         if (report.reviewNote() != null && !report.reviewNote().isBlank()) {
             sender.sendMessage(ReputationBanPlugin.PREFIX + "メモ: " + report.reviewNote());
-        }
-    }
-
-    private static int parseLimit(String value, int fallback) {
-        try {
-            int parsed = Integer.parseInt(value);
-            return Math.max(1, Math.min(50, parsed));
-        } catch (NumberFormatException exception) {
-            return fallback;
         }
     }
 

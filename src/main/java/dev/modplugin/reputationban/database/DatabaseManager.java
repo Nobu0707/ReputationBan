@@ -105,26 +105,40 @@ public final class DatabaseManager implements AutoCloseable {
                   expires_at INTEGER,
                   created_by TEXT,
                   unbanned_at INTEGER,
-                  unbanned_by TEXT
+                  unbanned_by TEXT,
+                  unban_reason TEXT
                 )
                 """);
         execute("CREATE INDEX IF NOT EXISTS idx_reports_reporter_target_created ON reports(reporter_uuid, target_uuid, created_at)");
         execute("CREATE INDEX IF NOT EXISTS idx_reports_target_created ON reports(target_uuid, created_at)");
         execute("CREATE INDEX IF NOT EXISTS idx_score_history_target_created ON score_history(target_uuid, created_at)");
         migratePlayersTable();
+        migrateBansTable();
     }
 
     private void migratePlayersTable() throws SQLException {
+        Set<String> columns = tableColumns("players");
+        if (!columns.contains("last_recovery_at")) {
+            execute("ALTER TABLE players ADD COLUMN last_recovery_at INTEGER");
+        }
+    }
+
+    private void migrateBansTable() throws SQLException {
+        Set<String> columns = tableColumns("bans");
+        if (!columns.contains("unban_reason")) {
+            execute("ALTER TABLE bans ADD COLUMN unban_reason TEXT");
+        }
+    }
+
+    private Set<String> tableColumns(String tableName) throws SQLException {
         Set<String> columns = new HashSet<>();
         try (Statement statement = connection.createStatement();
-                ResultSet result = statement.executeQuery("PRAGMA table_info(players)")) {
+                ResultSet result = statement.executeQuery("PRAGMA table_info(" + tableName + ")")) {
             while (result.next()) {
                 columns.add(result.getString("name"));
             }
         }
-        if (!columns.contains("last_recovery_at")) {
-            execute("ALTER TABLE players ADD COLUMN last_recovery_at INTEGER");
-        }
+        return columns;
     }
 
     private void execute(String sql) throws SQLException {

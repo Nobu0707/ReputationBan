@@ -1,8 +1,11 @@
 package dev.modplugin.reputationban;
 
 import dev.modplugin.reputationban.command.RepCommand;
+import dev.modplugin.reputationban.command.RepTabCompleter;
 import dev.modplugin.reputationban.command.ReportBadCommand;
+import dev.modplugin.reputationban.command.ReportBadTabCompleter;
 import dev.modplugin.reputationban.command.ReportsCommand;
+import dev.modplugin.reputationban.command.ReportsTabCompleter;
 import dev.modplugin.reputationban.config.PluginConfig;
 import dev.modplugin.reputationban.database.DatabaseManager;
 import dev.modplugin.reputationban.listener.PlayerJoinListener;
@@ -49,11 +52,15 @@ public final class ReputationBanPlugin extends JavaPlugin {
         punishmentService = new PunishmentService(this, databaseManager, pluginConfig);
 
         getServer().getPluginManager().registerEvents(new PlayerJoinListener(playerDataService, getLogger()), this);
-        registerCommand("rep", new RepCommand(this, playerDataService, scoreService, punishmentService));
-        registerCommand("reportbad", new ReportBadCommand(this, playerDataService, reportService, punishmentService));
-        registerCommand("reports", new ReportsCommand(this, reportService, punishmentService));
+        registerCommand("rep", new RepCommand(this, playerDataService, scoreService, punishmentService), new RepTabCompleter());
+        registerCommand(
+                "reportbad",
+                new ReportBadCommand(this, playerDataService, reportService, punishmentService),
+                new ReportBadTabCompleter(this::pluginConfig)
+        );
+        registerCommand("reports", new ReportsCommand(this, reportService, punishmentService), new ReportsTabCompleter());
         startScoreRecoveryTask();
-        getLogger().info("ReputationBan v0.4.0 enabled.");
+        getLogger().info("ReputationBan v0.5.0 enabled.");
     }
 
     @Override
@@ -122,9 +129,14 @@ public final class ReputationBanPlugin extends JavaPlugin {
         }
     }
 
-    private void registerCommand(String name, org.bukkit.command.CommandExecutor executor) {
+    private void registerCommand(
+            String name,
+            org.bukkit.command.CommandExecutor executor,
+            org.bukkit.command.TabCompleter tabCompleter
+    ) {
         PluginCommand command = Objects.requireNonNull(getCommand(name), "Missing command in plugin.yml: " + name);
         command.setExecutor(executor);
+        command.setTabCompleter(tabCompleter);
     }
 
     private void startScoreRecoveryTask() {

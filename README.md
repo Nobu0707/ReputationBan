@@ -13,6 +13,7 @@ ReputationBan is a PaperMC moderation plugin that tracks player reputation score
 
 - `/reportbad <player> <category> <reason>`: report a player.
 - `/rep`: show your own score.
+- `/rep help`: show commands available to you.
 - `/rep check <player>`: show another player's score.
 - `/rep history <player> [limit]`: show recent score history.
 - `/rep banhistory <player> [limit]`: show ReputationBan ban history.
@@ -24,6 +25,7 @@ ReputationBan is a PaperMC moderation plugin that tracks player reputation score
 - `/rep set <player> <score> [reason...]`: set an exact score.
 - `/rep reload`: reload configuration.
 - `/reports`: list pending reports.
+- `/reports help`: show report review commands.
 - `/reports list [pending|approved|rejected|auto_accepted|cancelled|all] [limit]`: list reports.
 - `/reports view <id>`: show report details.
 - `/reports approve <id> [note...]`: approve a pending report and apply score deduction.
@@ -48,7 +50,7 @@ ReputationBan is a PaperMC moderation plugin that tracks player reputation score
 ./scripts/review_code.sh
 ```
 
-The plugin jar is written to `build/libs/ReputationBan-0.4.0.jar`.
+The plugin jar is written to `build/libs/ReputationBan-0.5.0.jar`.
 
 ## Current Limitations
 

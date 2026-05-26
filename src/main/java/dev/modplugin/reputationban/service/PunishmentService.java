@@ -156,7 +156,8 @@ public final class PunishmentService {
         return database.supplyAsync(connection -> {
             List<BanHistoryEntry> history = new ArrayList<>();
             try (PreparedStatement statement = connection.prepareStatement("""
-                    SELECT id, reason, ban_type, created_at, expires_at, created_by, unbanned_at, unbanned_by
+                    SELECT id, reason, ban_type, created_at, expires_at, created_by,
+                           unbanned_at, unbanned_by, unban_reason
                     FROM bans
                     WHERE target_uuid = ?
                     ORDER BY created_at DESC
@@ -195,7 +196,8 @@ public final class PunishmentService {
 
             Optional<BanHistoryEntry> latest = Optional.empty();
             try (PreparedStatement statement = connection.prepareStatement("""
-                    SELECT id, reason, ban_type, created_at, expires_at, created_by, unbanned_at, unbanned_by
+                    SELECT id, reason, ban_type, created_at, expires_at, created_by,
+                           unbanned_at, unbanned_by, unban_reason
                     FROM bans
                     WHERE target_uuid = ?
                       AND unbanned_at IS NULL
@@ -225,13 +227,13 @@ public final class PunishmentService {
         });
     }
 
-    public CompletableFuture<UnbanResult> markActiveBansUnbanned(UUID targetUuid, String unbannedBy) {
+    public CompletableFuture<UnbanResult> markActiveBansUnbanned(UUID targetUuid, String unbannedBy, String unbanReason) {
         long now = System.currentTimeMillis();
         return database.supplyAsync(connection -> {
             boolean previousAutoCommit = connection.getAutoCommit();
             connection.setAutoCommit(false);
             try {
-                int updated = markActiveBansUnbannedInTransaction(connection, targetUuid, unbannedBy, now);
+                int updated = markActiveBansUnbannedInTransaction(connection, targetUuid, unbannedBy, unbanReason, now);
                 connection.commit();
                 return new UnbanResult(updated);
             } catch (SQLException | RuntimeException exception) {
@@ -249,7 +251,7 @@ public final class PunishmentService {
             boolean previousAutoCommit = connection.getAutoCommit();
             connection.setAutoCommit(false);
             try {
-                int updatedBans = markActiveBansUnbannedInTransaction(connection, targetUuid, actor, now);
+                int updatedBans = markActiveBansUnbannedInTransaction(connection, targetUuid, actor, reason, now);
                 int oldScore = ScoreService.currentScoreInTransaction(connection, targetUuid, config.initialScore());
                 int newScore = BanManagementPolicy.pardonTargetScore(oldScore, config.maxScore());
                 int delta = newScore - oldScore;
@@ -265,24 +267,22 @@ public final class PunishmentService {
                     update.executeUpdate();
                 }
 
-                if (delta != 0) {
-                    try (PreparedStatement insert = connection.prepareStatement("""
-                            INSERT INTO score_history (
-                              target_uuid, target_name, old_score, new_score, delta, reason, source_type, source_id, created_at
-                            )
-                            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-                            """)) {
-                        insert.setString(1, targetUuid.toString());
-                        insert.setString(2, targetName);
-                        insert.setInt(3, oldScore);
-                        insert.setInt(4, newScore);
-                        insert.setInt(5, delta);
-                        insert.setString(6, reason);
-                        insert.setString(7, "pardon");
-                        insert.setNull(8, Types.INTEGER);
-                        insert.setLong(9, now);
-                        insert.executeUpdate();
-                    }
+                try (PreparedStatement insert = connection.prepareStatement("""
+                        INSERT INTO score_history (
+                          target_uuid, target_name, old_score, new_score, delta, reason, source_type, source_id, created_at
+                        )
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                        """)) {
+                    insert.setString(1, targetUuid.toString());
+                    insert.setString(2, targetName);
+                    insert.setInt(3, oldScore);
+                    insert.setInt(4, newScore);
+                    insert.setInt(5, delta);
+                    insert.setString(6, reason);
+                    insert.setString(7, "pardon");
+                    insert.setNull(8, Types.INTEGER);
+                    insert.setLong(9, now);
+                    insert.executeUpdate();
                 }
 
                 connection.commit();
@@ -300,19 +300,21 @@ public final class PunishmentService {
             Connection connection,
             UUID targetUuid,
             String unbannedBy,
+            String unbanReason,
             long now
     ) throws SQLException {
         try (PreparedStatement update = connection.prepareStatement("""
                 UPDATE bans
-                SET unbanned_at = ?, unbanned_by = ?
+                SET unbanned_at = ?, unbanned_by = ?, unban_reason = ?
                 WHERE target_uuid = ?
                   AND unbanned_at IS NULL
                   AND (expires_at IS NULL OR expires_at > ?)
                 """)) {
             update.setLong(1, now);
             update.setString(2, unbannedBy);
-            update.setString(3, targetUuid.toString());
-            update.setLong(4, now);
+            update.setString(3, unbanReason);
+            update.setString(4, targetUuid.toString());
+            update.setLong(5, now);
             return update.executeUpdate();
         }
     }
@@ -326,7 +328,8 @@ public final class PunishmentService {
                 nullableLong(result, "expires_at"),
                 result.getString("created_by"),
                 nullableLong(result, "unbanned_at"),
-                result.getString("unbanned_by")
+                result.getString("unbanned_by"),
+                result.getString("unban_reason")
         );
     }
 
@@ -346,7 +349,8 @@ public final class PunishmentService {
             Long expiresAt,
             String createdBy,
             Long unbannedAt,
-            String unbannedBy
+            String unbannedBy,
+            String unbanReason
     ) {
     }
 
