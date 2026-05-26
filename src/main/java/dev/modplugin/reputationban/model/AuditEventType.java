@@ -16,6 +16,7 @@ public enum AuditEventType {
     PARDON,
     REPORTER_PENALTY,
     CONFIG_RELOADED,
+    MAINTENANCE_PREVIEW,
     MAINTENANCE_RUN;
 
     public String databaseValue() {

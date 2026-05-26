@@ -3,6 +3,7 @@ package dev.modplugin.reputationban.command;
 import dev.modplugin.reputationban.ReputationBanPlugin;
 import dev.modplugin.reputationban.model.AuditEvent;
 import dev.modplugin.reputationban.model.AuditEventType;
+import dev.modplugin.reputationban.model.CommandActor;
 import dev.modplugin.reputationban.model.PlayerRecord;
 import dev.modplugin.reputationban.notification.DiscordWebhookConfig;
 import dev.modplugin.reputationban.notification.NotificationEventType;
@@ -16,6 +17,7 @@ import dev.modplugin.reputationban.util.AuditMetadata;
 import dev.modplugin.reputationban.util.BanAuditMetadata;
 import dev.modplugin.reputationban.util.CommandArgumentParser;
 import dev.modplugin.reputationban.util.ManualScoreChangeGate;
+import dev.modplugin.reputationban.util.MaintenancePolicy;
 import dev.modplugin.reputationban.util.ReporterPenalty;
 import dev.modplugin.reputationban.util.ScoreMath;
 import java.time.Instant;
@@ -145,7 +147,8 @@ public final class RepCommand implements CommandExecutor {
             sender.sendMessage(ReputationBanPlugin.PREFIX + "/rep audit export <recent|player> [limit] - CSVエクスポート");
         }
         if (sender.hasPermission("reputationban.admin.maintenance")) {
-            sender.sendMessage(ReputationBanPlugin.PREFIX + "/rep maintenance run - データ保持メンテナンス");
+            sender.sendMessage(ReputationBanPlugin.PREFIX + "/rep maintenance preview - データ保持メンテナンスの予定件数");
+            sender.sendMessage(ReputationBanPlugin.PREFIX + "/rep maintenance run confirm - バックアップ後にデータ保持メンテナンスを実行");
         }
     }
 
@@ -435,18 +438,20 @@ public final class RepCommand implements CommandExecutor {
             sender.sendMessage(ReputationBanPlugin.PREFIX + "権限がありません。");
             return;
         }
-        if (args.length < 2 || !"run".equalsIgnoreCase(args[1])) {
-            sender.sendMessage(ReputationBanPlugin.PREFIX + "使い方: /rep maintenance run");
-            return;
+        CommandActor actor = CommandActor.from(sender);
+        switch (MaintenancePolicy.parse(args)) {
+            case PREVIEW -> auditService.previewMaintenance(actor)
+                    .thenAccept(result -> plugin.runSync(() -> sendMaintenanceResult(sender, "メンテナンス予定:", result, false)))
+                    .exceptionally(throwable -> auditFailure(sender, throwable));
+            case RUN_CONFIRMED -> auditService.runMaintenance(actor)
+                    .thenAccept(result -> plugin.runSync(() -> sendMaintenanceResult(sender, "メンテナンス完了:", result, true)))
+                    .exceptionally(throwable -> auditFailure(sender, throwable));
+            case RUN_REQUIRES_CONFIRMATION -> {
+                sender.sendMessage(ReputationBanPlugin.PREFIX + "データ削除を実行するには /rep maintenance run confirm を使用してください。");
+                sender.sendMessage(ReputationBanPlugin.PREFIX + "事前確認は /rep maintenance preview で確認できます。");
+            }
+            case HELP -> sender.sendMessage(ReputationBanPlugin.PREFIX + "使い方: /rep maintenance <preview|run confirm>");
         }
-        auditService.runMaintenance(sender.getName())
-                .thenAccept(result -> plugin.runSync(() -> sender.sendMessage(ReputationBanPlugin.PREFIX
-                        + "メンテナンス完了: rejected=" + result.rejectedReportsDeleted()
-                        + " cancelled=" + result.cancelledReportsDeleted()
-                        + " audit=" + result.auditEventsDeleted()
-                        + " score_history=" + result.scoreHistoryDeleted()
-                        + " bans=" + result.bansDeleted())))
-                .exceptionally(throwable -> auditFailure(sender, throwable));
     }
 
     private void banHistory(CommandSender sender, String[] args) {
@@ -558,7 +563,7 @@ public final class RepCommand implements CommandExecutor {
             return;
         }
         String reason = BanAuditMetadata.reasonFromArgs(args, 2);
-        String actor = actorId(sender);
+        CommandActor actor = CommandActor.from(sender);
         resolvePlayer(args[1], true)
                 .thenCompose(record -> {
                     if (record.isEmpty()) {
@@ -568,7 +573,8 @@ public final class RepCommand implements CommandExecutor {
                     return punishmentService.unbanProfile(targetUuid)
                             .thenCompose(profileResult -> punishmentService.markActiveBansUnbanned(
                                             targetUuid,
-                                            actor,
+                                            actor.uuid(),
+                                            actor.name(),
                                             reason,
                                             profileResult.wasProfileBanned()
                                     )
@@ -612,7 +618,7 @@ public final class RepCommand implements CommandExecutor {
             return;
         }
         String reason = BanAuditMetadata.reasonFromArgs(args, 2);
-        String actor = actorId(sender);
+        CommandActor actor = CommandActor.from(sender);
         resolvePlayer(args[1], true)
                 .thenCompose(record -> {
                     if (record.isEmpty()) {
@@ -624,7 +630,8 @@ public final class RepCommand implements CommandExecutor {
                                             target.uuid(),
                                             target.name(),
                                             reason,
-                                            actor,
+                                            actor.uuid(),
+                                            actor.name(),
                                             profileResult.wasProfileBanned()
                                     )
                                     .thenApply(pardonResult -> new PardonCompletion(record, profileResult, pardonResult)));
@@ -684,7 +691,7 @@ public final class RepCommand implements CommandExecutor {
             sender.sendMessage(ReputationBanPlugin.PREFIX + "権限がありません。");
             return;
         }
-        plugin.reloadPluginConfig();
+        List<dev.modplugin.reputationban.config.ConfigValidationIssue> issues = plugin.reloadPluginConfig();
         auditService.recordEvent(AuditEvent.create(
                 AuditEventType.CONFIG_RELOADED,
                 senderUuid(sender),
@@ -702,6 +709,13 @@ public final class RepCommand implements CommandExecutor {
                 System.currentTimeMillis()
         ));
         sender.sendMessage(ReputationBanPlugin.PREFIX + "設定を再読み込みしました。");
+        if (!issues.isEmpty()) {
+            long errors = issues.stream()
+                    .filter(issue -> issue.severity() == dev.modplugin.reputationban.config.ConfigValidationIssue.Severity.ERROR)
+                    .count();
+            long warnings = issues.size() - errors;
+            sender.sendMessage(ReputationBanPlugin.PREFIX + "設定警告: " + warnings + "件 / エラー: " + errors + "件。詳細はコンソールを確認してください。");
+        }
     }
 
     private static boolean canViewOthers(CommandSender sender) {
@@ -766,15 +780,25 @@ public final class RepCommand implements CommandExecutor {
         return null;
     }
 
-    private static String actorId(CommandSender sender) {
-        if (sender instanceof Player player) {
-            return BanAuditMetadata.actorId(player.getUniqueId());
-        }
-        return BanAuditMetadata.CONSOLE_ACTOR;
-    }
-
     private static UUID senderUuid(CommandSender sender) {
         return sender instanceof Player player ? player.getUniqueId() : null;
+    }
+
+    private static void sendMaintenanceResult(
+            CommandSender sender,
+            String title,
+            AuditService.MaintenanceResult result,
+            boolean includeBackup
+    ) {
+        sender.sendMessage(ReputationBanPlugin.PREFIX + title);
+        if (includeBackup) {
+            sender.sendMessage(ReputationBanPlugin.PREFIX + "backup: " + fallbackDash(result.backupFileName()));
+        }
+        sender.sendMessage(ReputationBanPlugin.PREFIX + "rejected reports: " + result.rejectedReportsDeleted());
+        sender.sendMessage(ReputationBanPlugin.PREFIX + "cancelled reports: " + result.cancelledReportsDeleted());
+        sender.sendMessage(ReputationBanPlugin.PREFIX + "audit events: " + result.auditEventsDeleted());
+        sender.sendMessage(ReputationBanPlugin.PREFIX + "score_history: " + result.scoreHistoryDeleted());
+        sender.sendMessage(ReputationBanPlugin.PREFIX + "bans: " + result.bansDeleted());
     }
 
     private String unbanDiscord(

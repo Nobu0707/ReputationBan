@@ -282,7 +282,8 @@ public final class PunishmentService {
 
     public CompletableFuture<UnbanResult> markActiveBansUnbanned(
             UUID targetUuid,
-            String unbannedBy,
+            UUID actorUuid,
+            String actorName,
             String unbanReason,
             boolean profileBanRemoved
     ) {
@@ -291,11 +292,11 @@ public final class PunishmentService {
             boolean previousAutoCommit = connection.getAutoCommit();
             connection.setAutoCommit(false);
             try {
-                int updated = markActiveBansUnbannedInTransaction(connection, targetUuid, unbannedBy, unbanReason, now);
+                int updated = markActiveBansUnbannedInTransaction(connection, targetUuid, actorName, unbanReason, now);
                 auditService.recordEventInTransaction(connection, AuditEvent.create(
                         AuditEventType.UNBAN,
-                        parseUuid(unbannedBy),
-                        unbannedBy,
+                        actorUuid,
+                        actorName,
                         targetUuid,
                         playerName(connection, targetUuid),
                         null,
@@ -326,7 +327,8 @@ public final class PunishmentService {
             UUID targetUuid,
             String targetName,
             String reason,
-            String actor,
+            UUID actorUuid,
+            String actorName,
             boolean profileBanRemoved
     ) {
         long now = System.currentTimeMillis();
@@ -334,7 +336,7 @@ public final class PunishmentService {
             boolean previousAutoCommit = connection.getAutoCommit();
             connection.setAutoCommit(false);
             try {
-                int updatedBans = markActiveBansUnbannedInTransaction(connection, targetUuid, actor, reason, now);
+                int updatedBans = markActiveBansUnbannedInTransaction(connection, targetUuid, actorName, reason, now);
                 int oldScore = ScoreService.currentScoreInTransaction(connection, targetUuid, config.initialScore());
                 int newScore = BanManagementPolicy.pardonTargetScore(oldScore, config.maxScore());
                 int delta = newScore - oldScore;
@@ -373,8 +375,8 @@ public final class PunishmentService {
                 }
                 auditService.recordEventInTransaction(connection, AuditEvent.create(
                         AuditEventType.PARDON,
-                        parseUuid(actor),
-                        actor,
+                        actorUuid,
+                        actorName,
                         targetUuid,
                         targetName,
                         null,
@@ -443,17 +445,6 @@ public final class PunishmentService {
     private static Long nullableLong(ResultSet result, String column) throws SQLException {
         long value = result.getLong(column);
         return result.wasNull() ? null : value;
-    }
-
-    private static UUID parseUuid(String value) {
-        if (value == null || "CONSOLE".equalsIgnoreCase(value)) {
-            return null;
-        }
-        try {
-            return UUID.fromString(value);
-        } catch (IllegalArgumentException exception) {
-            return null;
-        }
     }
 
     private static String playerName(Connection connection, UUID targetUuid) throws SQLException {

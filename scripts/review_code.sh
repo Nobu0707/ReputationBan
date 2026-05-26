@@ -2,7 +2,7 @@
 set -euo pipefail
 
 PROJECT_NAME="ReputationBan"
-EXPECTED_VERSION="0.8.0"
+EXPECTED_VERSION="0.9.0"
 EXPECTED_MAIN="dev.modplugin.reputationban.ReputationBanPlugin"
 EXPECTED_API_VERSION="26.1.2"
 EXPECTED_PACKAGE_DIR="src/main/java/dev/modplugin/reputationban"
@@ -31,15 +31,18 @@ require_file settings.gradle.kts
 require_file build.gradle.kts
 require_file gradlew
 require_file scripts/make-review-archive.sh
+require_file scripts/run-local-smoke-check.sh
+require_file docs/runtime-smoke-checklist.md
 require_file src/main/resources/plugin.yml
 require_file src/main/resources/config.yml
 require_dir "$EXPECTED_PACKAGE_DIR"
 [[ -x ./gradlew ]] || fail "gradlew is not executable"
 [[ -x ./scripts/review_code.sh ]] || fail "review_code.sh is not executable"
 [[ -x ./scripts/make-review-archive.sh ]] || fail "make-review-archive.sh is not executable"
+[[ -x ./scripts/run-local-smoke-check.sh ]] || fail "run-local-smoke-check.sh is not executable"
 
 grep -q "io.papermc.paper:paper-api:26.1.2.build" build.gradle.kts || fail "Paper API 26.1.2 dependency not found"
-grep -q 'version = "0.8.0"' build.gradle.kts || fail "build.gradle.kts version is not 0.8.0"
+grep -q 'version = "0.9.0"' build.gradle.kts || fail "build.gradle.kts version is not 0.9.0"
 grep -q "JavaLanguageVersion.of(25)" build.gradle.kts || fail "Java 25 toolchain not found"
 grep -q "options.release.set(25)" build.gradle.kts || fail "Java release 25 not found"
 
@@ -114,6 +117,14 @@ grep -R "enum AuditEventType" src/main/java/dev/modplugin/reputationban/model >/
 grep -R "\"audit\"" src/main/java/dev/modplugin/reputationban/command/RepCommand.java >/dev/null || fail "/rep audit command not found"
 grep -R "\"maintenance\"" src/main/java/dev/modplugin/reputationban/command/RepCommand.java >/dev/null || fail "/rep maintenance command not found"
 grep -R "MAINTENANCE_RUN" src/main/java/dev/modplugin/reputationban >/dev/null || fail "MAINTENANCE_RUN audit event not found"
+grep -R "MAINTENANCE_PREVIEW" src/main/java/dev/modplugin/reputationban src/test/java/dev/modplugin/reputationban >/dev/null || fail "MAINTENANCE_PREVIEW audit event not found"
+grep -R "class ConfigValidator\\|record ConfigValidationIssue" src/main/java/dev/modplugin/reputationban/config >/dev/null || fail "ConfigValidator/ConfigValidationIssue not found"
+grep -R "class SafePathResolver" src/main/java/dev/modplugin/reputationban/util >/dev/null || fail "SafePathResolver not found"
+grep -R "\"preview\"" src/main/java/dev/modplugin/reputationban/command/RepCommand.java src/main/java/dev/modplugin/reputationban/util/CommandSuggestionUtil.java >/dev/null || fail "/rep maintenance preview handling not found"
+grep -R "\"confirm\"" src/main/java/dev/modplugin/reputationban/command/RepCommand.java src/main/java/dev/modplugin/reputationban/util/CommandSuggestionUtil.java >/dev/null || fail "/rep maintenance run confirm handling not found"
+grep -R "RUN_REQUIRES_CONFIRMATION" src/main/java/dev/modplugin/reputationban >/dev/null || fail "/rep maintenance run must require confirmation"
+grep -R "reputationban-before-maintenance\\|backupDatabase\\|backups" src/main/java/dev/modplugin/reputationban/service/AuditService.java >/dev/null || fail "maintenance backup creation not found"
+grep -R "secret-scan.txt" scripts/make-review-archive.sh >/dev/null || fail "review archive secret-scan output not found"
 grep -R "class CsvEscaper" src/main/java/dev/modplugin/reputationban/util >/dev/null || fail "CsvEscaper not found"
 grep -q "reputationban.admin.audit:" "$YML" || fail "Missing reputationban.admin.audit permission"
 grep -q "reputationban.admin.maintenance:" "$YML" || fail "Missing reputationban.admin.maintenance permission"
@@ -186,6 +197,9 @@ if grep -R "profileBanList\.pardon[[:space:]]*(.*targetName\|profileBanList\.par
 fi
 if grep -R "discord\.com/api/webhooks" src/main/java >/dev/null; then
   fail "Hard-coded Discord webhook URL detected in Java sources"
+fi
+if grep -RE "https://(canary\\.|ptb\\.)?discord(app)?\\.com/api/webhooks/[0-9]+/[A-Za-z0-9_-]{20,}" src/main/java src/main/resources >/dev/null; then
+  fail "Concrete Discord webhook URL detected in main sources/resources"
 fi
 if grep -R "logger\.\(info\|warning\|severe\|log\).*url\|url.*logger\.\(info\|warning\|severe\|log\)" src/main/java/dev/modplugin/reputationban/notification >/dev/null; then
   fail "Possible webhook URL logging detected"

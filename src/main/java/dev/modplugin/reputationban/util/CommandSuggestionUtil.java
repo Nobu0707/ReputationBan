@@ -69,7 +69,7 @@ public final class CommandSuggestionUtil {
                 candidates.addAll(playerNames);
                 yield filterByPrefix(candidates, prefix);
             }
-            case "maintenance" -> filterByPrefix(List.of("run"), prefix);
+            case "maintenance" -> filterByPrefix(List.of("preview", "run"), prefix);
             default -> repSubcommandNeedsPlayer(subcommand) ? filterByPrefix(playerNames, prefix) : List.of();
         };
     }
@@ -99,6 +99,13 @@ public final class CommandSuggestionUtil {
             case "history", "banhistory" -> filterByPrefix(LIMITS, prefix);
             default -> List.of();
         };
+    }
+
+    public static List<String> repMaintenanceThirdArgumentSuggestions(String second, String prefix) {
+        if ("run".equals(normalize(second))) {
+            return filterByPrefix(List.of("confirm"), prefix);
+        }
+        return List.of();
     }
 
     public static List<String> reportStatuses(String prefix) {

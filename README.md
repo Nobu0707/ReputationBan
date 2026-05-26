@@ -26,7 +26,9 @@ ReputationBan is a PaperMC moderation plugin that tracks player reputation score
 - `/rep audit type <eventType> [limit]`: show audit events by type.
 - `/rep audit export recent [limit]`: export recent audit events as CSV.
 - `/rep audit export <player> [limit]`: export player audit events as CSV.
-- `/rep maintenance run`: run retention cleanup.
+- `/rep maintenance preview`: show retention cleanup counts without deleting data.
+- `/rep maintenance run`: show the confirm guidance without deleting data.
+- `/rep maintenance run confirm`: back up the SQLite database and run retention cleanup.
 - `/rep add <player> <points> [reason...]`: add score points.
 - `/rep remove <player> <points> [reason...]`: remove score points.
 - `/rep set <player> <score> [reason...]`: set an exact score.
@@ -53,6 +55,14 @@ ReputationBan is a PaperMC moderation plugin that tracks player reputation score
 - Audit metadata intentionally omits secret-like keys such as webhook URLs, tokens, passwords, cookies, and session IDs.
 - `retention.audit-events-days`, `retention.rejected-reports-days`, and `retention.cancelled-reports-days` control default cleanup. `retention.score-history-days` and `retention.bans-days` default to `0`, meaning no deletion.
 
+## Phase 9 Operational Hardening
+
+- Audit actor fields now keep player UUID and display name separate; console actions use `actor_uuid=NULL` and `actor_name=CONSOLE`.
+- Audit CSV export paths are constrained to the plugin data folder even if `audit.export-directory` is misconfigured.
+- Maintenance now supports `/rep maintenance preview` and requires `/rep maintenance run confirm` for deletion. Confirmed runs create `plugins/ReputationBan/backups/reputationban-before-maintenance-*.db`.
+- Startup and `/rep reload` validate obvious unsafe or invalid config values and report summaries.
+- Runtime smoke support lives in `scripts/run-local-smoke-check.sh` and `docs/runtime-smoke-checklist.md`.
+
 ## Permissions
 
 - `reputationban.report`: use `/reportbad`.
@@ -62,7 +72,7 @@ ReputationBan is a PaperMC moderation plugin that tracks player reputation score
 - `reputationban.admin.reports`: review reports.
 - `reputationban.admin.ban`: allow ban-sensitive approvals and ban management commands.
 - `reputationban.admin.audit`: view and export audit logs.
-- `reputationban.admin.maintenance`: run retention cleanup.
+- `reputationban.admin.maintenance`: preview and run confirmed retention cleanup.
 - `reputationban.notify`: receive staff notifications.
 - `reputationban.bypass`: bypass reports, deductions, and automatic bans while online.
 - `reputationban.admin`: grants the main admin permissions.
@@ -74,7 +84,7 @@ ReputationBan is a PaperMC moderation plugin that tracks player reputation score
 ./scripts/review_code.sh
 ```
 
-The plugin jar is written to `build/libs/ReputationBan-0.8.0.jar`.
+The plugin jar is written to `build/libs/ReputationBan-0.9.0.jar`.
 
 ## Current Limitations
 

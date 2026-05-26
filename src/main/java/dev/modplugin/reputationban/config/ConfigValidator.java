@@ -1,0 +1,66 @@
+package dev.modplugin.reputationban.config;
+
+import dev.modplugin.reputationban.config.ConfigValidationIssue.Severity;
+import dev.modplugin.reputationban.util.SafePathResolver;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
+
+public final class ConfigValidator {
+    private ConfigValidator() {
+    }
+
+    public static List<ConfigValidationIssue> validate(PluginConfig config, Path dataFolder) {
+        return validate(ConfigValidationInput.from(config), dataFolder);
+    }
+
+    public static List<ConfigValidationIssue> validate(ConfigValidationInput config, Path dataFolder) {
+        List<ConfigValidationIssue> issues = new ArrayList<>();
+        require(config.initialScore() > 0, issues, "initial-score", "initial-score must be greater than 0");
+        require(config.maxScore() > 0, issues, "max-score", "max-score must be greater than 0");
+        require(config.initialScore() <= config.maxScore(), issues, "initial-score", "initial-score must be less than or equal to max-score");
+        require(config.minReasonLength() >= 0, issues, "rating.min-reason-length", "rating.min-reason-length must be 0 or greater");
+        require(config.minUniqueReportsBeforeDeduction() >= 1, issues, "rating.min-unique-reports-before-deduction",
+                "rating.min-unique-reports-before-deduction must be at least 1");
+        require(config.reportWindowDays() >= 1, issues, "rating.report-window-days", "rating.report-window-days must be at least 1");
+        require(config.globalReportSeconds() >= 0, issues, "cooldowns.global-report-seconds", "cooldowns.global-report-seconds must be 0 or greater");
+        require(config.sameTargetCooldownDays() >= 0, issues, "cooldowns.same-target-cooldown-days", "cooldowns.same-target-cooldown-days must be 0 or greater");
+        require(config.maxReportsPerDay() >= 1, issues, "cooldowns.max-reports-per-day", "cooldowns.max-reports-per-day must be at least 1");
+        require(config.maxReportsPerWeek() >= 1, issues, "cooldowns.max-reports-per-week", "cooldowns.max-reports-per-week must be at least 1");
+        require(config.minPlaytimeMinutes() >= 0, issues, "report-requirements.min-playtime-minutes",
+                "report-requirements.min-playtime-minutes must be 0 or greater");
+        require(config.minAccountAgeDays() >= 0, issues, "report-requirements.min-account-age-days",
+                "report-requirements.min-account-age-days must be 0 or greater");
+        require(config.banThreshold() <= config.maxScore(), issues, "ban.threshold", "ban.threshold must be less than or equal to max-score");
+        require(config.recoveryPointsPerDay() >= 0, issues, "score-recovery.points-per-day", "score-recovery.points-per-day must be 0 or greater");
+        require(config.recoveryMaxScore() > 0, issues, "score-recovery.max-score", "score-recovery.max-score must be greater than 0");
+        require(config.recoveryNoReportDaysRequired() >= 0, issues, "score-recovery.no-report-days-required",
+                "score-recovery.no-report-days-required must be 0 or greater");
+        require(config.auditMaxDisplayLimit() >= 1, issues, "audit.max-display-limit", "audit.max-display-limit must be at least 1");
+        require(config.auditMaxExportLimit() >= 1, issues, "audit.max-export-limit", "audit.max-export-limit must be at least 1");
+        retention(config.retentionAuditEventsDays(), issues, "retention.audit-events-days");
+        retention(config.retentionRejectedReportsDays(), issues, "retention.rejected-reports-days");
+        retention(config.retentionCancelledReportsDays(), issues, "retention.cancelled-reports-days");
+        retention(config.retentionScoreHistoryDays(), issues, "retention.score-history-days");
+        retention(config.retentionBansDays(), issues, "retention.bans-days");
+        if (config.discordWebhookTimeoutSeconds() < 1 || config.discordWebhookTimeoutSeconds() > 30) {
+            issues.add(new ConfigValidationIssue(Severity.WARNING, "notify.discord-webhook.timeout-seconds",
+                    "notify.discord-webhook.timeout-seconds should be between 1 and 30"));
+        }
+        if (!SafePathResolver.staysInsideBase(dataFolder, config.auditExportDirectory())) {
+            issues.add(new ConfigValidationIssue(Severity.ERROR, "audit.export-directory",
+                    "audit.export-directory must stay inside the plugin data folder"));
+        }
+        return List.copyOf(issues);
+    }
+
+    private static void require(boolean valid, List<ConfigValidationIssue> issues, String path, String message) {
+        if (!valid) {
+            issues.add(new ConfigValidationIssue(Severity.ERROR, path, message));
+        }
+    }
+
+    private static void retention(int value, List<ConfigValidationIssue> issues, String path) {
+        require(value >= 0, issues, path, path + " must be 0 or greater");
+    }
+}

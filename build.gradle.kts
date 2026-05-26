@@ -3,7 +3,7 @@ plugins {
 }
 
 group = "dev.modplugin"
-version = "0.8.0"
+version = "0.9.0"
 
 java {
     toolchain {
@@ -22,6 +22,7 @@ dependencies {
 
     testImplementation(platform("org.junit:junit-bom:5.14.1"))
     testImplementation("org.junit.jupiter:junit-jupiter")
+    testImplementation("io.papermc.paper:paper-api:26.1.2.build.+")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
 

@@ -24,6 +24,9 @@ public final class RepTabCompleter implements TabCompleter {
             if ("audit".equalsIgnoreCase(args[0])) {
                 return CommandSuggestionUtil.repAuditThirdArgumentSuggestions(args[1], names, args[2]);
             }
+            if ("maintenance".equalsIgnoreCase(args[0])) {
+                return CommandSuggestionUtil.repMaintenanceThirdArgumentSuggestions(args[1], args[2]);
+            }
             return CommandSuggestionUtil.repThirdArgumentSuggestions(args[0], args[2]);
         }
         if (args.length == 4 && "audit".equalsIgnoreCase(args[0])) {

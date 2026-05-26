@@ -2,6 +2,7 @@ package dev.modplugin.reputationban.database;
 
 import dev.modplugin.reputationban.config.PluginConfig;
 import java.io.File;
+import java.nio.file.Path;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
@@ -38,7 +39,7 @@ public final class DatabaseManager implements AutoCloseable {
             throw new SQLException("Could not create plugin data folder: " + dataFolder);
         }
 
-        File databaseFile = new File(dataFolder, config.databaseFile());
+        File databaseFile = databasePath().toFile();
         connection = DriverManager.getConnection("jdbc:sqlite:" + databaseFile.getAbsolutePath());
         try (Statement statement = connection.createStatement()) {
             statement.execute("PRAGMA journal_mode=WAL");
@@ -47,6 +48,10 @@ public final class DatabaseManager implements AutoCloseable {
             plugin.getLogger().log(Level.WARNING, "SQLite PRAGMA setup failed; continuing with default settings.", exception);
         }
         createTables();
+    }
+
+    public Path databasePath() {
+        return plugin.getDataFolder().toPath().resolve(config.databaseFile()).toAbsolutePath().normalize();
     }
 
     private void createTables() throws SQLException {

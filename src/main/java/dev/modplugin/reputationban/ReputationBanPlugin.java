@@ -6,6 +6,8 @@ import dev.modplugin.reputationban.command.ReportBadCommand;
 import dev.modplugin.reputationban.command.ReportBadTabCompleter;
 import dev.modplugin.reputationban.command.ReportsCommand;
 import dev.modplugin.reputationban.command.ReportsTabCompleter;
+import dev.modplugin.reputationban.config.ConfigValidationIssue;
+import dev.modplugin.reputationban.config.ConfigValidator;
 import dev.modplugin.reputationban.config.PluginConfig;
 import dev.modplugin.reputationban.database.DatabaseManager;
 import dev.modplugin.reputationban.listener.PlayerJoinListener;
@@ -20,6 +22,7 @@ import dev.modplugin.reputationban.service.ReportService;
 import dev.modplugin.reputationban.service.ScoreService;
 import dev.modplugin.reputationban.util.ScoreThresholdPolicy;
 import java.sql.SQLException;
+import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Supplier;
@@ -45,6 +48,7 @@ public final class ReputationBanPlugin extends JavaPlugin {
     public void onEnable() {
         saveDefaultConfig();
         pluginConfig = PluginConfig.load(getConfig());
+        logConfigValidationIssues(ConfigValidator.validate(pluginConfig, getDataFolder().toPath()));
         notificationService = new NotificationService(this, this::pluginConfig);
         databaseManager = new DatabaseManager(this, pluginConfig);
         try {
@@ -70,7 +74,7 @@ public final class ReputationBanPlugin extends JavaPlugin {
         );
         registerCommand("reports", new ReportsCommand(this, reportService, punishmentService), new ReportsTabCompleter());
         startScoreRecoveryTask();
-        getLogger().info("ReputationBan v0.8.0 enabled.");
+        getLogger().info("ReputationBan v0.9.0 enabled.");
     }
 
     @Override
@@ -80,14 +84,17 @@ public final class ReputationBanPlugin extends JavaPlugin {
         }
     }
 
-    public void reloadPluginConfig() {
+    public List<ConfigValidationIssue> reloadPluginConfig() {
         reloadConfig();
         pluginConfig = PluginConfig.load(getConfig());
+        List<ConfigValidationIssue> issues = ConfigValidator.validate(pluginConfig, getDataFolder().toPath());
+        logConfigValidationIssues(issues);
         playerDataService.updateConfig(pluginConfig);
         auditService.updateConfig(pluginConfig);
         scoreService.updateConfig(pluginConfig);
         reportService.updateConfig(pluginConfig);
         punishmentService.updateConfig(pluginConfig);
+        return issues;
     }
 
     public PluginConfig pluginConfig() {
@@ -195,6 +202,14 @@ public final class ReputationBanPlugin extends JavaPlugin {
         PluginCommand command = Objects.requireNonNull(getCommand(name), "Missing command in plugin.yml: " + name);
         command.setExecutor(executor);
         command.setTabCompleter(tabCompleter);
+    }
+
+    private void logConfigValidationIssues(List<ConfigValidationIssue> issues) {
+        for (ConfigValidationIssue issue : issues) {
+            Level level = issue.severity() == ConfigValidationIssue.Severity.ERROR ? Level.SEVERE : Level.WARNING;
+            getLogger().log(level, "Configuration {0}: {1} - {2}",
+                    new Object[] {issue.severity(), issue.path(), issue.message()});
+        }
     }
 
     private void startScoreRecoveryTask() {

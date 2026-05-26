@@ -166,7 +166,28 @@
 - review_code.sh / make-review-archive.sh Phase 8対応
 - version 0.8.0
 
-## Phase 9以降: 外部連携・高度な悪用対策
+## Phase 9 / v0.9.0: 運用ハードニング
+
+目的: v1.0.0前に、監査・CSV・maintenance・設定検証・実機スモーク確認の安全性を高める。
+
+実装範囲:
+
+- unban / pardon / maintenance audit actor の `actor_uuid` と `actor_name` 分離
+- `CommandActor`
+- `SafePathResolver` による audit CSV export の data folder 外脱出防止
+- `/rep maintenance preview`
+- `/rep maintenance run confirm`
+- `/rep maintenance run` の confirm 案内化
+- maintenance 実行前 SQLite backup
+- `MAINTENANCE_PREVIEW`
+- `ConfigValidator` / `ConfigValidationIssue`
+- 起動時と `/rep reload` 時の設定検証ログと実行者サマリ
+- runtime smoke スクリプトとチェックリスト
+- review archive secret scan
+- review_code.sh / make-review-archive.sh Phase 9対応
+- version 0.9.0
+
+## Phase 10以降: 外部連携・高度な悪用対策
 
 実装候補:
 

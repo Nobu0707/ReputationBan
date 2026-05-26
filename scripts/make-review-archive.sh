@@ -4,7 +4,7 @@ set -euo pipefail
 # ReputationBan review archive generator.
 # Usage:
 #   bash scripts/make-review-archive.sh
-#   bash scripts/make-review-archive.sh "Phase 8"
+#   bash scripts/make-review-archive.sh "Phase 9"
 #
 # The optional argument is an expected substring of HEAD's commit subject.
 # If it does not match, the script exits before producing an archive, which
@@ -87,7 +87,19 @@ done < "$OUTDIR/meta/changed-files.txt"
   echo
   echo "## rg phase 8 audit retention"
   rg -n "audit_events|AuditService|AuditEventType|CsvEscaper|maintenance|retention|reputationban.admin.audit|reputationban.admin.maintenance|REPORT_THRESHOLD_REACHED" src/main/java src/test/java src/main/resources README.md docs reputationban_phase_plan.md scripts || true
+  echo
+  echo "## rg phase 9 operational hardening"
+  rg -n "ConfigValidator|ConfigValidationIssue|SafePathResolver|MAINTENANCE_PREVIEW|maintenance preview|run confirm|backup|runtime-smoke|secret-scan|CommandActor" src/main/java src/test/java src/main/resources README.md docs reputationban_phase_plan.md scripts || true
 } > "$OUTDIR/checks/rg-review-signals.txt"
+
+{
+  echo "## secret scan patterns"
+  echo "Patterns: discord.com/api/webhooks, webhook-url, webhookUrl, password, sessionId, token, secret"
+  echo
+  rg -n -i "discord\\.com/api/webhooks|webhook-url|webhookUrl|password|sessionId|token|secret" \
+    src/main src/test scripts docs README.md reputationban_phase_plan.md build.gradle.kts settings.gradle.kts 2>/dev/null \
+    | sed -E 's#https://(canary\.|ptb\.)?discord(app)?\.com/api/webhooks/[0-9]+/[A-Za-z0-9_-]+#[REDACTED_DISCORD_WEBHOOK]#g' || true
+} > "$OUTDIR/checks/secret-scan.txt"
 
 run_logged() {
   local name="$1"
@@ -125,8 +137,8 @@ fi
 
 if [[ -d "$ROOT/build/libs" ]]; then
   find "$ROOT/build/libs" -maxdepth 1 -type f -print | sort > "$OUTDIR/checks/built-jars.txt"
-  if [[ -f "$ROOT/build/libs/ReputationBan-0.8.0.jar" ]]; then
-    (cd "$ROOT" && sha256sum build/libs/ReputationBan-0.8.0.jar) > "$OUTDIR/checks/jar-sha256.txt"
+  if [[ -f "$ROOT/build/libs/ReputationBan-0.9.0.jar" ]]; then
+    (cd "$ROOT" && sha256sum build/libs/ReputationBan-0.9.0.jar) > "$OUTDIR/checks/jar-sha256.txt"
   fi
 fi
 

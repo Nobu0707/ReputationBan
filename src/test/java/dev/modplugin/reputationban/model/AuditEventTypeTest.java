@@ -17,6 +17,8 @@ class AuditEventTypeTest {
     @Test
     void exposesDatabaseValues() {
         assertTrue(AuditEventType.databaseValues().contains("MAINTENANCE_RUN"));
+        assertTrue(AuditEventType.databaseValues().contains("MAINTENANCE_PREVIEW"));
+        assertEquals(AuditEventType.MAINTENANCE_PREVIEW, AuditEventType.parse("maintenance-preview"));
     }
 
     @Test

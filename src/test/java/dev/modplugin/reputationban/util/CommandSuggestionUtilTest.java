@@ -54,5 +54,7 @@ class CommandSuggestionUtilTest {
         assertEquals(List.of("Alex"), CommandSuggestionUtil.repSecondArgumentSuggestions("audit", List.of("Alex"), "Al"));
         assertTrue(CommandSuggestionUtil.repAuditThirdArgumentSuggestions("type", List.of(), "REPORT").contains("REPORT_CREATED"));
         assertEquals(List.of("run"), CommandSuggestionUtil.repSecondArgumentSuggestions("maintenance", List.of(), "r"));
+        assertEquals(List.of("preview"), CommandSuggestionUtil.repSecondArgumentSuggestions("maintenance", List.of(), "pre"));
+        assertEquals(List.of("confirm"), CommandSuggestionUtil.repMaintenanceThirdArgumentSuggestions("run", "con"));
     }
 }

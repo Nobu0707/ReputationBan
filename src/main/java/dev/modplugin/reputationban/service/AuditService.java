@@ -4,12 +4,16 @@ import dev.modplugin.reputationban.config.PluginConfig;
 import dev.modplugin.reputationban.database.DatabaseManager;
 import dev.modplugin.reputationban.model.AuditEvent;
 import dev.modplugin.reputationban.model.AuditEventType;
+import dev.modplugin.reputationban.model.CommandActor;
+import dev.modplugin.reputationban.util.AuditMetadata;
 import dev.modplugin.reputationban.util.CsvEscaper;
 import dev.modplugin.reputationban.util.RetentionPolicy;
+import dev.modplugin.reputationban.util.SafePathResolver;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -160,22 +164,39 @@ public final class AuditService {
         });
     }
 
-    public CompletableFuture<MaintenanceResult> runMaintenance(String actorName) {
+    public CompletableFuture<MaintenanceResult> previewMaintenance(CommandActor actor) {
+        long now = System.currentTimeMillis();
+        return database.supplyAsync(connection -> {
+            MaintenanceResult result = previewCounts(connection, now, null);
+            auditServicePreview(connection, actor, result, now);
+            return result;
+        });
+    }
+
+    public CompletableFuture<MaintenanceResult> runMaintenance(CommandActor actor) {
         long now = System.currentTimeMillis();
         return database.supplyAsync(connection -> {
             boolean previousAutoCommit = connection.getAutoCommit();
             connection.setAutoCommit(false);
             try {
+                Path backupPath = backupDatabase(connection);
                 int rejectedReports = cleanupReports(connection, "rejected", config.retentionRejectedReportsDays(), now);
                 int cancelledReports = cleanupReports(connection, "cancelled", config.retentionCancelledReportsDays(), now);
                 int scoreHistory = cleanupByCreatedAt(connection, "score_history", config.retentionScoreHistoryDays(), now);
                 int bans = cleanupByCreatedAt(connection, "bans", config.retentionBansDays(), now);
                 int auditEvents = cleanupByCreatedAt(connection, "audit_events", config.retentionAuditEventsDays(), now);
-                MaintenanceResult result = new MaintenanceResult(rejectedReports, cancelledReports, auditEvents, scoreHistory, bans);
+                MaintenanceResult result = new MaintenanceResult(
+                        rejectedReports,
+                        cancelledReports,
+                        auditEvents,
+                        scoreHistory,
+                        bans,
+                        "backups/" + backupPath.getFileName()
+                );
                 recordEventInTransaction(connection, AuditEvent.create(
                         AuditEventType.MAINTENANCE_RUN,
-                        null,
-                        actorName,
+                        actor.uuid(),
+                        actor.name(),
                         null,
                         null,
                         null,
@@ -197,6 +218,25 @@ public final class AuditService {
                 connection.setAutoCommit(previousAutoCommit);
             }
         });
+    }
+
+    private void auditServicePreview(Connection connection, CommandActor actor, MaintenanceResult result, long now) throws SQLException {
+        recordEventInTransaction(connection, AuditEvent.create(
+                AuditEventType.MAINTENANCE_PREVIEW,
+                actor.uuid(),
+                actor.name(),
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                "retention cleanup preview",
+                result.metadata(),
+                now
+        ));
     }
 
     private static void insertEvent(Connection connection, AuditEvent event) throws SQLException {
@@ -265,7 +305,15 @@ public final class AuditService {
     }
 
     private Path exportPath(String fileName) throws IOException {
-        Path directory = plugin.getDataFolder().toPath().resolve(config.auditExportDirectory()).normalize();
+        Path base = plugin.getDataFolder().toPath().toAbsolutePath().normalize();
+        Path directory = SafePathResolver.resolveInsideBase(
+                base,
+                config.auditExportDirectory(),
+                SafePathResolver.DEFAULT_EXPORT_DIRECTORY
+        );
+        if (!SafePathResolver.staysInsideBase(base, config.auditExportDirectory())) {
+            plugin.getLogger().warning("Invalid audit export directory configured; using safe default export directory.");
+        }
         Files.createDirectories(directory);
         return directory.resolve(fileName).normalize();
     }
@@ -315,6 +363,42 @@ public final class AuditService {
         }
     }
 
+    private MaintenanceResult previewCounts(Connection connection, long now, String backupFileName) throws SQLException {
+        return new MaintenanceResult(
+                countReports(connection, "rejected", config.retentionRejectedReportsDays(), now),
+                countReports(connection, "cancelled", config.retentionCancelledReportsDays(), now),
+                countByCreatedAt(connection, "audit_events", config.retentionAuditEventsDays(), now),
+                countByCreatedAt(connection, "score_history", config.retentionScoreHistoryDays(), now),
+                countByCreatedAt(connection, "bans", config.retentionBansDays(), now),
+                backupFileName
+        );
+    }
+
+    private static int countReports(Connection connection, String status, int retentionDays, long now) throws SQLException {
+        Long cutoff = RetentionPolicy.cutoffMillis(retentionDays, now);
+        if (cutoff == null) {
+            return 0;
+        }
+        try (PreparedStatement statement = connection.prepareStatement("SELECT COUNT(*) FROM reports WHERE status = ? AND created_at < ?")) {
+            statement.setString(1, status);
+            statement.setLong(2, cutoff);
+            try (ResultSet result = statement.executeQuery()) {
+                return result.next() ? result.getInt(1) : 0;
+            }
+        }
+    }
+
+    private static int countByCreatedAt(Connection connection, String table, int retentionDays, long now) throws SQLException {
+        Long cutoff = RetentionPolicy.cutoffMillis(retentionDays, now);
+        if (cutoff == null) {
+            return 0;
+        }
+        try (Statement statement = connection.createStatement();
+                ResultSet result = statement.executeQuery("SELECT COUNT(*) FROM " + table + " WHERE created_at < " + cutoff)) {
+            return result.next() ? result.getInt(1) : 0;
+        }
+    }
+
     private static int cleanupByCreatedAt(Connection connection, String table, int retentionDays, long now) throws SQLException {
         Long cutoff = RetentionPolicy.cutoffMillis(retentionDays, now);
         if (cutoff == null) {
@@ -322,6 +406,31 @@ public final class AuditService {
         }
         try (Statement statement = connection.createStatement()) {
             return statement.executeUpdate("DELETE FROM " + table + " WHERE created_at < " + cutoff);
+        }
+    }
+
+    private Path backupDatabase(Connection connection) throws SQLException {
+        try (Statement statement = connection.createStatement()) {
+            statement.execute("PRAGMA wal_checkpoint(FULL)");
+        }
+        try {
+            Path backups = plugin.getDataFolder().toPath().resolve("backups").toAbsolutePath().normalize();
+            Files.createDirectories(backups);
+            Path databasePath = database.databasePath();
+            String stamp = FILE_STAMP.format(Instant.now());
+            Path destination = backups.resolve("reputationban-before-maintenance-" + stamp + ".db").normalize();
+            Files.copy(databasePath, destination, StandardCopyOption.REPLACE_EXISTING);
+            copyIfExists(Path.of(databasePath.toString() + "-wal"), Path.of(destination.toString() + "-wal"));
+            copyIfExists(Path.of(databasePath.toString() + "-shm"), Path.of(destination.toString() + "-shm"));
+            return destination;
+        } catch (IOException exception) {
+            throw new SQLException("Failed to create maintenance backup", exception);
+        }
+    }
+
+    private static void copyIfExists(Path source, Path destination) throws IOException {
+        if (Files.exists(source)) {
+            Files.copy(source, destination, StandardCopyOption.REPLACE_EXISTING);
         }
     }
 
@@ -368,14 +477,20 @@ public final class AuditService {
             int cancelledReportsDeleted,
             int auditEventsDeleted,
             int scoreHistoryDeleted,
-            int bansDeleted
+            int bansDeleted,
+            String backupFileName
     ) {
         public String metadata() {
-            return "{\"rejectedReportsDeleted\":\"" + rejectedReportsDeleted
-                    + "\",\"cancelledReportsDeleted\":\"" + cancelledReportsDeleted
-                    + "\",\"auditEventsDeleted\":\"" + auditEventsDeleted
-                    + "\",\"scoreHistoryDeleted\":\"" + scoreHistoryDeleted
-                    + "\",\"bansDeleted\":\"" + bansDeleted + "\"}";
+            AuditMetadata metadata = AuditMetadata.create()
+                    .put("rejectedReports", rejectedReportsDeleted)
+                    .put("cancelledReports", cancelledReportsDeleted)
+                    .put("auditEvents", auditEventsDeleted)
+                    .put("scoreHistory", scoreHistoryDeleted)
+                    .put("bans", bansDeleted);
+            if (backupFileName != null && !backupFileName.isBlank()) {
+                metadata.put("backup", backupFileName);
+            }
+            return metadata.toJson();
         }
     }
 }
