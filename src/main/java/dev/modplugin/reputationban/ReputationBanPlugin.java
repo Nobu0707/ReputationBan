@@ -44,11 +44,11 @@ public final class ReputationBanPlugin extends JavaPlugin {
         playerDataService = new PlayerDataService(databaseManager, pluginConfig);
         scoreService = new ScoreService(databaseManager, pluginConfig);
         reportService = new ReportService(databaseManager, pluginConfig);
-        punishmentService = new PunishmentService(this, databaseManager, playerDataService, pluginConfig);
+        punishmentService = new PunishmentService(this, databaseManager, pluginConfig);
 
         getServer().getPluginManager().registerEvents(new PlayerJoinListener(playerDataService, getLogger()), this);
         registerCommand("rep", new RepCommand(this, playerDataService));
-        registerCommand("reportbad", new ReportBadCommand(this, playerDataService, reportService, scoreService, punishmentService));
+        registerCommand("reportbad", new ReportBadCommand(this, playerDataService, reportService, punishmentService));
         registerCommand("reports", new ReportsCommand(this, reportService));
         getLogger().info("ReputationBan v0.1.0 enabled.");
     }

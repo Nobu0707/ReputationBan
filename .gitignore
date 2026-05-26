@@ -11,3 +11,5 @@ run/
 server/
 .DS_Store
 *:Zone.Identifier
+reputationban-review-*.tar.gz
+reputationban-review-latest.tar.gz

@@ -6,12 +6,12 @@ import dev.modplugin.reputationban.model.ReportCategory;
 import dev.modplugin.reputationban.service.PlayerDataService;
 import dev.modplugin.reputationban.service.PunishmentService;
 import dev.modplugin.reputationban.service.ReportService;
-import dev.modplugin.reputationban.service.ScoreService;
 import java.util.Arrays;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import org.bukkit.Bukkit;
+import org.bukkit.OfflinePlayer;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
@@ -21,20 +21,17 @@ public final class ReportBadCommand implements CommandExecutor {
     private final ReputationBanPlugin plugin;
     private final PlayerDataService playerDataService;
     private final ReportService reportService;
-    private final ScoreService scoreService;
     private final PunishmentService punishmentService;
 
     public ReportBadCommand(
             ReputationBanPlugin plugin,
             PlayerDataService playerDataService,
             ReportService reportService,
-            ScoreService scoreService,
             PunishmentService punishmentService
     ) {
         this.plugin = plugin;
         this.playerDataService = playerDataService;
         this.reportService = reportService;
-        this.scoreService = scoreService;
         this.punishmentService = punishmentService;
     }
 
@@ -70,7 +67,7 @@ public final class ReportBadCommand implements CommandExecutor {
         }
 
         Player onlineTarget = Bukkit.getPlayerExact(args[0]);
-        if (onlineTarget != null && onlineTarget.hasPermission("reputationban.bypass")) {
+        if (onlineTarget != null && (onlineTarget.hasPermission("reputationban.bypass") || onlineTarget.isOp())) {
             reporter.sendMessage(ReputationBanPlugin.PREFIX + "このプレイヤーは通報対象外です。");
             return true;
         }
@@ -117,6 +114,24 @@ public final class ReportBadCommand implements CommandExecutor {
             return CompletableFuture.completedFuture(null);
         }
 
+        return isTargetProtected(value.uuid())
+                .thenCompose(protectedTarget -> {
+                    if (protectedTarget) {
+                        plugin.runSync(() -> reporter.sendMessage(ReputationBanPlugin.PREFIX + "このプレイヤーは通報対象外です。"));
+                        return CompletableFuture.completedFuture(null);
+                    }
+                    return submitAllowedReport(reporter, reporterUuid, reporterName, value, category, reason);
+                });
+    }
+
+    private CompletableFuture<Void> submitAllowedReport(
+            Player reporter,
+            UUID reporterUuid,
+            String reporterName,
+            Target value,
+            ReportCategory category,
+            String reason
+    ) {
         return playerDataService.ensurePlayer(reporterUuid, reporterName)
                 .thenCompose(ignored -> reportService.submitReport(reporterUuid, reporterName, value.uuid(), value.name(), category, reason))
                 .thenCompose(result -> {
@@ -131,32 +146,45 @@ public final class ReportBadCommand implements CommandExecutor {
                         });
                         return CompletableFuture.completedFuture(null);
                     }
-                    return scoreService.applyDelta(
+
+                    CompletableFuture<Boolean> banFuture = result.crossedBanThreshold()
+                            ? punishmentService.punishIfNeeded(
                                     value.uuid(),
                                     value.name(),
-                                    -result.deduction(),
-                                    "Report #" + result.reportId() + ": " + category.key(),
-                                    "report",
-                                    result.reportId()
+                                    result.oldScore(),
+                                    result.newScore(),
+                                    "Reputation score reached " + result.newScore()
                             )
-                            .thenCompose(change -> punishmentService.punishIfNeeded(
-                                    change.targetUuid(),
-                                    change.targetName(),
-                                    change.newScore(),
-                                    "Reputation score reached " + change.newScore()
-                            ).thenApply(banned -> {
-                                plugin.runSync(() -> {
-                                    reporter.sendMessage(ReputationBanPlugin.PREFIX + "通報を受け付けました。対象スコア: "
-                                            + change.oldScore() + " -> " + change.newScore());
-                                    plugin.notifyStaff("自動承認通報 #" + result.reportId() + ": " + value.name()
-                                            + " -" + result.deduction() + " (" + change.newScore() + ")");
-                                    if (banned) {
-                                        plugin.notifyStaff(value.name() + " は評判スコアによりBAN処理されました。");
-                                    }
-                                });
-                                return null;
-                            }));
+                            : CompletableFuture.completedFuture(false);
+
+                    return banFuture.thenApply(banned -> {
+                        plugin.runSync(() -> {
+                            reporter.sendMessage(ReputationBanPlugin.PREFIX + "通報を受け付けました。対象スコア: "
+                                    + result.oldScore() + " -> " + result.newScore());
+                            plugin.notifyStaff("自動承認通報 #" + result.reportId() + ": " + value.name()
+                                    + " -" + result.deduction() + " (" + result.newScore() + ")");
+                            if (banned) {
+                                plugin.notifyStaff(value.name() + " は評判スコアによりBAN処理されました。");
+                            }
+                        });
+                        return null;
+                    });
                 });
+    }
+
+    private CompletableFuture<Boolean> isTargetProtected(UUID targetUuid) {
+        CompletableFuture<Boolean> result = new CompletableFuture<>();
+        plugin.runSync(() -> {
+            Player online = Bukkit.getPlayer(targetUuid);
+            if (online != null) {
+                result.complete(online.hasPermission("reputationban.bypass") || online.isOp());
+                return;
+            }
+
+            OfflinePlayer offline = Bukkit.getOfflinePlayer(targetUuid);
+            result.complete(offline.isOp());
+        });
+        return result;
     }
 
     private record Target(UUID uuid, String name) {

@@ -3,8 +3,10 @@ package dev.modplugin.reputationban.service;
 import dev.modplugin.reputationban.config.PluginConfig;
 import dev.modplugin.reputationban.database.DatabaseManager;
 import dev.modplugin.reputationban.model.ReportCategory;
+import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.sql.Statement;
 import java.time.Duration;
 import java.util.UUID;
@@ -55,31 +57,171 @@ public final class ReportService {
                 return ReportResult.rejected("1週間の通報上限に達しています。");
             }
 
-            String status = category.staffReviewRequired() ? "pending" : "auto_accepted";
-            int deduction = category.staffReviewRequired() ? 0 : category.deduction();
-            try (PreparedStatement insert = connection.prepareStatement("""
-                    INSERT INTO reports (
-                      reporter_uuid, reporter_name, target_uuid, target_name, category,
-                      reason, status, deduction, created_at
-                    )
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-                    """, Statement.RETURN_GENERATED_KEYS)) {
-                insert.setString(1, reporterUuid.toString());
-                insert.setString(2, reporterName);
-                insert.setString(3, targetUuid.toString());
-                insert.setString(4, targetName);
-                insert.setString(5, category.key());
-                insert.setString(6, reason);
-                insert.setString(7, status);
-                insert.setInt(8, deduction);
-                insert.setLong(9, now);
-                insert.executeUpdate();
-                try (ResultSet generated = insert.getGeneratedKeys()) {
-                    long reportId = generated.next() ? generated.getLong(1) : -1L;
-                    return ReportResult.accepted(reportId, status, deduction, category.staffReviewRequired());
-                }
+            if (category.staffReviewRequired()) {
+                long reportId = insertReport(
+                        connection,
+                        reporterUuid,
+                        reporterName,
+                        targetUuid,
+                        targetName,
+                        category,
+                        reason,
+                        "pending",
+                        0,
+                        now
+                );
+                return ReportResult.accepted(reportId, "pending", 0, true, null, null, false);
             }
+
+            return submitAutoAcceptedReportInTransaction(
+                    connection,
+                    reporterUuid,
+                    reporterName,
+                    targetUuid,
+                    targetName,
+                    category,
+                    reason,
+                    now
+            );
         });
+    }
+
+    private ReportResult submitAutoAcceptedReportInTransaction(
+            Connection connection,
+            UUID reporterUuid,
+            String reporterName,
+            UUID targetUuid,
+            String targetName,
+            ReportCategory category,
+            String reason,
+            long now
+    ) throws SQLException {
+        boolean previousAutoCommit = connection.getAutoCommit();
+        connection.setAutoCommit(false);
+        try {
+            int deduction = category.deduction();
+            long reportId = insertReport(
+                    connection,
+                    reporterUuid,
+                    reporterName,
+                    targetUuid,
+                    targetName,
+                    category,
+                    reason,
+                    "auto_accepted",
+                    deduction,
+                    now
+            );
+            int oldScore = getCurrentScore(connection, targetUuid);
+            int newScore = Math.min(config.maxScore(), oldScore - deduction);
+            updateScore(connection, targetUuid, targetName, newScore);
+            insertScoreHistory(
+                    connection,
+                    targetUuid,
+                    targetName,
+                    oldScore,
+                    newScore,
+                    -deduction,
+                    "Report #" + reportId + ": " + category.key(),
+                    reportId,
+                    now
+            );
+            connection.commit();
+            boolean crossedThreshold = oldScore > config.banThreshold() && newScore <= config.banThreshold();
+            return ReportResult.accepted(reportId, "auto_accepted", deduction, false, oldScore, newScore, crossedThreshold);
+        } catch (SQLException | RuntimeException exception) {
+            connection.rollback();
+            throw exception;
+        } finally {
+            connection.setAutoCommit(previousAutoCommit);
+        }
+    }
+
+    private static long insertReport(
+            Connection connection,
+            UUID reporterUuid,
+            String reporterName,
+            UUID targetUuid,
+            String targetName,
+            ReportCategory category,
+            String reason,
+            String status,
+            int deduction,
+            long now
+    ) throws SQLException {
+        try (PreparedStatement insert = connection.prepareStatement("""
+                INSERT INTO reports (
+                  reporter_uuid, reporter_name, target_uuid, target_name, category,
+                  reason, status, deduction, created_at
+                )
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """, Statement.RETURN_GENERATED_KEYS)) {
+            insert.setString(1, reporterUuid.toString());
+            insert.setString(2, reporterName);
+            insert.setString(3, targetUuid.toString());
+            insert.setString(4, targetName);
+            insert.setString(5, category.key());
+            insert.setString(6, reason);
+            insert.setString(7, status);
+            insert.setInt(8, deduction);
+            insert.setLong(9, now);
+            insert.executeUpdate();
+            try (ResultSet generated = insert.getGeneratedKeys()) {
+                return generated.next() ? generated.getLong(1) : -1L;
+            }
+        }
+    }
+
+    private int getCurrentScore(Connection connection, UUID targetUuid) throws SQLException {
+        try (PreparedStatement select = connection.prepareStatement("SELECT score FROM players WHERE uuid = ?")) {
+            select.setString(1, targetUuid.toString());
+            try (ResultSet result = select.executeQuery()) {
+                return result.next() ? result.getInt("score") : config.initialScore();
+            }
+        }
+    }
+
+    private static void updateScore(Connection connection, UUID targetUuid, String targetName, int newScore) throws SQLException {
+        try (PreparedStatement update = connection.prepareStatement("""
+                UPDATE players
+                SET score = ?, name = ?
+                WHERE uuid = ?
+                """)) {
+            update.setInt(1, newScore);
+            update.setString(2, targetName);
+            update.setString(3, targetUuid.toString());
+            update.executeUpdate();
+        }
+    }
+
+    private static void insertScoreHistory(
+            Connection connection,
+            UUID targetUuid,
+            String targetName,
+            int oldScore,
+            int newScore,
+            int delta,
+            String reason,
+            long sourceId,
+            long now
+    ) throws SQLException {
+        try (PreparedStatement insert = connection.prepareStatement("""
+                INSERT INTO score_history (
+                  target_uuid, target_name, old_score, new_score, delta, reason, source_type, source_id, created_at
+                )
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """)) {
+            insert.setString(1, targetUuid.toString());
+            insert.setString(2, targetName);
+            insert.setInt(3, oldScore);
+            insert.setInt(4, newScore);
+            insert.setInt(5, delta);
+            insert.setString(6, reason);
+            insert.setString(7, "report");
+            insert.setLong(8, sourceId);
+            insert.setLong(9, now);
+            insert.executeUpdate();
+        }
     }
 
     public CompletableFuture<java.util.List<ReportSummary>> recentReports(int limit) {
@@ -156,14 +298,35 @@ public final class ReportService {
             long reportId,
             String status,
             int deduction,
-            boolean staffReviewRequired
+            boolean staffReviewRequired,
+            Integer oldScore,
+            Integer newScore,
+            boolean crossedBanThreshold
     ) {
         static ReportResult rejected(String message) {
-            return new ReportResult(false, message, -1L, "rejected", 0, false);
+            return new ReportResult(false, message, -1L, "rejected", 0, false, null, null, false);
         }
 
-        static ReportResult accepted(long reportId, String status, int deduction, boolean staffReviewRequired) {
-            return new ReportResult(true, "通報を受け付けました。", reportId, status, deduction, staffReviewRequired);
+        static ReportResult accepted(
+                long reportId,
+                String status,
+                int deduction,
+                boolean staffReviewRequired,
+                Integer oldScore,
+                Integer newScore,
+                boolean crossedBanThreshold
+        ) {
+            return new ReportResult(
+                    true,
+                    "通報を受け付けました。",
+                    reportId,
+                    status,
+                    deduction,
+                    staffReviewRequired,
+                    oldScore,
+                    newScore,
+                    crossedBanThreshold
+            );
         }
     }
 
