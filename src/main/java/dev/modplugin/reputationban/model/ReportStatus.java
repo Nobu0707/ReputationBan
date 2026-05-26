@@ -6,6 +6,7 @@ import java.util.Locale;
 
 public enum ReportStatus {
     PENDING("pending"),
+    THRESHOLD_PENDING("threshold_pending"),
     AUTO_ACCEPTED("auto_accepted"),
     APPROVED("approved"),
     REJECTED("rejected"),

@@ -33,6 +33,7 @@ class CommandSuggestionUtilTest {
     @Test
     void reportsListStatusSuggestionsIncludeAll() {
         assertEquals(List.of("pending"), CommandSuggestionUtil.reportsSecondArgumentSuggestions("list", List.of(), "pen"));
+        assertEquals(List.of("threshold_pending"), CommandSuggestionUtil.reportsSecondArgumentSuggestions("list", List.of(), "threshold"));
         assertTrue(CommandSuggestionUtil.reportsSecondArgumentSuggestions("list", List.of(), "").contains("all"));
     }
 

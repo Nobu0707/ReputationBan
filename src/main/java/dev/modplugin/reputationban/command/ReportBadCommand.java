@@ -6,8 +6,10 @@ import dev.modplugin.reputationban.model.ReportCategory;
 import dev.modplugin.reputationban.notification.DiscordWebhookConfig;
 import dev.modplugin.reputationban.notification.NotificationEventType;
 import dev.modplugin.reputationban.service.PlayerDataService;
+import dev.modplugin.reputationban.service.PlayerReportEligibilityService;
 import dev.modplugin.reputationban.service.PunishmentService;
 import dev.modplugin.reputationban.service.ReportService;
+import dev.modplugin.reputationban.util.ReportEligibilityPolicy;
 import java.util.Arrays;
 import java.util.Optional;
 import java.util.UUID;
@@ -24,6 +26,7 @@ public final class ReportBadCommand implements CommandExecutor {
     private final PlayerDataService playerDataService;
     private final ReportService reportService;
     private final PunishmentService punishmentService;
+    private final PlayerReportEligibilityService eligibilityService;
 
     public ReportBadCommand(
             ReputationBanPlugin plugin,
@@ -35,6 +38,7 @@ public final class ReportBadCommand implements CommandExecutor {
         this.playerDataService = playerDataService;
         this.reportService = reportService;
         this.punishmentService = punishmentService;
+        eligibilityService = new PlayerReportEligibilityService();
     }
 
     @Override
@@ -135,18 +139,73 @@ public final class ReportBadCommand implements CommandExecutor {
             String reason
     ) {
         return playerDataService.ensurePlayer(reporterUuid, reporterName)
+                .thenCompose(ignored -> plugin.supplySync(() -> eligibilityService.checkPlaytime(
+                        reporter,
+                        plugin.pluginConfig().minPlaytimeMinutes()
+                )))
+                .thenCompose(playtimeEligibility -> {
+                    if (!playtimeEligibility.allowed()) {
+                        plugin.runSync(() -> sendEligibilityFailure(reporter, playtimeEligibility.message()));
+                        return CompletableFuture.<ReportSubmissionEligibility>completedFuture(ReportSubmissionStop.INSTANCE);
+                    }
+                    return playerDataService.getPlayerRecord(reporterUuid)
+                            .thenApply(record -> {
+                                Long firstSeen = record.map(PlayerRecord::firstSeen).orElse(null);
+                                ReportEligibilityPolicy.EligibilityResult accountAgeEligibility =
+                                        ReportEligibilityPolicy.checkAccountAge(
+                                                firstSeen,
+                                                plugin.pluginConfig().minAccountAgeDays(),
+                                                System.currentTimeMillis()
+                                        );
+                                if (!accountAgeEligibility.allowed()) {
+                                    plugin.runSync(() -> sendEligibilityFailure(reporter, accountAgeEligibility.message()));
+                                    return ReportSubmissionStop.INSTANCE;
+                                }
+                                return ReportSubmissionContinue.INSTANCE;
+                            });
+                })
+                .thenCompose(eligibility -> {
+                    if (eligibility instanceof ReportSubmissionStop) {
+                        return CompletableFuture.completedFuture(null);
+                    }
+                    return submitReportAfterEligibility(reporter, reporterUuid, reporterName, value, category, reason);
+                });
+    }
+
+    private CompletableFuture<Void> submitReportAfterEligibility(
+            Player reporter,
+            UUID reporterUuid,
+            String reporterName,
+            Target value,
+            ReportCategory category,
+            String reason
+    ) {
+        return playerDataService.ensurePlayer(reporterUuid, reporterName)
                 .thenCompose(ignored -> reportService.submitReport(reporterUuid, reporterName, value.uuid(), value.name(), category, reason))
                 .thenCompose(result -> {
                     if (!result.accepted()) {
                         plugin.runSync(() -> reporter.sendMessage(ReputationBanPlugin.PREFIX + result.message()));
                         return CompletableFuture.completedFuture(null);
                     }
-                    if (result.staffReviewRequired() || result.deduction() <= 0) {
+                    if (result.staffReviewRequired()) {
                         plugin.runSync(() -> {
                             reporter.sendMessage(ReputationBanPlugin.PREFIX + "通報を受け付けました。スタッフ審査待ちです。");
                             plugin.notifyStaff(
                                     NotificationEventType.REPORT_CREATED,
                                     "審査待ち通報 #" + result.reportId() + ": " + reporterName + " -> " + value.name(),
+                                    reportCreatedDiscord(result, reporterName, reporterUuid, value, category, reason)
+                            );
+                        });
+                        return CompletableFuture.completedFuture(null);
+                    }
+                    if ("threshold_pending".equals(result.status())) {
+                        plugin.runSync(() -> {
+                            reporter.sendMessage(ReputationBanPlugin.PREFIX + "通報を受け付けました。しきい値待ちです: "
+                                    + result.thresholdCurrent() + "/" + result.thresholdRequired());
+                            plugin.notifyStaff(
+                                    NotificationEventType.REPORT_CREATED,
+                                    "しきい値待ち通報 #" + result.reportId() + ": " + reporterName + " -> " + value.name()
+                                            + " (" + result.thresholdCurrent() + "/" + result.thresholdRequired() + ")",
                                     reportCreatedDiscord(result, reporterName, reporterUuid, value, category, reason)
                             );
                         });
@@ -165,18 +224,39 @@ public final class ReportBadCommand implements CommandExecutor {
 
                     return banFuture.thenApply(banned -> {
                         plugin.runSync(() -> {
-                            reporter.sendMessage(ReputationBanPlugin.PREFIX + "通報を受け付けました。対象スコア: "
-                                    + result.oldScore() + " -> " + result.newScore());
+                            if (result.thresholdReached()) {
+                                reporter.sendMessage(ReputationBanPlugin.PREFIX + "通報を受け付けました。"
+                                        + result.acceptedReportCount() + "件の通報が集まったため、対象スコアを減点しました: "
+                                        + result.oldScore() + " -> " + result.newScore());
+                            } else {
+                                reporter.sendMessage(ReputationBanPlugin.PREFIX + "通報を受け付けました。対象スコア: "
+                                        + result.oldScore() + " -> " + result.newScore());
+                            }
                             plugin.notifyStaff(
                                     NotificationEventType.REPORT_CREATED,
                                     "自動承認通報 #" + result.reportId() + ": " + value.name()
                                             + " -" + result.deduction() + " (" + result.newScore() + ")",
                                     reportCreatedDiscord(result, reporterName, reporterUuid, value, category, reason)
                             );
+                            if (result.oldScore() != null && result.newScore() != null) {
+                                plugin.notifyScoreThresholdCrossings(
+                                        value.uuid(),
+                                        value.name(),
+                                        result.oldScore(),
+                                        result.newScore(),
+                                        "通報 #" + result.reportId()
+                                );
+                            }
                         });
                         return null;
                     });
                 });
+    }
+
+    private static void sendEligibilityFailure(Player reporter, String message) {
+        for (String line : message.split("\\R")) {
+            reporter.sendMessage(ReputationBanPlugin.PREFIX + line);
+        }
     }
 
     private String reportCreatedDiscord(
@@ -231,5 +311,16 @@ public final class ReportBadCommand implements CommandExecutor {
     }
 
     private record Target(UUID uuid, String name) {
+    }
+
+    private sealed interface ReportSubmissionEligibility permits ReportSubmissionContinue, ReportSubmissionStop {
+    }
+
+    private enum ReportSubmissionContinue implements ReportSubmissionEligibility {
+        INSTANCE
+    }
+
+    private enum ReportSubmissionStop implements ReportSubmissionEligibility {
+        INSTANCE
     }
 }

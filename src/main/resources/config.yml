@@ -6,7 +6,9 @@ rating:
   default-deduction: 10
   require-reason: true
   min-reason-length: 5
+  # 1なら通報ごとに即減点。2以上なら同一対象・同一カテゴリの複数ユニーク通報が集まるまで threshold_pending で待機します。
   min-unique-reports-before-deduction: 1
+  # 複数通報方式で集計する期間（日数）です。
   report-window-days: 7
 
 categories:
@@ -52,7 +54,9 @@ cooldowns:
   max-reports-per-week: 15
 
 report-requirements:
+  # 0以下で無効。プレイヤー統計の累計プレイ時間を分単位で判定します。
   min-playtime-minutes: 60
+  # 0以下で無効。Mojangアカウント年齢ではなく、ReputationBanが記録するサーバー初参加(first_seen)からの日数です。
   min-account-age-days: 1
 
 score-thresholds:

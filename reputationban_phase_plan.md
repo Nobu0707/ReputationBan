@@ -121,11 +121,34 @@
 - 失敗ログのレート制限
 - review_code.sh / make-review-archive.sh Phase 6対応
 
-## Phase 7以降: 外部連携・高度な悪用対策
+## Phase 7 / v0.7.0: 通報安全性強化
+
+目的: 公開サーバー運用で悪用されやすい低評価・通報を、参加条件・複数通報しきい値・スコア警告通知で強化する。
+
+実装範囲:
+
+- `/reportbad` 通報者の累計プレイ時間チェック
+- `/reportbad` 通報者のサーバー初参加 `players.first_seen` からの日数チェック
+- `rating.min-unique-reports-before-deduction`
+- `rating.report-window-days`
+- `threshold_pending` report status
+- 同一対象・同一カテゴリ・期間内ユニーク通報者数による一回だけの自動減点
+- `/reports list threshold_pending`
+- TAB補完への `threshold_pending` 追加
+- `score-thresholds` warning/watch/restricted/final-warning の下方向跨ぎ通知
+- Discord `score-threshold-crossed` 通知
+- review_code.sh / make-review-archive.sh Phase 7対応
+- version 0.7.0
+
+注意:
+
+- `report-requirements.min-account-age-days` は Mojang アカウント作成日ではなく、ReputationBanが記録するサーバー初参加日時からの日数。
+- `threshold_pending` はスタッフ審査待ちではなく、複数通報しきい値待ち。
+
+## Phase 8以降: 外部連携・高度な悪用対策
 
 実装候補:
 
-- Discord Webhook通知
 - 管理GUI
 - 信頼度システム
 - 接触判定

@@ -11,6 +11,7 @@ class ReportStatusTest {
     @Test
     void onlyPendingReportsCanBeReviewed() {
         assertTrue(ReportStatus.canReview("pending"));
+        assertFalse(ReportStatus.canReview("threshold_pending"));
         assertFalse(ReportStatus.canReview("auto_accepted"));
         assertFalse(ReportStatus.canReview("approved"));
         assertFalse(ReportStatus.canReview("rejected"));
@@ -25,14 +26,20 @@ class ReportStatusTest {
     @Test
     void exposesValidDatabaseValuesForListCommand() {
         assertTrue(ReportStatus.isDatabaseValue("pending"));
+        assertTrue(ReportStatus.isDatabaseValue("threshold_pending"));
         assertTrue(ReportStatus.isDatabaseValue("approved"));
         assertTrue(ReportStatus.isDatabaseValue("rejected"));
         assertTrue(ReportStatus.isDatabaseValue("auto_accepted"));
         assertTrue(ReportStatus.isDatabaseValue("cancelled"));
         assertFalse(ReportStatus.isDatabaseValue("all"));
         assertEquals(
-                java.util.List.of("pending", "auto_accepted", "approved", "rejected", "cancelled"),
+                java.util.List.of("pending", "threshold_pending", "auto_accepted", "approved", "rejected", "cancelled"),
                 ReportStatus.databaseValues()
         );
+    }
+
+    @Test
+    void parsesThresholdPendingStatus() {
+        assertEquals(ReportStatus.THRESHOLD_PENDING, ReportStatus.parse("threshold_pending"));
     }
 }

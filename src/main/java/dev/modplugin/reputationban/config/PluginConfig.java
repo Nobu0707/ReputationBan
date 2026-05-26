@@ -15,6 +15,11 @@ public final class PluginConfig {
     private final boolean ratingEnabled;
     private final int defaultDeduction;
     private final int minReasonLength;
+    private final int minUniqueReportsBeforeDeduction;
+    private final int reportWindowDays;
+    private final int minPlaytimeMinutes;
+    private final int minAccountAgeDays;
+    private final Map<String, Integer> scoreThresholds;
     private final int globalReportSeconds;
     private final int sameTargetCooldownDays;
     private final int maxReportsPerDay;
@@ -46,6 +51,11 @@ public final class PluginConfig {
         ratingEnabled = config.getBoolean("rating.enabled", true);
         defaultDeduction = config.getInt("rating.default-deduction", 10);
         minReasonLength = config.getInt("rating.min-reason-length", 5);
+        minUniqueReportsBeforeDeduction = config.getInt("rating.min-unique-reports-before-deduction", 1);
+        reportWindowDays = config.getInt("rating.report-window-days", 7);
+        minPlaytimeMinutes = config.getInt("report-requirements.min-playtime-minutes", 60);
+        minAccountAgeDays = config.getInt("report-requirements.min-account-age-days", 1);
+        scoreThresholds = loadScoreThresholds(config);
         globalReportSeconds = config.getInt("cooldowns.global-report-seconds", 300);
         sameTargetCooldownDays = config.getInt("cooldowns.same-target-cooldown-days", 14);
         maxReportsPerDay = config.getInt("cooldowns.max-reports-per-day", 5);
@@ -93,6 +103,16 @@ public final class PluginConfig {
         return Collections.unmodifiableMap(loaded);
     }
 
+    private static Map<String, Integer> loadScoreThresholds(FileConfiguration config) {
+        Map<String, Integer> thresholds = new LinkedHashMap<>();
+        thresholds.put("warning", config.getInt("score-thresholds.warning", 70));
+        thresholds.put("watch", config.getInt("score-thresholds.watch", 50));
+        thresholds.put("restricted", config.getInt("score-thresholds.restricted", 30));
+        thresholds.put("final-warning", config.getInt("score-thresholds.final-warning", 10));
+        thresholds.put("ban", config.getInt("score-thresholds.ban", 0));
+        return Collections.unmodifiableMap(thresholds);
+    }
+
     public ReportCategory category(String key) {
         if (key == null) {
             return null;
@@ -118,6 +138,26 @@ public final class PluginConfig {
 
     public int minReasonLength() {
         return minReasonLength;
+    }
+
+    public int minUniqueReportsBeforeDeduction() {
+        return minUniqueReportsBeforeDeduction;
+    }
+
+    public int reportWindowDays() {
+        return reportWindowDays;
+    }
+
+    public int minPlaytimeMinutes() {
+        return minPlaytimeMinutes;
+    }
+
+    public int minAccountAgeDays() {
+        return minAccountAgeDays;
+    }
+
+    public Map<String, Integer> scoreThresholds() {
+        return scoreThresholds;
     }
 
     public int globalReportSeconds() {

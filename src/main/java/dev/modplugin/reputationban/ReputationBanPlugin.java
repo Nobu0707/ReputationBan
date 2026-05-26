@@ -9,12 +9,15 @@ import dev.modplugin.reputationban.command.ReportsTabCompleter;
 import dev.modplugin.reputationban.config.PluginConfig;
 import dev.modplugin.reputationban.database.DatabaseManager;
 import dev.modplugin.reputationban.listener.PlayerJoinListener;
+import dev.modplugin.reputationban.model.ScoreThresholdCrossing;
+import dev.modplugin.reputationban.notification.DiscordWebhookConfig;
 import dev.modplugin.reputationban.notification.NotificationEventType;
 import dev.modplugin.reputationban.notification.NotificationService;
 import dev.modplugin.reputationban.service.PlayerDataService;
 import dev.modplugin.reputationban.service.PunishmentService;
 import dev.modplugin.reputationban.service.ReportService;
 import dev.modplugin.reputationban.service.ScoreService;
+import dev.modplugin.reputationban.util.ScoreThresholdPolicy;
 import java.sql.SQLException;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
@@ -64,7 +67,7 @@ public final class ReputationBanPlugin extends JavaPlugin {
         );
         registerCommand("reports", new ReportsCommand(this, reportService, punishmentService), new ReportsTabCompleter());
         startScoreRecoveryTask();
-        getLogger().info("ReputationBan v0.6.0 enabled.");
+        getLogger().info("ReputationBan v0.7.0 enabled.");
     }
 
     @Override
@@ -133,6 +136,51 @@ public final class ReputationBanPlugin extends JavaPlugin {
 
     public void notifyDiscord(NotificationEventType type, String discordContent) {
         notificationService.notifyDiscord(type, discordContent);
+    }
+
+    public void notifyScoreThresholdCrossings(
+            java.util.UUID targetUuid,
+            String targetName,
+            int oldScore,
+            int newScore,
+            String context
+    ) {
+        for (ScoreThresholdCrossing crossing : ScoreThresholdPolicy.crossedDownward(
+                oldScore,
+                newScore,
+                pluginConfig.scoreThresholds()
+        )) {
+            notifyStaff(
+                    NotificationEventType.SCORE_THRESHOLD_CROSSED,
+                    "スコアしきい値到達: " + targetName + " / " + crossing.key()
+                            + " (" + crossing.threshold() + ") / " + oldScore + " -> " + newScore,
+                    scoreThresholdDiscord(targetUuid, targetName, oldScore, newScore, crossing, context)
+            );
+        }
+    }
+
+    private String scoreThresholdDiscord(
+            java.util.UUID targetUuid,
+            String targetName,
+            int oldScore,
+            int newScore,
+            ScoreThresholdCrossing crossing,
+            String context
+    ) {
+        DiscordWebhookConfig discord = pluginConfig.discordWebhookConfig();
+        StringBuilder message = new StringBuilder();
+        message.append("**スコアしきい値到達**\n");
+        message.append("対象: ").append(targetName);
+        if (discord.includePlayerUuids()) {
+            message.append(" (").append(targetUuid).append(")");
+        }
+        message.append('\n');
+        message.append("しきい値: ").append(crossing.key()).append(" (").append(crossing.threshold()).append(")\n");
+        message.append("スコア: ").append(oldScore).append(" -> ").append(newScore);
+        if (context != null && !context.isBlank()) {
+            message.append('\n').append("理由: ").append(context);
+        }
+        return message.toString();
     }
 
     private void registerCommand(

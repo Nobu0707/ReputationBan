@@ -77,7 +77,7 @@ public final class ReportsCommand implements CommandExecutor {
     private void listReports(CommandSender sender, String[] args) {
         String status = args.length >= 2 ? args[1] : "pending";
         if (!"all".equalsIgnoreCase(status) && !ReportStatus.isDatabaseValue(status)) {
-            sender.sendMessage(ReputationBanPlugin.PREFIX + "使い方: /reports list [pending|approved|rejected|auto_accepted|cancelled|all] [limit]");
+            sender.sendMessage(ReputationBanPlugin.PREFIX + "使い方: /reports list [pending|threshold_pending|approved|rejected|auto_accepted|cancelled|all] [limit]");
             return;
         }
         OptionalInt parsedLimit = args.length >= 3 ? CommandArgumentParser.parseLimit(args[2], 50) : OptionalInt.of(10);
@@ -225,6 +225,13 @@ public final class ReportsCommand implements CommandExecutor {
         plugin.notifyDiscord(
                 NotificationEventType.REPORT_APPROVED,
                 approvedDiscord(result, completion.moderatorName(), completion.note())
+        );
+        plugin.notifyScoreThresholdCrossings(
+                result.scoreChange().targetUuid(),
+                result.scoreChange().targetName(),
+                result.scoreChange().oldScore(),
+                result.scoreChange().newScore(),
+                "通報承認 #" + result.report().id()
         );
         if (completion.banned()) {
             sender.sendMessage(ReputationBanPlugin.PREFIX + "対象プレイヤーは評判スコアによりBAN処理されました。");

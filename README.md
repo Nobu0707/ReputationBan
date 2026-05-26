@@ -27,10 +27,18 @@ ReputationBan is a PaperMC moderation plugin that tracks player reputation score
 - `/rep reload`: reload configuration.
 - `/reports`: list pending reports.
 - `/reports help`: show report review commands.
-- `/reports list [pending|approved|rejected|auto_accepted|cancelled|all] [limit]`: list reports.
+- `/reports list [pending|threshold_pending|approved|rejected|auto_accepted|cancelled|all] [limit]`: list reports.
 - `/reports view <id>`: show report details.
 - `/reports approve <id> [note...]`: approve a pending report and apply score deduction.
 - `/reports reject <id> [note...]`: reject a pending report.
+
+## Phase 7 Report Safety
+
+- `/reportbad` can require reporter playtime with `report-requirements.min-playtime-minutes`.
+- `/reportbad` can require server account age with `report-requirements.min-account-age-days`. This is based on ReputationBan `players.first_seen`, not Mojang account creation date.
+- `rating.min-unique-reports-before-deduction` controls automatic deduction. `1` means immediate auto acceptance; `2` or more stores non-review reports as `threshold_pending` until enough unique reporters submit the same target/category within `rating.report-window-days`.
+- `threshold_pending` means waiting for the multi-report threshold, not staff review.
+- Score drops crossing `warning`, `watch`, `restricted`, or `final-warning` in `score-thresholds` notify staff and Discord. The `ban` threshold remains handled by the auto-ban notification path.
 
 ## Permissions
 
@@ -51,7 +59,7 @@ ReputationBan is a PaperMC moderation plugin that tracks player reputation score
 ./scripts/review_code.sh
 ```
 
-The plugin jar is written to `build/libs/ReputationBan-0.6.0.jar`.
+The plugin jar is written to `build/libs/ReputationBan-0.7.0.jar`.
 
 ## Current Limitations
 

@@ -7,6 +7,7 @@ import dev.modplugin.reputationban.model.ReportStatus;
 import dev.modplugin.reputationban.util.ReporterPenalty;
 import dev.modplugin.reputationban.util.ReviewApprovalGate;
 import dev.modplugin.reputationban.util.ScoreMath;
+import dev.modplugin.reputationban.util.ThresholdReportPolicy;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -86,6 +87,19 @@ public final class ReportService {
                 return ReportResult.accepted(reportId, "pending", 0, true, null, null, false);
             }
 
+            if (ThresholdReportPolicy.shouldQueueForThreshold(config.minUniqueReportsBeforeDeduction())) {
+                return submitThresholdPendingReportInTransaction(
+                        connection,
+                        reporterUuid,
+                        reporterName,
+                        targetUuid,
+                        targetName,
+                        category,
+                        reason,
+                        now
+                );
+            }
+
             return submitAutoAcceptedReportInTransaction(
                     connection,
                     reporterUuid,
@@ -144,6 +158,85 @@ public final class ReportService {
                     change.oldScore(),
                     change.newScore(),
                     change.crossedBanThreshold()
+            );
+        } catch (SQLException | RuntimeException exception) {
+            connection.rollback();
+            throw exception;
+        } finally {
+            connection.setAutoCommit(previousAutoCommit);
+        }
+    }
+
+    private ReportResult submitThresholdPendingReportInTransaction(
+            Connection connection,
+            UUID reporterUuid,
+            String reporterName,
+            UUID targetUuid,
+            String targetName,
+            ReportCategory category,
+            String reason,
+            long now
+    ) throws SQLException {
+        boolean previousAutoCommit = connection.getAutoCommit();
+        connection.setAutoCommit(false);
+        try {
+            int requiredReports = ThresholdReportPolicy.effectiveRequiredReports(config.minUniqueReportsBeforeDeduction());
+            long reportId = insertReport(
+                    connection,
+                    reporterUuid,
+                    reporterName,
+                    targetUuid,
+                    targetName,
+                    category,
+                    reason,
+                    "threshold_pending",
+                    0,
+                    now
+            );
+
+            long windowCutoff = ThresholdReportPolicy.windowCutoff(now, config.reportWindowDays());
+            int currentUniqueReports = countUniqueThresholdPendingReporters(
+                    connection,
+                    targetUuid,
+                    category.key(),
+                    windowCutoff
+            );
+            if (!ThresholdReportPolicy.thresholdReached(requiredReports, currentUniqueReports)) {
+                connection.commit();
+                return ReportResult.thresholdPending(reportId, requiredReports, currentUniqueReports);
+            }
+
+            int deduction = category.deduction();
+            ScoreService.ScoreChange change = scoreService.mutateScoreInTransaction(
+                    connection,
+                    targetUuid,
+                    targetName,
+                    ScoreService.ScoreMutation.delta(-deduction),
+                    "Threshold reports reached #" + reportId + ": " + category.key(),
+                    "report_threshold",
+                    reportId,
+                    now
+            );
+            int acceptedReportCount = autoAcceptThresholdPendingReports(
+                    connection,
+                    targetUuid,
+                    category.key(),
+                    deduction,
+                    windowCutoff,
+                    now,
+                    currentUniqueReports,
+                    requiredReports
+            );
+            connection.commit();
+            return ReportResult.thresholdReached(
+                    reportId,
+                    deduction,
+                    change.oldScore(),
+                    change.newScore(),
+                    change.crossedBanThreshold(),
+                    requiredReports,
+                    currentUniqueReports,
+                    acceptedReportCount
             );
         } catch (SQLException | RuntimeException exception) {
             connection.rollback();
@@ -484,6 +577,60 @@ public final class ReportService {
         }
     }
 
+    private static int countUniqueThresholdPendingReporters(
+            Connection connection,
+            UUID targetUuid,
+            String category,
+            long createdAfter
+    ) throws SQLException {
+        try (PreparedStatement statement = connection.prepareStatement("""
+                SELECT COUNT(DISTINCT reporter_uuid)
+                FROM reports
+                WHERE target_uuid = ?
+                  AND category = ?
+                  AND status = 'threshold_pending'
+                  AND created_at >= ?
+                """)) {
+            statement.setString(1, targetUuid.toString());
+            statement.setString(2, category);
+            statement.setLong(3, createdAfter);
+            try (ResultSet result = statement.executeQuery()) {
+                return result.next() ? result.getInt(1) : 0;
+            }
+        }
+    }
+
+    private static int autoAcceptThresholdPendingReports(
+            Connection connection,
+            UUID targetUuid,
+            String category,
+            int deduction,
+            long createdAfter,
+            long now,
+            int currentUniqueReports,
+            int requiredReports
+    ) throws SQLException {
+        try (PreparedStatement statement = connection.prepareStatement("""
+                UPDATE reports
+                SET status = 'auto_accepted',
+                    deduction = ?,
+                    reviewed_at = ?,
+                    review_note = ?
+                WHERE target_uuid = ?
+                  AND category = ?
+                  AND status = 'threshold_pending'
+                  AND created_at >= ?
+                """)) {
+            statement.setInt(1, deduction);
+            statement.setLong(2, now);
+            statement.setString(3, "threshold reached: " + currentUniqueReports + "/" + requiredReports);
+            statement.setString(4, targetUuid.toString());
+            statement.setString(5, category);
+            statement.setLong(6, createdAfter);
+            return statement.executeUpdate();
+        }
+    }
+
     public record ReportResult(
             boolean accepted,
             String message,
@@ -493,10 +640,14 @@ public final class ReportService {
             boolean staffReviewRequired,
             Integer oldScore,
             Integer newScore,
-            boolean crossedBanThreshold
+            boolean crossedBanThreshold,
+            int thresholdRequired,
+            int thresholdCurrent,
+            boolean thresholdReached,
+            int acceptedReportCount
     ) {
         static ReportResult rejected(String message) {
-            return new ReportResult(false, message, -1L, "rejected", 0, false, null, null, false);
+            return new ReportResult(false, message, -1L, "rejected", 0, false, null, null, false, 0, 0, false, 0);
         }
 
         static ReportResult accepted(
@@ -517,7 +668,56 @@ public final class ReportService {
                     staffReviewRequired,
                     oldScore,
                     newScore,
-                    crossedBanThreshold
+                    crossedBanThreshold,
+                    0,
+                    0,
+                    false,
+                    0
+            );
+        }
+
+        static ReportResult thresholdPending(long reportId, int thresholdRequired, int thresholdCurrent) {
+            return new ReportResult(
+                    true,
+                    "通報を受け付けました。",
+                    reportId,
+                    "threshold_pending",
+                    0,
+                    false,
+                    null,
+                    null,
+                    false,
+                    thresholdRequired,
+                    thresholdCurrent,
+                    false,
+                    0
+            );
+        }
+
+        static ReportResult thresholdReached(
+                long reportId,
+                int deduction,
+                int oldScore,
+                int newScore,
+                boolean crossedBanThreshold,
+                int thresholdRequired,
+                int thresholdCurrent,
+                int acceptedReportCount
+        ) {
+            return new ReportResult(
+                    true,
+                    "通報を受け付けました。",
+                    reportId,
+                    "auto_accepted",
+                    deduction,
+                    false,
+                    oldScore,
+                    newScore,
+                    crossedBanThreshold,
+                    thresholdRequired,
+                    thresholdCurrent,
+                    true,
+                    acceptedReportCount
             );
         }
     }

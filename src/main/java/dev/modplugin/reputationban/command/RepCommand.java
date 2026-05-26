@@ -298,6 +298,13 @@ public final class RepCommand implements CommandExecutor {
                     }
                     sender.sendMessage(ReputationBanPlugin.PREFIX + result.record().get().name() + " のスコアを変更しました: "
                             + change.oldScore() + " -> " + change.newScore() + " (" + signed(change.delta()) + ")");
+                    plugin.notifyScoreThresholdCrossings(
+                            change.targetUuid(),
+                            change.targetName(),
+                            change.oldScore(),
+                            change.newScore(),
+                            "管理者スコア変更: " + sender.getName()
+                    );
                     if (result.banned()) {
                         sender.sendMessage(ReputationBanPlugin.PREFIX + "対象プレイヤーは評判スコアによりBAN処理されました。");
                     }

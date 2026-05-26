@@ -121,6 +121,12 @@ public final class DatabaseManager implements AutoCloseable {
         if (!columns.contains("last_recovery_at")) {
             execute("ALTER TABLE players ADD COLUMN last_recovery_at INTEGER");
         }
+        if (!columns.contains("first_seen")) {
+            execute("ALTER TABLE players ADD COLUMN first_seen INTEGER");
+        }
+        if (!columns.contains("last_seen")) {
+            execute("ALTER TABLE players ADD COLUMN last_seen INTEGER");
+        }
     }
 
     private void migrateBansTable() throws SQLException {

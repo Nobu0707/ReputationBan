@@ -29,7 +29,10 @@ public final class PlayerDataService {
             try (PreparedStatement statement = connection.prepareStatement("""
                     INSERT INTO players (uuid, name, score, ban_count, false_report_count, first_seen, last_seen)
                     VALUES (?, ?, ?, 0, 0, ?, ?)
-                    ON CONFLICT(uuid) DO UPDATE SET name = excluded.name, last_seen = excluded.last_seen
+                    ON CONFLICT(uuid) DO UPDATE SET
+                      name = excluded.name,
+                      first_seen = COALESCE(players.first_seen, excluded.first_seen),
+                      last_seen = excluded.last_seen
                     """)) {
                 statement.setString(1, uuid.toString());
                 statement.setString(2, name);
