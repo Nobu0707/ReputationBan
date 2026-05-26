@@ -1,0 +1,69 @@
+name: ReputationBan
+version: 0.1.0
+main: dev.modplugin.reputationban.ReputationBanPlugin
+api-version: '26.1.2'
+description: Reputation score based moderation and temporary ban plugin.
+author: MOD_PLUGIN
+
+libraries:
+  - org.xerial:sqlite-jdbc:3.53.1.0
+
+commands:
+  reportbad:
+    description: 悪質なプレイヤーを通報します
+    usage: /reportbad <player> <category> <reason>
+    permission: reputationban.report
+    aliases: [bad]
+
+  rep:
+    description: 評判スコアを確認・管理します
+    usage: /rep
+    aliases: [score]
+
+  reports:
+    description: 通報一覧を確認します
+    usage: /reports
+    permission: reputationban.admin.reports
+
+permissions:
+  reputationban.report:
+    description: プレイヤーを通報できます
+    default: true
+
+  reputationban.score.self:
+    description: 自分のスコアを確認できます
+    default: true
+
+  reputationban.score.others:
+    description: 他人のスコアを確認できます
+    default: op
+
+  reputationban.notify:
+    description: スタッフ通知を受け取ります
+    default: op
+
+  reputationban.admin:
+    description: ReputationBanの管理権限
+    default: op
+    children:
+      reputationban.admin.reports: true
+      reputationban.admin.score: true
+      reputationban.admin.ban: true
+      reputationban.score.others: true
+      reputationban.notify: true
+
+  reputationban.admin.reports:
+    description: 通報を管理できます
+    default: op
+
+  reputationban.admin.score:
+    description: スコアを管理できます
+    default: op
+
+  reputationban.admin.ban:
+    description: BANを管理できます
+    default: op
+
+  reputationban.bypass:
+    description: 通報・減点・自動BANの対象外になります
+    default: op

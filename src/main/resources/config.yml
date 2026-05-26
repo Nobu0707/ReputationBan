@@ -1,0 +1,94 @@
+initial-score: 100
+max-score: 100
+
+rating:
+  enabled: true
+  default-deduction: 10
+  require-reason: true
+  min-reason-length: 5
+  min-unique-reports-before-deduction: 1
+  report-window-days: 7
+
+categories:
+  griefing:
+    display-name: "荒らし"
+    deduction: 15
+    staff-review-required: false
+
+  abusive_chat:
+    display-name: "暴言"
+    deduction: 5
+    staff-review-required: false
+
+  spam:
+    display-name: "スパム"
+    deduction: 5
+    staff-review-required: false
+
+  scam:
+    display-name: "詐欺"
+    deduction: 10
+    staff-review-required: true
+
+  harassment:
+    display-name: "嫌がらせ"
+    deduction: 10
+    staff-review-required: false
+
+  cheating:
+    display-name: "チート疑い"
+    deduction: 0
+    staff-review-required: true
+
+  other:
+    display-name: "その他"
+    deduction: 0
+    staff-review-required: true
+
+cooldowns:
+  global-report-seconds: 300
+  same-target-cooldown-days: 14
+  max-reports-per-day: 5
+  max-reports-per-week: 15
+
+report-requirements:
+  min-playtime-minutes: 60
+  min-account-age-days: 1
+
+score-thresholds:
+  warning: 70
+  watch: 50
+  restricted: 30
+  final-warning: 10
+  ban: 0
+
+score-recovery:
+  enabled: true
+  points-per-day: 2
+  max-score: 100
+  no-report-days-required: 7
+
+ban:
+  enabled: true
+  threshold: 0
+  source: "ReputationBan"
+  durations:
+    first: "1d"
+    second: "7d"
+    third: "30d"
+    fourth: "permanent"
+
+notify:
+  in-game-staff: true
+  console: true
+  discord-webhook: false
+  staff-permission: "reputationban.notify"
+
+reporter-penalty:
+  enabled: true
+  false-report-threshold: 5
+  report-ban-days: 7
+
+database:
+  type: "sqlite"
+  file: "reputationban.db"
