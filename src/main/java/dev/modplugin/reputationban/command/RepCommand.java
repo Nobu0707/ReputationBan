@@ -3,7 +3,15 @@ package dev.modplugin.reputationban.command;
 import dev.modplugin.reputationban.ReputationBanPlugin;
 import dev.modplugin.reputationban.model.PlayerRecord;
 import dev.modplugin.reputationban.service.PlayerDataService;
+import dev.modplugin.reputationban.service.PunishmentService;
+import dev.modplugin.reputationban.service.ScoreService;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
+import java.util.Arrays;
 import java.util.Optional;
+import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import org.bukkit.Bukkit;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
@@ -11,12 +19,24 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
 public final class RepCommand implements CommandExecutor {
+    private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")
+            .withZone(ZoneId.systemDefault());
+
     private final ReputationBanPlugin plugin;
     private final PlayerDataService playerDataService;
+    private final ScoreService scoreService;
+    private final PunishmentService punishmentService;
 
-    public RepCommand(ReputationBanPlugin plugin, PlayerDataService playerDataService) {
+    public RepCommand(
+            ReputationBanPlugin plugin,
+            PlayerDataService playerDataService,
+            ScoreService scoreService,
+            PunishmentService punishmentService
+    ) {
         this.plugin = plugin;
         this.playerDataService = playerDataService;
+        this.scoreService = scoreService;
+        this.punishmentService = punishmentService;
     }
 
     @Override
@@ -29,12 +49,21 @@ public final class RepCommand implements CommandExecutor {
             checkOther(sender, args);
             return true;
         }
+        if ("history".equalsIgnoreCase(args[0])) {
+            history(sender, args);
+            return true;
+        }
+        if ("add".equalsIgnoreCase(args[0]) || "remove".equalsIgnoreCase(args[0]) || "set".equalsIgnoreCase(args[0])) {
+            mutateScore(sender, args);
+            return true;
+        }
         if ("reload".equalsIgnoreCase(args[0])) {
             reload(sender);
             return true;
         }
 
-        sender.sendMessage(ReputationBanPlugin.PREFIX + "使い方: /rep, /rep check <player>, /rep reload");
+        sender.sendMessage(ReputationBanPlugin.PREFIX + "使い方: /rep, /rep check <player>, /rep history <player> [limit]");
+        sender.sendMessage(ReputationBanPlugin.PREFIX + "使い方: /rep add <player> <points>, /rep remove <player> <points>, /rep set <player> <score>");
         return true;
     }
 
@@ -47,7 +76,7 @@ public final class RepCommand implements CommandExecutor {
             player.sendMessage(ReputationBanPlugin.PREFIX + "権限がありません。");
             return;
         }
-        java.util.UUID playerUuid = player.getUniqueId();
+        UUID playerUuid = player.getUniqueId();
         String playerName = player.getName();
         playerDataService.ensurePlayer(playerUuid, playerName)
                 .thenCompose(ignored -> playerDataService.getPlayerRecord(playerUuid))
@@ -63,7 +92,7 @@ public final class RepCommand implements CommandExecutor {
     }
 
     private void checkOther(CommandSender sender, String[] args) {
-        if (!sender.hasPermission("reputationban.score.others") && !sender.hasPermission("reputationban.admin.score")) {
+        if (!canViewOthers(sender)) {
             sender.sendMessage(ReputationBanPlugin.PREFIX + "権限がありません。");
             return;
         }
@@ -72,18 +101,8 @@ public final class RepCommand implements CommandExecutor {
             return;
         }
 
-        Player online = Bukkit.getPlayerExact(args[1]);
-        java.util.concurrent.CompletableFuture<Optional<PlayerRecord>> lookup;
-        if (online != null) {
-            java.util.UUID targetUuid = online.getUniqueId();
-            String targetName = online.getName();
-            lookup = playerDataService.ensurePlayer(targetUuid, targetName)
-                    .thenCompose(ignored -> playerDataService.getPlayerRecord(targetUuid));
-        } else {
-            lookup = playerDataService.findByName(args[1]);
-        }
-
-        lookup.thenAccept(record -> plugin.runSync(() -> {
+        resolvePlayer(args[1], true)
+                .thenAccept(record -> plugin.runSync(() -> {
                     if (record.isEmpty()) {
                         sender.sendMessage(ReputationBanPlugin.PREFIX + "対象プレイヤーが見つかりません。");
                         return;
@@ -101,6 +120,135 @@ public final class RepCommand implements CommandExecutor {
                 });
     }
 
+    private void history(CommandSender sender, String[] args) {
+        if (!canViewOthers(sender)) {
+            sender.sendMessage(ReputationBanPlugin.PREFIX + "権限がありません。");
+            return;
+        }
+        if (args.length < 2) {
+            sender.sendMessage(ReputationBanPlugin.PREFIX + "使い方: /rep history <player> [limit]");
+            return;
+        }
+        int limit = args.length >= 3 ? parsePositiveInt(args[2], 10, 50) : 10;
+        resolvePlayer(args[1], true)
+                .thenCompose(record -> {
+                    if (record.isEmpty()) {
+                        return CompletableFuture.completedFuture(new HistoryResult(Optional.empty(), java.util.List.of()));
+                    }
+                    return scoreService.history(record.get().uuid(), limit)
+                            .thenApply(history -> new HistoryResult(record, history));
+                })
+                .thenAccept(result -> plugin.runSync(() -> {
+                    if (result.record().isEmpty()) {
+                        sender.sendMessage(ReputationBanPlugin.PREFIX + "対象プレイヤーが見つかりません。");
+                        return;
+                    }
+                    sender.sendMessage(ReputationBanPlugin.PREFIX + result.record().get().name() + " のスコア履歴: " + result.history().size() + "件");
+                    for (ScoreService.ScoreHistoryEntry entry : result.history()) {
+                        sender.sendMessage(ReputationBanPlugin.PREFIX + "%s %d -> %d (%+d) [%s] %s".formatted(
+                                FORMATTER.format(Instant.ofEpochMilli(entry.createdAt())),
+                                entry.oldScore(),
+                                entry.newScore(),
+                                entry.delta(),
+                                entry.sourceType(),
+                                entry.reason()
+                        ));
+                    }
+                }))
+                .exceptionally(throwable -> {
+                    plugin.getLogger().severe("Failed to load score history: " + throwable.getMessage());
+                    plugin.runSync(() -> sender.sendMessage(ReputationBanPlugin.PREFIX + "スコア履歴の取得に失敗しました。"));
+                    return null;
+                });
+    }
+
+    private void mutateScore(CommandSender sender, String[] args) {
+        if (!sender.hasPermission("reputationban.admin.score")) {
+            sender.sendMessage(ReputationBanPlugin.PREFIX + "権限がありません。");
+            return;
+        }
+        if (args.length < 3) {
+            sender.sendMessage(ReputationBanPlugin.PREFIX + "使い方: /rep " + args[0].toLowerCase() + " <player> <points|score> [reason]");
+            return;
+        }
+        Integer amount = parseInteger(sender, args[2]);
+        if (amount == null) {
+            return;
+        }
+        if (amount < 0) {
+            sender.sendMessage(ReputationBanPlugin.PREFIX + "数値は0以上で指定してください。");
+            return;
+        }
+        if ("set".equalsIgnoreCase(args[0]) && amount < plugin.pluginConfig().banThreshold()
+                && !sender.hasPermission("reputationban.admin.ban")) {
+            sender.sendMessage(ReputationBanPlugin.PREFIX + "BANしきい値未満に設定するには reputationban.admin.ban が必要です。");
+            return;
+        }
+
+        String suppliedReason = args.length >= 4 ? String.join(" ", Arrays.copyOfRange(args, 3, args.length)) : "理由未指定";
+        String reason = "Admin " + sender.getName() + ": " + suppliedReason;
+        resolvePlayer(args[1], false)
+                .thenCompose(record -> {
+                    if (record.isEmpty()) {
+                        return CompletableFuture.completedFuture(new MutationResult(Optional.empty(), null, false));
+                    }
+                    PlayerRecord target = record.get();
+                    CompletableFuture<ScoreService.ScoreChange> change = switch (args[0].toLowerCase()) {
+                        case "add" -> scoreService.applyDelta(target.uuid(), target.name(), amount, reason, "admin", null);
+                        case "remove" -> scoreService.applyDelta(target.uuid(), target.name(), -amount, reason, "admin", null);
+                        case "set" -> scoreService.setScore(target.uuid(), target.name(), amount, reason, "admin", null);
+                        default -> throw new IllegalArgumentException("unknown command");
+                    };
+                    return change.thenCompose(scoreChange -> {
+                        if (!scoreChange.crossedBanThreshold()) {
+                            return CompletableFuture.completedFuture(new MutationResult(record, scoreChange, false));
+                        }
+                        return punishmentService.punishIfNeeded(
+                                scoreChange.targetUuid(),
+                                scoreChange.targetName(),
+                                scoreChange.oldScore(),
+                                scoreChange.newScore(),
+                                "Admin score change reached " + scoreChange.newScore()
+                        ).thenApply(banned -> new MutationResult(record, scoreChange, banned));
+                    });
+                })
+                .thenAccept(result -> plugin.runSync(() -> {
+                    if (result.record().isEmpty()) {
+                        sender.sendMessage(ReputationBanPlugin.PREFIX + "対象プレイヤーが見つかりません。");
+                        return;
+                    }
+                    ScoreService.ScoreChange change = result.change();
+                    sender.sendMessage(ReputationBanPlugin.PREFIX + result.record().get().name() + " のスコアを変更しました: "
+                            + change.oldScore() + " -> " + change.newScore() + " (" + signed(change.delta()) + ")");
+                    if (result.banned()) {
+                        sender.sendMessage(ReputationBanPlugin.PREFIX + "対象プレイヤーは評判スコアによりBAN処理されました。");
+                    }
+                }))
+                .exceptionally(throwable -> {
+                    plugin.getLogger().severe("Failed to mutate reputation score: " + throwable.getMessage());
+                    plugin.runSync(() -> sender.sendMessage(ReputationBanPlugin.PREFIX + "スコア変更に失敗しました。"));
+                    return null;
+                });
+    }
+
+    private CompletableFuture<Optional<PlayerRecord>> resolvePlayer(String name, boolean createOnlineRecord) {
+        Player online = Bukkit.getPlayerExact(name);
+        if (online != null) {
+            UUID targetUuid = online.getUniqueId();
+            String targetName = online.getName();
+            if (createOnlineRecord) {
+                return playerDataService.ensurePlayer(targetUuid, targetName)
+                        .thenCompose(ignored -> playerDataService.getPlayerRecord(targetUuid));
+            }
+            return playerDataService.getPlayerRecord(targetUuid)
+                    .thenCompose(record -> record.isPresent()
+                            ? CompletableFuture.completedFuture(record)
+                            : playerDataService.ensurePlayer(targetUuid, targetName)
+                                    .thenCompose(ignored -> playerDataService.getPlayerRecord(targetUuid)));
+        }
+        return playerDataService.findByName(name);
+    }
+
     private void reload(CommandSender sender) {
         if (!sender.hasPermission("reputationban.admin")) {
             sender.sendMessage(ReputationBanPlugin.PREFIX + "権限がありません。");
@@ -108,5 +256,36 @@ public final class RepCommand implements CommandExecutor {
         }
         plugin.reloadPluginConfig();
         sender.sendMessage(ReputationBanPlugin.PREFIX + "設定を再読み込みしました。");
+    }
+
+    private static boolean canViewOthers(CommandSender sender) {
+        return sender.hasPermission("reputationban.score.others") || sender.hasPermission("reputationban.admin.score");
+    }
+
+    private static Integer parseInteger(CommandSender sender, String value) {
+        try {
+            return Integer.parseInt(value);
+        } catch (NumberFormatException exception) {
+            sender.sendMessage(ReputationBanPlugin.PREFIX + "数値を指定してください。");
+            return null;
+        }
+    }
+
+    private static int parsePositiveInt(String value, int fallback, int max) {
+        try {
+            return Math.max(1, Math.min(max, Integer.parseInt(value)));
+        } catch (NumberFormatException exception) {
+            return fallback;
+        }
+    }
+
+    private static String signed(int value) {
+        return value >= 0 ? "+" + value : Integer.toString(value);
+    }
+
+    private record HistoryResult(Optional<PlayerRecord> record, java.util.List<ScoreService.ScoreHistoryEntry> history) {
+    }
+
+    private record MutationResult(Optional<PlayerRecord> record, ScoreService.ScoreChange change, boolean banned) {
     }
 }

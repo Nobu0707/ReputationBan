@@ -12,6 +12,8 @@ import dev.modplugin.reputationban.service.ReportService;
 import dev.modplugin.reputationban.service.ScoreService;
 import java.sql.SQLException;
 import java.util.Objects;
+import java.util.concurrent.CompletableFuture;
+import java.util.function.Supplier;
 import java.util.logging.Level;
 import org.bukkit.Bukkit;
 import org.bukkit.command.PluginCommand;
@@ -43,14 +45,14 @@ public final class ReputationBanPlugin extends JavaPlugin {
 
         playerDataService = new PlayerDataService(databaseManager, pluginConfig);
         scoreService = new ScoreService(databaseManager, pluginConfig);
-        reportService = new ReportService(databaseManager, pluginConfig);
+        reportService = new ReportService(databaseManager, scoreService, pluginConfig);
         punishmentService = new PunishmentService(this, databaseManager, pluginConfig);
 
         getServer().getPluginManager().registerEvents(new PlayerJoinListener(playerDataService, getLogger()), this);
-        registerCommand("rep", new RepCommand(this, playerDataService));
+        registerCommand("rep", new RepCommand(this, playerDataService, scoreService, punishmentService));
         registerCommand("reportbad", new ReportBadCommand(this, playerDataService, reportService, punishmentService));
-        registerCommand("reports", new ReportsCommand(this, reportService));
-        getLogger().info("ReputationBan v0.1.0 enabled.");
+        registerCommand("reports", new ReportsCommand(this, reportService, punishmentService));
+        getLogger().info("ReputationBan v0.2.0 enabled.");
     }
 
     @Override
@@ -79,6 +81,30 @@ public final class ReputationBanPlugin extends JavaPlugin {
             return;
         }
         Bukkit.getScheduler().runTask(this, task);
+    }
+
+    public CompletableFuture<Void> runSyncFuture(Runnable task) {
+        return supplySync(() -> {
+            task.run();
+            return null;
+        });
+    }
+
+    public <T> CompletableFuture<T> supplySync(Supplier<T> task) {
+        CompletableFuture<T> future = new CompletableFuture<>();
+        Runnable wrapped = () -> {
+            try {
+                future.complete(task.get());
+            } catch (Throwable throwable) {
+                future.completeExceptionally(throwable);
+            }
+        };
+        if (Bukkit.isPrimaryThread()) {
+            wrapped.run();
+        } else {
+            Bukkit.getScheduler().runTask(this, wrapped);
+        }
+        return future;
     }
 
     public void notifyStaff(String message) {

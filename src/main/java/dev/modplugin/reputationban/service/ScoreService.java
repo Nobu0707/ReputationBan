@@ -2,8 +2,14 @@ package dev.modplugin.reputationban.service;
 
 import dev.modplugin.reputationban.config.PluginConfig;
 import dev.modplugin.reputationban.database.DatabaseManager;
+import dev.modplugin.reputationban.util.ScoreMath;
+import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Types;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
@@ -29,51 +35,199 @@ public final class ScoreService {
             Long sourceId
     ) {
         return database.supplyAsync(connection -> {
-            int oldScore;
-            try (PreparedStatement select = connection.prepareStatement("SELECT score FROM players WHERE uuid = ?")) {
-                select.setString(1, targetUuid.toString());
-                try (ResultSet result = select.executeQuery()) {
-                    oldScore = result.next() ? result.getInt("score") : config.initialScore();
-                }
+            boolean previousAutoCommit = connection.getAutoCommit();
+            connection.setAutoCommit(false);
+            try {
+                ScoreChange change = mutateScoreInTransaction(
+                        connection,
+                        targetUuid,
+                        targetName,
+                        ScoreMutation.delta(delta),
+                        reason,
+                        sourceType,
+                        sourceId,
+                        System.currentTimeMillis()
+                );
+                connection.commit();
+                return change;
+            } catch (SQLException | RuntimeException exception) {
+                connection.rollback();
+                throw exception;
+            } finally {
+                connection.setAutoCommit(previousAutoCommit);
             }
-
-            int newScore = Math.min(config.maxScore(), oldScore + delta);
-            try (PreparedStatement update = connection.prepareStatement("""
-                    UPDATE players
-                    SET score = ?, name = ?
-                    WHERE uuid = ?
-                    """)) {
-                update.setInt(1, newScore);
-                update.setString(2, targetName);
-                update.setString(3, targetUuid.toString());
-                update.executeUpdate();
-            }
-
-            try (PreparedStatement insert = connection.prepareStatement("""
-                    INSERT INTO score_history (
-                      target_uuid, target_name, old_score, new_score, delta, reason, source_type, source_id, created_at
-                    )
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-                    """)) {
-                insert.setString(1, targetUuid.toString());
-                insert.setString(2, targetName);
-                insert.setInt(3, oldScore);
-                insert.setInt(4, newScore);
-                insert.setInt(5, delta);
-                insert.setString(6, reason);
-                insert.setString(7, sourceType);
-                if (sourceId == null) {
-                    insert.setNull(8, java.sql.Types.INTEGER);
-                } else {
-                    insert.setLong(8, sourceId);
-                }
-                insert.setLong(9, System.currentTimeMillis());
-                insert.executeUpdate();
-            }
-            return new ScoreChange(targetUuid, targetName, oldScore, newScore, delta);
         });
     }
 
-    public record ScoreChange(UUID targetUuid, String targetName, int oldScore, int newScore, int delta) {
+    public CompletableFuture<ScoreChange> setScore(
+            UUID targetUuid,
+            String targetName,
+            int score,
+            String reason,
+            String sourceType,
+            Long sourceId
+    ) {
+        return database.supplyAsync(connection -> {
+            boolean previousAutoCommit = connection.getAutoCommit();
+            connection.setAutoCommit(false);
+            try {
+                ScoreChange change = mutateScoreInTransaction(
+                        connection,
+                        targetUuid,
+                        targetName,
+                        ScoreMutation.set(score),
+                        reason,
+                        sourceType,
+                        sourceId,
+                        System.currentTimeMillis()
+                );
+                connection.commit();
+                return change;
+            } catch (SQLException | RuntimeException exception) {
+                connection.rollback();
+                throw exception;
+            } finally {
+                connection.setAutoCommit(previousAutoCommit);
+            }
+        });
+    }
+
+    public ScoreChange mutateScoreInTransaction(
+            Connection connection,
+            UUID targetUuid,
+            String targetName,
+            ScoreMutation mutation,
+            String reason,
+            String sourceType,
+            Long sourceId,
+            long now
+    ) throws SQLException {
+        int oldScore = getCurrentScore(connection, targetUuid);
+        int requestedScore = mutation.type() == ScoreMutation.Type.DELTA ? oldScore + mutation.value() : mutation.value();
+        int newScore = ScoreMath.clampToMax(requestedScore, config.maxScore());
+        int delta = newScore - oldScore;
+
+        try (PreparedStatement update = connection.prepareStatement("""
+                UPDATE players
+                SET score = ?, name = ?
+                WHERE uuid = ?
+                """)) {
+            update.setInt(1, newScore);
+            update.setString(2, targetName);
+            update.setString(3, targetUuid.toString());
+            update.executeUpdate();
+        }
+
+        try (PreparedStatement insert = connection.prepareStatement("""
+                INSERT INTO score_history (
+                  target_uuid, target_name, old_score, new_score, delta, reason, source_type, source_id, created_at
+                )
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """)) {
+            insert.setString(1, targetUuid.toString());
+            insert.setString(2, targetName);
+            insert.setInt(3, oldScore);
+            insert.setInt(4, newScore);
+            insert.setInt(5, delta);
+            insert.setString(6, reason);
+            insert.setString(7, sourceType);
+            if (sourceId == null) {
+                insert.setNull(8, Types.INTEGER);
+            } else {
+                insert.setLong(8, sourceId);
+            }
+            insert.setLong(9, now);
+            insert.executeUpdate();
+        }
+
+        return new ScoreChange(
+                targetUuid,
+                targetName,
+                oldScore,
+                newScore,
+                delta,
+                ScoreMath.crossedThresholdDownward(oldScore, newScore, config.banThreshold())
+        );
+    }
+
+    public CompletableFuture<List<ScoreHistoryEntry>> history(UUID targetUuid, int limit) {
+        return database.supplyAsync(connection -> {
+            List<ScoreHistoryEntry> history = new ArrayList<>();
+            try (PreparedStatement statement = connection.prepareStatement("""
+                    SELECT old_score, new_score, delta, reason, source_type, source_id, created_at
+                    FROM score_history
+                    WHERE target_uuid = ?
+                    ORDER BY created_at DESC
+                    LIMIT ?
+                    """)) {
+                statement.setString(1, targetUuid.toString());
+                statement.setInt(2, limit);
+                try (ResultSet result = statement.executeQuery()) {
+                    while (result.next()) {
+                        Long sourceId = nullableLong(result, "source_id");
+                        history.add(new ScoreHistoryEntry(
+                                result.getInt("old_score"),
+                                result.getInt("new_score"),
+                                result.getInt("delta"),
+                                result.getString("reason"),
+                                result.getString("source_type"),
+                                sourceId,
+                                result.getLong("created_at")
+                        ));
+                    }
+                }
+            }
+            return history;
+        });
+    }
+
+    private int getCurrentScore(Connection connection, UUID targetUuid) throws SQLException {
+        try (PreparedStatement select = connection.prepareStatement("SELECT score FROM players WHERE uuid = ?")) {
+            select.setString(1, targetUuid.toString());
+            try (ResultSet result = select.executeQuery()) {
+                return result.next() ? result.getInt("score") : config.initialScore();
+            }
+        }
+    }
+
+    private static Long nullableLong(ResultSet result, String column) throws SQLException {
+        long value = result.getLong(column);
+        return result.wasNull() ? null : value;
+    }
+
+    public record ScoreMutation(Type type, int value) {
+        public static ScoreMutation delta(int delta) {
+            return new ScoreMutation(Type.DELTA, delta);
+        }
+
+        public static ScoreMutation set(int score) {
+            return new ScoreMutation(Type.SET, score);
+        }
+
+        public enum Type {
+            DELTA,
+            SET
+        }
+    }
+
+    public record ScoreChange(
+            UUID targetUuid,
+            String targetName,
+            int oldScore,
+            int newScore,
+            int delta,
+            boolean crossedBanThreshold
+    ) {
+    }
+
+    public record ScoreHistoryEntry(
+            int oldScore,
+            int newScore,
+            int delta,
+            String reason,
+            String sourceType,
+            Long sourceId,
+            long createdAt
+    ) {
     }
 }

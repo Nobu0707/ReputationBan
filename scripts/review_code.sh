@@ -2,7 +2,7 @@
 set -euo pipefail
 
 PROJECT_NAME="ReputationBan"
-EXPECTED_VERSION="0.1.0"
+EXPECTED_VERSION="0.2.0"
 EXPECTED_MAIN="dev.modplugin.reputationban.ReputationBanPlugin"
 EXPECTED_API_VERSION="26.1.2"
 EXPECTED_PACKAGE_DIR="src/main/java/dev/modplugin/reputationban"
@@ -69,11 +69,20 @@ grep -R "CREATE TABLE" src/main/java >/dev/null || fail "Table creation SQL not 
 grep -R "getUniqueId" src/main/java >/dev/null || fail "UUID handling not found"
 grep -R "reputationban.bypass" src/main/java >/dev/null || fail "bypass permission check not found"
 grep -R "OfflinePlayer.*ban\\|\\.ban(reason" src/main/java >/dev/null || fail "Profile ban API usage not found"
+grep -R "\"approve\"" src/main/java/dev/modplugin/reputationban/command/ReportsCommand.java >/dev/null || fail "/reports approve handling not found"
+grep -R "\"reject\"" src/main/java/dev/modplugin/reputationban/command/ReportsCommand.java >/dev/null || fail "/reports reject handling not found"
+grep -R "\"history\"" src/main/java/dev/modplugin/reputationban/command/RepCommand.java >/dev/null || fail "/rep history handling not found"
+grep -R "\"add\"" src/main/java/dev/modplugin/reputationban/command/RepCommand.java >/dev/null || fail "/rep add handling not found"
+grep -R "\"remove\"" src/main/java/dev/modplugin/reputationban/command/RepCommand.java >/dev/null || fail "/rep remove handling not found"
+grep -R "\"set\"" src/main/java/dev/modplugin/reputationban/command/RepCommand.java >/dev/null || fail "/rep set handling not found"
+grep -R "setAutoCommit(false)" src/main/java >/dev/null || fail "Transactional setAutoCommit(false) pattern not found"
+grep -R "commit()" src/main/java >/dev/null || fail "Transactional commit() pattern not found"
+grep -R "rollback()" src/main/java >/dev/null || fail "Transactional rollback() pattern not found"
 
 if grep -R "net\.minecraft\|org\.bukkit\.craftbukkit\|CraftPlayer\|NMS" src/main/java >/dev/null; then
   fail "NMS/CraftBukkit usage detected"
 fi
-if grep -R "BanList.Type.NAME\|@SuppressWarnings(\"deprecation\")" src/main/java >/dev/null; then
+if grep -R "BanList.Type.NAME\|BanList\|@SuppressWarnings(\"deprecation\")" src/main/java >/dev/null; then
   fail "Deprecated name ban usage detected"
 fi
 

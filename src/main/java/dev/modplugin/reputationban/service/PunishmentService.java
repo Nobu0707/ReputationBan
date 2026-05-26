@@ -62,25 +62,31 @@ public final class PunishmentService {
             if (blocked) {
                 return CompletableFuture.completedFuture(false);
             }
-            return recordBan(targetUuid, targetName, reason).thenApply(plan -> {
-                plugin.runSync(() -> applyBukkitBan(targetUuid, targetName, reason, plan.expiresAt()));
-                return true;
-            });
+            return createBanPlan(targetUuid)
+                    .thenCompose(plan -> plugin.runSyncFuture(() -> applyBukkitBan(targetUuid, targetName, reason, plan.expiresAt()))
+                            .thenCompose(ignored -> recordBan(targetUuid, targetName, reason, plan))
+                            .thenApply(ignored -> true));
         });
     }
 
-    private CompletableFuture<BanPlan> recordBan(UUID targetUuid, String targetName, String reason) {
+    private CompletableFuture<BanPlan> createBanPlan(UUID targetUuid) {
+        return database.supplyAsync(connection -> {
+            int banCount = getBanCount(connection, targetUuid);
+            String durationValue = config.banDurationForCount(banCount);
+            Optional<Duration> duration = DurationParser.parseBanDuration(durationValue);
+            long now = System.currentTimeMillis();
+            Instant expiresAt = duration.map(value -> Instant.ofEpochMilli(now).plus(value)).orElse(null);
+            String banType = expiresAt == null ? "permanent" : "temporary";
+            return new BanPlan(expiresAt, banType);
+        });
+    }
+
+    private CompletableFuture<Void> recordBan(UUID targetUuid, String targetName, String reason, BanPlan plan) {
         return database.supplyAsync(connection -> {
             boolean previousAutoCommit = connection.getAutoCommit();
             connection.setAutoCommit(false);
             try {
-                int banCount = getBanCount(connection, targetUuid);
-                String durationValue = config.banDurationForCount(banCount);
-                Optional<Duration> duration = DurationParser.parseBanDuration(durationValue);
                 long now = System.currentTimeMillis();
-                Instant expiresAt = duration.map(value -> Instant.ofEpochMilli(now).plus(value)).orElse(null);
-                String banType = expiresAt == null ? "permanent" : "temporary";
-
                 try (PreparedStatement insert = connection.prepareStatement("""
                         INSERT INTO bans (
                           target_uuid, target_name, reason, ban_type, created_at, expires_at, created_by
@@ -90,12 +96,12 @@ public final class PunishmentService {
                     insert.setString(1, targetUuid.toString());
                     insert.setString(2, targetName);
                     insert.setString(3, reason);
-                    insert.setString(4, banType);
+                    insert.setString(4, plan.banType());
                     insert.setLong(5, now);
-                    if (expiresAt == null) {
+                    if (plan.expiresAt() == null) {
                         insert.setNull(6, java.sql.Types.INTEGER);
                     } else {
-                        insert.setLong(6, expiresAt.toEpochMilli());
+                        insert.setLong(6, plan.expiresAt().toEpochMilli());
                     }
                     insert.setString(7, config.banSource());
                     insert.executeUpdate();
@@ -110,7 +116,7 @@ public final class PunishmentService {
                 }
 
                 connection.commit();
-                return new BanPlan(expiresAt);
+                return null;
             } catch (SQLException | RuntimeException exception) {
                 connection.rollback();
                 throw exception;
@@ -140,6 +146,6 @@ public final class PunishmentService {
         plugin.notifyStaff("自動BAN: " + targetName + " / 理由: " + reason);
     }
 
-    private record BanPlan(Instant expiresAt) {
+    private record BanPlan(Instant expiresAt, String banType) {
     }
 }
