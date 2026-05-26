@@ -145,7 +145,28 @@
 - `report-requirements.min-account-age-days` は Mojang アカウント作成日ではなく、ReputationBanが記録するサーバー初参加日時からの日数。
 - `threshold_pending` はスタッフ審査待ちではなく、複数通報しきい値待ち。
 
-## Phase 8以降: 外部連携・高度な悪用対策
+## Phase 8 / v0.8.0: 監査ログ・データ保持
+
+目的: 実運用時の説明責任・調査性・保守性を高める。
+
+実装範囲:
+
+- `audit_events` テーブルとindex
+- AuditService / AuditEvent / AuditEventType
+- 通報作成、しきい値到達、審査、手動スコア変更、自動BAN、BAN解除、pardon、スコア回復、通報者ペナルティ、reload、maintenance の監査記録
+- `/rep audit recent [limit]`
+- `/rep audit <player> [limit]`
+- `/rep audit type <eventType> [limit]`
+- `/rep audit export recent [limit]`
+- `/rep audit export <player> [limit]`
+- `/rep maintenance run`
+- CSVエスケープ
+- retention設定
+- Webhook URL等のシークレットを監査・CSV・ログへ出さない方針
+- review_code.sh / make-review-archive.sh Phase 8対応
+- version 0.8.0
+
+## Phase 9以降: 外部連携・高度な悪用対策
 
 実装候補:
 
@@ -157,4 +178,3 @@
 - LuckPerms連携
 - WorldGuard/GriefPrevention連携
 - 設定可能なメッセージファイル
-- 監査ログ強化

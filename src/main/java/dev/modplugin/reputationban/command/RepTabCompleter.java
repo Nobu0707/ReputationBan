@@ -14,14 +14,20 @@ public final class RepTabCompleter implements TabCompleter {
         if (args.length == 1) {
             return CommandSuggestionUtil.repSubcommands(sender::hasPermission, args[0]);
         }
-        if (args.length == 2 && CommandSuggestionUtil.repSubcommandNeedsPlayer(args[0])) {
-            List<String> names = Bukkit.getOnlinePlayers().stream()
-                    .map(Player::getName)
-                    .toList();
-            return CommandSuggestionUtil.filterByPrefix(names, args[1]);
+        List<String> names = Bukkit.getOnlinePlayers().stream()
+                .map(Player::getName)
+                .toList();
+        if (args.length == 2) {
+            return CommandSuggestionUtil.repSecondArgumentSuggestions(args[0], names, args[1]);
         }
         if (args.length == 3) {
+            if ("audit".equalsIgnoreCase(args[0])) {
+                return CommandSuggestionUtil.repAuditThirdArgumentSuggestions(args[1], names, args[2]);
+            }
             return CommandSuggestionUtil.repThirdArgumentSuggestions(args[0], args[2]);
+        }
+        if (args.length == 4 && "audit".equalsIgnoreCase(args[0])) {
+            return CommandSuggestionUtil.repAuditFourthArgumentSuggestions(args[1], args[3]);
         }
         return List.of();
     }

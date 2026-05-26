@@ -1,6 +1,7 @@
 package dev.modplugin.reputationban.util;
 
 import dev.modplugin.reputationban.model.ReportStatus;
+import dev.modplugin.reputationban.model.AuditEventType;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -45,6 +46,12 @@ public final class CommandSuggestionUtil {
         if (hasPermission.test("reputationban.admin")) {
             candidates.add("reload");
         }
+        if (hasPermission.test("reputationban.admin.audit")) {
+            candidates.add("audit");
+        }
+        if (hasPermission.test("reputationban.admin.maintenance")) {
+            candidates.add("maintenance");
+        }
         return filterByPrefix(candidates, prefix);
     }
 
@@ -52,6 +59,37 @@ public final class CommandSuggestionUtil {
         return switch (normalize(subcommand)) {
             case "check", "history", "add", "remove", "set", "banhistory", "baninfo", "unban", "pardon" -> true;
             default -> false;
+        };
+    }
+
+    public static List<String> repSecondArgumentSuggestions(String subcommand, Collection<String> playerNames, String prefix) {
+        return switch (normalize(subcommand)) {
+            case "audit" -> {
+                List<String> candidates = new ArrayList<>(List.of("recent", "type", "export"));
+                candidates.addAll(playerNames);
+                yield filterByPrefix(candidates, prefix);
+            }
+            case "maintenance" -> filterByPrefix(List.of("run"), prefix);
+            default -> repSubcommandNeedsPlayer(subcommand) ? filterByPrefix(playerNames, prefix) : List.of();
+        };
+    }
+
+    public static List<String> repAuditThirdArgumentSuggestions(String second, Collection<String> playerNames, String prefix) {
+        return switch (normalize(second)) {
+            case "type" -> filterByPrefix(AuditEventType.databaseValues(), prefix);
+            case "export" -> {
+                List<String> candidates = new ArrayList<>(List.of("recent"));
+                candidates.addAll(playerNames);
+                yield filterByPrefix(candidates, prefix);
+            }
+            default -> filterByPrefix(LIMITS, prefix);
+        };
+    }
+
+    public static List<String> repAuditFourthArgumentSuggestions(String second, String prefix) {
+        return switch (normalize(second)) {
+            case "type", "export" -> filterByPrefix(LIMITS, prefix);
+            default -> List.of();
         };
     }
 

@@ -28,6 +28,10 @@ class CommandSuggestionUtilTest {
         Predicate<String> banOnly = Set.of("reputationban.admin.ban")::contains;
         assertEquals(List.of("banhistory", "baninfo"),
                 CommandSuggestionUtil.repSubcommands(banOnly, "ban"));
+
+        Predicate<String> auditAndMaintenance = Set.of("reputationban.admin.audit", "reputationban.admin.maintenance")::contains;
+        assertEquals(List.of("audit"), CommandSuggestionUtil.repSubcommands(auditAndMaintenance, "aud"));
+        assertEquals(List.of("maintenance"), CommandSuggestionUtil.repSubcommands(auditAndMaintenance, "main"));
     }
 
     @Test
@@ -42,5 +46,13 @@ class CommandSuggestionUtilTest {
         assertEquals(List.of("10"), CommandSuggestionUtil.repThirdArgumentSuggestions("history", "1"));
         assertEquals(List.of("1", "10", "100"), CommandSuggestionUtil.repThirdArgumentSuggestions("add", "1"));
         assertEquals(List.of("10", "20", "50"), CommandSuggestionUtil.reportsThirdArgumentSuggestions("list", ""));
+    }
+
+    @Test
+    void auditSuggestionsIncludeModesPlayersAndTypes() {
+        assertEquals(List.of("recent"), CommandSuggestionUtil.repSecondArgumentSuggestions("audit", List.of("Alex"), "rec"));
+        assertEquals(List.of("Alex"), CommandSuggestionUtil.repSecondArgumentSuggestions("audit", List.of("Alex"), "Al"));
+        assertTrue(CommandSuggestionUtil.repAuditThirdArgumentSuggestions("type", List.of(), "REPORT").contains("REPORT_CREATED"));
+        assertEquals(List.of("run"), CommandSuggestionUtil.repSecondArgumentSuggestions("maintenance", List.of(), "r"));
     }
 }

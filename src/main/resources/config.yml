@@ -72,6 +72,20 @@ score-recovery:
   max-score: 100
   no-report-days-required: 7
 
+audit:
+  enabled: true
+  export-directory: "exports"
+  max-display-limit: 50
+  max-export-limit: 1000
+
+retention:
+  audit-events-days: 180
+  rejected-reports-days: 90
+  cancelled-reports-days: 90
+  # 0以下なら削除しません。重要履歴はデフォルトで保持します。
+  score-history-days: 0
+  bans-days: 0
+
 ban:
   enabled: true
   threshold: 0

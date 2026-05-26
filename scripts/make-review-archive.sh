@@ -4,7 +4,7 @@ set -euo pipefail
 # ReputationBan review archive generator.
 # Usage:
 #   bash scripts/make-review-archive.sh
-#   bash scripts/make-review-archive.sh "Phase 7"
+#   bash scripts/make-review-archive.sh "Phase 8"
 #
 # The optional argument is an expected substring of HEAD's commit subject.
 # If it does not match, the script exits before producing an archive, which
@@ -84,6 +84,9 @@ done < "$OUTDIR/meta/changed-files.txt"
   echo
   echo "## rg phase 7 report safety"
   rg -n "threshold_pending|min-unique-reports-before-deduction|report-window-days|min-playtime-minutes|min-account-age-days|ScoreThreshold|SCORE_THRESHOLD_CROSSED|COUNT\\(DISTINCT" src/main/java src/test/java src/main/resources README.md docs reputationban_phase_plan.md scripts || true
+  echo
+  echo "## rg phase 8 audit retention"
+  rg -n "audit_events|AuditService|AuditEventType|CsvEscaper|maintenance|retention|reputationban.admin.audit|reputationban.admin.maintenance|REPORT_THRESHOLD_REACHED" src/main/java src/test/java src/main/resources README.md docs reputationban_phase_plan.md scripts || true
 } > "$OUTDIR/checks/rg-review-signals.txt"
 
 run_logged() {
@@ -122,8 +125,8 @@ fi
 
 if [[ -d "$ROOT/build/libs" ]]; then
   find "$ROOT/build/libs" -maxdepth 1 -type f -print | sort > "$OUTDIR/checks/built-jars.txt"
-  if [[ -f "$ROOT/build/libs/ReputationBan-0.7.0.jar" ]]; then
-    (cd "$ROOT" && sha256sum build/libs/ReputationBan-0.7.0.jar) > "$OUTDIR/checks/jar-sha256.txt"
+  if [[ -f "$ROOT/build/libs/ReputationBan-0.8.0.jar" ]]; then
+    (cd "$ROOT" && sha256sum build/libs/ReputationBan-0.8.0.jar) > "$OUTDIR/checks/jar-sha256.txt"
   fi
 fi
 

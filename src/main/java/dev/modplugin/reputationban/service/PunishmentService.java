@@ -2,8 +2,11 @@ package dev.modplugin.reputationban.service;
 
 import dev.modplugin.reputationban.ReputationBanPlugin;
 import dev.modplugin.reputationban.config.PluginConfig;
+import dev.modplugin.reputationban.model.AuditEvent;
+import dev.modplugin.reputationban.model.AuditEventType;
 import dev.modplugin.reputationban.notification.DiscordWebhookConfig;
 import dev.modplugin.reputationban.notification.NotificationEventType;
+import dev.modplugin.reputationban.util.AuditMetadata;
 import dev.modplugin.reputationban.util.BanManagementPolicy;
 import dev.modplugin.reputationban.util.DurationParser;
 import java.sql.Connection;
@@ -27,15 +30,18 @@ import org.bukkit.entity.Player;
 public final class PunishmentService {
     private final ReputationBanPlugin plugin;
     private final dev.modplugin.reputationban.database.DatabaseManager database;
+    private final AuditService auditService;
     private volatile PluginConfig config;
 
     public PunishmentService(
             ReputationBanPlugin plugin,
             dev.modplugin.reputationban.database.DatabaseManager database,
+            AuditService auditService,
             PluginConfig config
     ) {
         this.plugin = plugin;
         this.database = database;
+        this.auditService = auditService;
         this.config = config;
     }
 
@@ -95,12 +101,13 @@ public final class PunishmentService {
             connection.setAutoCommit(false);
             try {
                 long now = System.currentTimeMillis();
+                long banId;
                 try (PreparedStatement insert = connection.prepareStatement("""
                         INSERT INTO bans (
                           target_uuid, target_name, reason, ban_type, created_at, expires_at, created_by
                         )
                         VALUES (?, ?, ?, ?, ?, ?, ?)
-                        """)) {
+                        """, java.sql.Statement.RETURN_GENERATED_KEYS)) {
                     insert.setString(1, targetUuid.toString());
                     insert.setString(2, targetName);
                     insert.setString(3, reason);
@@ -113,6 +120,9 @@ public final class PunishmentService {
                     }
                     insert.setString(7, config.banSource());
                     insert.executeUpdate();
+                    try (ResultSet generated = insert.getGeneratedKeys()) {
+                        banId = generated.next() ? generated.getLong(1) : -1L;
+                    }
                 }
                 try (PreparedStatement update = connection.prepareStatement("""
                         UPDATE players
@@ -122,6 +132,27 @@ public final class PunishmentService {
                     update.setString(1, targetUuid.toString());
                     update.executeUpdate();
                 }
+                int banCount = getBanCount(connection, targetUuid);
+                auditService.recordEventInTransaction(connection, AuditEvent.create(
+                        AuditEventType.AUTO_BAN,
+                        null,
+                        "SYSTEM",
+                        targetUuid,
+                        targetName,
+                        null,
+                        banId,
+                        null,
+                        null,
+                        null,
+                        null,
+                        reason,
+                        AuditMetadata.create()
+                                .put("expiresAt", plan.expiresAt() == null ? "permanent" : plan.expiresAt().toEpochMilli())
+                                .put("banCount", banCount)
+                                .put("banType", plan.banType())
+                                .toJson(),
+                        now
+                ));
 
                 connection.commit();
                 return null;
@@ -249,13 +280,37 @@ public final class PunishmentService {
         });
     }
 
-    public CompletableFuture<UnbanResult> markActiveBansUnbanned(UUID targetUuid, String unbannedBy, String unbanReason) {
+    public CompletableFuture<UnbanResult> markActiveBansUnbanned(
+            UUID targetUuid,
+            String unbannedBy,
+            String unbanReason,
+            boolean profileBanRemoved
+    ) {
         long now = System.currentTimeMillis();
         return database.supplyAsync(connection -> {
             boolean previousAutoCommit = connection.getAutoCommit();
             connection.setAutoCommit(false);
             try {
                 int updated = markActiveBansUnbannedInTransaction(connection, targetUuid, unbannedBy, unbanReason, now);
+                auditService.recordEventInTransaction(connection, AuditEvent.create(
+                        AuditEventType.UNBAN,
+                        parseUuid(unbannedBy),
+                        unbannedBy,
+                        targetUuid,
+                        playerName(connection, targetUuid),
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        unbanReason,
+                        AuditMetadata.create()
+                                .put("profileBanRemoved", profileBanRemoved)
+                                .put("dbActiveBanUpdatedCount", updated)
+                                .toJson(),
+                        now
+                ));
                 connection.commit();
                 return new UnbanResult(updated);
             } catch (SQLException | RuntimeException exception) {
@@ -267,7 +322,13 @@ public final class PunishmentService {
         });
     }
 
-    public CompletableFuture<PardonResult> pardon(UUID targetUuid, String targetName, String reason, String actor) {
+    public CompletableFuture<PardonResult> pardon(
+            UUID targetUuid,
+            String targetName,
+            String reason,
+            String actor,
+            boolean profileBanRemoved
+    ) {
         long now = System.currentTimeMillis();
         return database.supplyAsync(connection -> {
             boolean previousAutoCommit = connection.getAutoCommit();
@@ -277,6 +338,7 @@ public final class PunishmentService {
                 int oldScore = ScoreService.currentScoreInTransaction(connection, targetUuid, config.initialScore());
                 int newScore = BanManagementPolicy.pardonTargetScore(oldScore, config.maxScore());
                 int delta = newScore - oldScore;
+                long scoreHistoryId;
 
                 try (PreparedStatement update = connection.prepareStatement("""
                         UPDATE players
@@ -294,7 +356,7 @@ public final class PunishmentService {
                           target_uuid, target_name, old_score, new_score, delta, reason, source_type, source_id, created_at
                         )
                         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-                        """)) {
+                        """, java.sql.Statement.RETURN_GENERATED_KEYS)) {
                     insert.setString(1, targetUuid.toString());
                     insert.setString(2, targetName);
                     insert.setInt(3, oldScore);
@@ -305,7 +367,30 @@ public final class PunishmentService {
                     insert.setNull(8, Types.INTEGER);
                     insert.setLong(9, now);
                     insert.executeUpdate();
+                    try (ResultSet generated = insert.getGeneratedKeys()) {
+                        scoreHistoryId = generated.next() ? generated.getLong(1) : -1L;
+                    }
                 }
+                auditService.recordEventInTransaction(connection, AuditEvent.create(
+                        AuditEventType.PARDON,
+                        parseUuid(actor),
+                        actor,
+                        targetUuid,
+                        targetName,
+                        null,
+                        null,
+                        scoreHistoryId,
+                        oldScore,
+                        newScore,
+                        delta,
+                        reason,
+                        AuditMetadata.create()
+                                .put("profileBanRemoved", profileBanRemoved)
+                                .put("dbActiveBanUpdatedCount", updatedBans)
+                                .put("reportBanCleared", true)
+                                .toJson(),
+                        now
+                ));
 
                 connection.commit();
                 return new PardonResult(updatedBans, oldScore, newScore, delta);
@@ -358,6 +443,26 @@ public final class PunishmentService {
     private static Long nullableLong(ResultSet result, String column) throws SQLException {
         long value = result.getLong(column);
         return result.wasNull() ? null : value;
+    }
+
+    private static UUID parseUuid(String value) {
+        if (value == null || "CONSOLE".equalsIgnoreCase(value)) {
+            return null;
+        }
+        try {
+            return UUID.fromString(value);
+        } catch (IllegalArgumentException exception) {
+            return null;
+        }
+    }
+
+    private static String playerName(Connection connection, UUID targetUuid) throws SQLException {
+        try (PreparedStatement statement = connection.prepareStatement("SELECT name FROM players WHERE uuid = ?")) {
+            statement.setString(1, targetUuid.toString());
+            try (ResultSet result = statement.executeQuery()) {
+                return result.next() ? result.getString("name") : null;
+            }
+        }
     }
 
     private record BanPlan(Instant expiresAt, String banType) {

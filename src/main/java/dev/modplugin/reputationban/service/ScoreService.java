@@ -2,6 +2,9 @@ package dev.modplugin.reputationban.service;
 
 import dev.modplugin.reputationban.config.PluginConfig;
 import dev.modplugin.reputationban.database.DatabaseManager;
+import dev.modplugin.reputationban.model.AuditEvent;
+import dev.modplugin.reputationban.model.AuditEventType;
+import dev.modplugin.reputationban.util.AuditMetadata;
 import dev.modplugin.reputationban.util.ScoreMath;
 import dev.modplugin.reputationban.util.ScoreRecoveryPolicy;
 import java.sql.Connection;
@@ -16,10 +19,12 @@ import java.util.concurrent.CompletableFuture;
 
 public final class ScoreService {
     private final DatabaseManager database;
+    private final AuditService auditService;
     private volatile PluginConfig config;
 
-    public ScoreService(DatabaseManager database, PluginConfig config) {
+    public ScoreService(DatabaseManager database, AuditService auditService, PluginConfig config) {
         this.database = database;
+        this.auditService = auditService;
         this.config = config;
     }
 
@@ -119,12 +124,13 @@ public final class ScoreService {
             update.executeUpdate();
         }
 
+        long scoreHistoryId;
         try (PreparedStatement insert = connection.prepareStatement("""
                 INSERT INTO score_history (
                   target_uuid, target_name, old_score, new_score, delta, reason, source_type, source_id, created_at
                 )
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-                """)) {
+                """, java.sql.Statement.RETURN_GENERATED_KEYS)) {
             insert.setString(1, targetUuid.toString());
             insert.setString(2, targetName);
             insert.setInt(3, oldScore);
@@ -139,6 +145,9 @@ public final class ScoreService {
             }
             insert.setLong(9, now);
             insert.executeUpdate();
+            try (ResultSet generated = insert.getGeneratedKeys()) {
+                scoreHistoryId = generated.next() ? generated.getLong(1) : -1L;
+            }
         }
 
         return new ScoreChange(
@@ -147,6 +156,7 @@ public final class ScoreService {
                 oldScore,
                 newScore,
                 delta,
+                scoreHistoryId,
                 ScoreMath.crossedThresholdDownward(oldScore, newScore, config.banThreshold())
         );
     }
@@ -247,6 +257,22 @@ public final class ScoreService {
                 continue;
             }
             updateRecoveredPlayer(connection, candidate.uuid(), candidate.name(), candidate.score(), newScore, delta, now);
+            auditService.recordEventInTransaction(connection, AuditEvent.create(
+                    AuditEventType.SCORE_RECOVERED,
+                    null,
+                    "SYSTEM",
+                    candidate.uuid(),
+                    candidate.name(),
+                    null,
+                    null,
+                    null,
+                    candidate.score(),
+                    newScore,
+                    delta,
+                    "recovery",
+                    AuditMetadata.create().put("source", "score-recovery").toJson(),
+                    now
+            ));
             recovered++;
         }
         return new RecoveryRunResult(candidates.size(), recovered);
@@ -346,6 +372,7 @@ public final class ScoreService {
             int oldScore,
             int newScore,
             int delta,
+            long scoreHistoryId,
             boolean crossedBanThreshold
     ) {
     }

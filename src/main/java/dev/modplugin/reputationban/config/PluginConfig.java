@@ -42,6 +42,15 @@ public final class PluginConfig {
     private final int recoveryPointsPerDay;
     private final int recoveryMaxScore;
     private final int recoveryNoReportDaysRequired;
+    private final boolean auditEnabled;
+    private final String auditExportDirectory;
+    private final int auditMaxDisplayLimit;
+    private final int auditMaxExportLimit;
+    private final int retentionAuditEventsDays;
+    private final int retentionRejectedReportsDays;
+    private final int retentionCancelledReportsDays;
+    private final int retentionScoreHistoryDays;
+    private final int retentionBansDays;
     private final String databaseFile;
     private final Map<String, ReportCategory> categories;
 
@@ -78,6 +87,15 @@ public final class PluginConfig {
         recoveryPointsPerDay = config.getInt("score-recovery.points-per-day", 2);
         recoveryMaxScore = config.getInt("score-recovery.max-score", maxScore);
         recoveryNoReportDaysRequired = config.getInt("score-recovery.no-report-days-required", 7);
+        auditEnabled = config.getBoolean("audit.enabled", true);
+        auditExportDirectory = config.getString("audit.export-directory", "exports");
+        auditMaxDisplayLimit = config.getInt("audit.max-display-limit", 50);
+        auditMaxExportLimit = config.getInt("audit.max-export-limit", 1000);
+        retentionAuditEventsDays = config.getInt("retention.audit-events-days", 180);
+        retentionRejectedReportsDays = config.getInt("retention.rejected-reports-days", 90);
+        retentionCancelledReportsDays = config.getInt("retention.cancelled-reports-days", 90);
+        retentionScoreHistoryDays = config.getInt("retention.score-history-days", 0);
+        retentionBansDays = config.getInt("retention.bans-days", 0);
         databaseFile = config.getString("database.file", "reputationban.db");
         categories = loadCategories(config);
     }
@@ -243,6 +261,42 @@ public final class PluginConfig {
 
     public int recoveryNoReportDaysRequired() {
         return recoveryNoReportDaysRequired;
+    }
+
+    public boolean auditEnabled() {
+        return auditEnabled;
+    }
+
+    public String auditExportDirectory() {
+        return auditExportDirectory;
+    }
+
+    public int auditMaxDisplayLimit() {
+        return auditMaxDisplayLimit;
+    }
+
+    public int auditMaxExportLimit() {
+        return auditMaxExportLimit;
+    }
+
+    public int retentionAuditEventsDays() {
+        return retentionAuditEventsDays;
+    }
+
+    public int retentionRejectedReportsDays() {
+        return retentionRejectedReportsDays;
+    }
+
+    public int retentionCancelledReportsDays() {
+        return retentionCancelledReportsDays;
+    }
+
+    public int retentionScoreHistoryDays() {
+        return retentionScoreHistoryDays;
+    }
+
+    public int retentionBansDays() {
+        return retentionBansDays;
     }
 
     public String databaseFile() {

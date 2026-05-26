@@ -1,12 +1,18 @@
 package dev.modplugin.reputationban.command;
 
 import dev.modplugin.reputationban.ReputationBanPlugin;
+import dev.modplugin.reputationban.model.AuditEvent;
+import dev.modplugin.reputationban.model.AuditEventType;
 import dev.modplugin.reputationban.model.PlayerRecord;
 import dev.modplugin.reputationban.notification.DiscordWebhookConfig;
 import dev.modplugin.reputationban.notification.NotificationEventType;
+import dev.modplugin.reputationban.service.AuditService;
 import dev.modplugin.reputationban.service.PlayerDataService;
 import dev.modplugin.reputationban.service.PunishmentService;
 import dev.modplugin.reputationban.service.ScoreService;
+import dev.modplugin.reputationban.util.AuditCommandArgument;
+import dev.modplugin.reputationban.util.AuditCommandArgumentParser;
+import dev.modplugin.reputationban.util.AuditMetadata;
 import dev.modplugin.reputationban.util.BanAuditMetadata;
 import dev.modplugin.reputationban.util.CommandArgumentParser;
 import dev.modplugin.reputationban.util.ManualScoreChangeGate;
@@ -16,6 +22,7 @@ import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Optional;
 import java.util.OptionalInt;
 import java.util.UUID;
@@ -36,17 +43,20 @@ public final class RepCommand implements CommandExecutor {
     private final PlayerDataService playerDataService;
     private final ScoreService scoreService;
     private final PunishmentService punishmentService;
+    private final AuditService auditService;
 
     public RepCommand(
             ReputationBanPlugin plugin,
             PlayerDataService playerDataService,
             ScoreService scoreService,
-            PunishmentService punishmentService
+            PunishmentService punishmentService,
+            AuditService auditService
     ) {
         this.plugin = plugin;
         this.playerDataService = playerDataService;
         this.scoreService = scoreService;
         this.punishmentService = punishmentService;
+        this.auditService = auditService;
     }
 
     @Override
@@ -81,6 +91,14 @@ public final class RepCommand implements CommandExecutor {
         }
         if ("pardon".equalsIgnoreCase(args[0])) {
             pardon(sender, args);
+            return true;
+        }
+        if ("audit".equalsIgnoreCase(args[0])) {
+            audit(sender, args);
+            return true;
+        }
+        if ("maintenance".equalsIgnoreCase(args[0])) {
+            maintenance(sender, args);
             return true;
         }
         if ("add".equalsIgnoreCase(args[0]) || "remove".equalsIgnoreCase(args[0]) || "set".equalsIgnoreCase(args[0])) {
@@ -119,6 +137,15 @@ public final class RepCommand implements CommandExecutor {
         }
         if (sender.hasPermission("reputationban.admin")) {
             sender.sendMessage(ReputationBanPlugin.PREFIX + "/rep reload - 設定再読み込み");
+        }
+        if (sender.hasPermission("reputationban.admin.audit")) {
+            sender.sendMessage(ReputationBanPlugin.PREFIX + "/rep audit recent [limit] - 直近の監査ログ");
+            sender.sendMessage(ReputationBanPlugin.PREFIX + "/rep audit <player> [limit] - 対象の監査ログ");
+            sender.sendMessage(ReputationBanPlugin.PREFIX + "/rep audit type <eventType> [limit] - 種別別の監査ログ");
+            sender.sendMessage(ReputationBanPlugin.PREFIX + "/rep audit export <recent|player> [limit] - CSVエクスポート");
+        }
+        if (sender.hasPermission("reputationban.admin.maintenance")) {
+            sender.sendMessage(ReputationBanPlugin.PREFIX + "/rep maintenance run - データ保持メンテナンス");
         }
     }
 
@@ -298,6 +325,22 @@ public final class RepCommand implements CommandExecutor {
                     }
                     sender.sendMessage(ReputationBanPlugin.PREFIX + result.record().get().name() + " のスコアを変更しました: "
                             + change.oldScore() + " -> " + change.newScore() + " (" + signed(change.delta()) + ")");
+                    auditService.recordEvent(AuditEvent.create(
+                            AuditEventType.SCORE_CHANGED_ADMIN,
+                            senderUuid(sender),
+                            sender.getName(),
+                            change.targetUuid(),
+                            change.targetName(),
+                            null,
+                            null,
+                            change.scoreHistoryId(),
+                            change.oldScore(),
+                            change.newScore(),
+                            change.delta(),
+                            reason,
+                            AuditMetadata.create().put("command", args[0].toLowerCase()).toJson(),
+                            System.currentTimeMillis()
+                    ));
                     plugin.notifyScoreThresholdCrossings(
                             change.targetUuid(),
                             change.targetName(),
@@ -314,6 +357,96 @@ public final class RepCommand implements CommandExecutor {
                     plugin.runSync(() -> sender.sendMessage(ReputationBanPlugin.PREFIX + "スコア変更に失敗しました。"));
                     return null;
                 });
+    }
+
+    private void audit(CommandSender sender, String[] args) {
+        if (!sender.hasPermission("reputationban.admin.audit")) {
+            sender.sendMessage(ReputationBanPlugin.PREFIX + "権限がありません。");
+            return;
+        }
+        AuditCommandArgument parsed = AuditCommandArgumentParser.parse(args);
+        switch (parsed.mode()) {
+            case RECENT -> {
+                OptionalInt limit = parseAuditLimit(sender, args.length >= 3 ? args[2] : null, plugin.pluginConfig().auditMaxDisplayLimit());
+                limit.ifPresent(value -> auditService.listRecent(value)
+                        .thenAccept(events -> plugin.runSync(() -> sendAuditEvents(sender, "recent", events)))
+                        .exceptionally(throwable -> auditFailure(sender, throwable)));
+            }
+            case TARGET -> {
+                OptionalInt limit = parseAuditLimit(sender, args.length >= 3 ? args[2] : null, plugin.pluginConfig().auditMaxDisplayLimit());
+                if (limit.isEmpty()) {
+                    return;
+                }
+                resolvePlayer(parsed.value(), true)
+                        .thenCompose(record -> record
+                                .map(player -> auditService.listForTarget(player.uuid(), limit.getAsInt())
+                                        .thenApply(events -> new AuditListResult(record, events, player.name())))
+                                .orElseGet(() -> CompletableFuture.completedFuture(new AuditListResult(Optional.empty(), List.of(), parsed.value()))))
+                        .thenAccept(result -> plugin.runSync(() -> {
+                            if (result.record().isEmpty()) {
+                                sender.sendMessage(ReputationBanPlugin.PREFIX + "対象プレイヤーが見つかりません。");
+                                return;
+                            }
+                            sendAuditEvents(sender, result.label(), result.events());
+                        }))
+                        .exceptionally(throwable -> auditFailure(sender, throwable));
+            }
+            case TYPE -> {
+                if (parsed.value().isBlank() || !AuditEventType.isValid(parsed.value())) {
+                    sender.sendMessage(ReputationBanPlugin.PREFIX + "使い方: /rep audit type <eventType> [limit]");
+                    return;
+                }
+                OptionalInt limit = parseAuditLimit(sender, args.length >= 4 ? args[3] : null, plugin.pluginConfig().auditMaxDisplayLimit());
+                limit.ifPresent(value -> auditService.listByType(AuditEventType.parse(parsed.value()), value)
+                        .thenAccept(events -> plugin.runSync(() -> sendAuditEvents(sender, "type " + AuditEventType.parse(parsed.value()).databaseValue(), events)))
+                        .exceptionally(throwable -> auditFailure(sender, throwable)));
+            }
+            case EXPORT_RECENT -> {
+                OptionalInt limit = parseAuditLimit(sender, args.length >= 4 ? args[3] : null, plugin.pluginConfig().auditMaxExportLimit());
+                limit.ifPresent(value -> auditService.exportRecentCsv(value)
+                        .thenAccept(path -> plugin.runSync(() -> sender.sendMessage(ReputationBanPlugin.PREFIX
+                                + "監査ログをエクスポートしました: " + path)))
+                        .exceptionally(throwable -> auditFailure(sender, throwable)));
+            }
+            case EXPORT_TARGET -> {
+                OptionalInt limit = parseAuditLimit(sender, args.length >= 4 ? args[3] : null, plugin.pluginConfig().auditMaxExportLimit());
+                if (limit.isEmpty()) {
+                    return;
+                }
+                resolvePlayer(parsed.value(), true)
+                        .thenCompose(record -> record
+                                .map(player -> auditService.exportTargetCsv(player.uuid(), player.name(), limit.getAsInt())
+                                        .thenApply(path -> new AuditExportResult(record, path)))
+                                .orElseGet(() -> CompletableFuture.completedFuture(new AuditExportResult(Optional.empty(), null))))
+                        .thenAccept(result -> plugin.runSync(() -> {
+                            if (result.record().isEmpty()) {
+                                sender.sendMessage(ReputationBanPlugin.PREFIX + "対象プレイヤーが見つかりません。");
+                                return;
+                            }
+                            sender.sendMessage(ReputationBanPlugin.PREFIX + "監査ログをエクスポートしました: " + result.path());
+                        }))
+                        .exceptionally(throwable -> auditFailure(sender, throwable));
+            }
+        }
+    }
+
+    private void maintenance(CommandSender sender, String[] args) {
+        if (!sender.hasPermission("reputationban.admin.maintenance")) {
+            sender.sendMessage(ReputationBanPlugin.PREFIX + "権限がありません。");
+            return;
+        }
+        if (args.length < 2 || !"run".equalsIgnoreCase(args[1])) {
+            sender.sendMessage(ReputationBanPlugin.PREFIX + "使い方: /rep maintenance run");
+            return;
+        }
+        auditService.runMaintenance(sender.getName())
+                .thenAccept(result -> plugin.runSync(() -> sender.sendMessage(ReputationBanPlugin.PREFIX
+                        + "メンテナンス完了: rejected=" + result.rejectedReportsDeleted()
+                        + " cancelled=" + result.cancelledReportsDeleted()
+                        + " audit=" + result.auditEventsDeleted()
+                        + " score_history=" + result.scoreHistoryDeleted()
+                        + " bans=" + result.bansDeleted())))
+                .exceptionally(throwable -> auditFailure(sender, throwable));
     }
 
     private void banHistory(CommandSender sender, String[] args) {
@@ -433,7 +566,12 @@ public final class RepCommand implements CommandExecutor {
                     }
                     UUID targetUuid = record.get().uuid();
                     return punishmentService.unbanProfile(targetUuid)
-                            .thenCompose(profileResult -> punishmentService.markActiveBansUnbanned(targetUuid, actor, reason)
+                            .thenCompose(profileResult -> punishmentService.markActiveBansUnbanned(
+                                            targetUuid,
+                                            actor,
+                                            reason,
+                                            profileResult.wasProfileBanned()
+                                    )
                                     .thenApply(dbResult -> new UnbanCompletion(record, profileResult, dbResult)));
                 })
                 .thenAccept(result -> plugin.runSync(() -> {
@@ -482,7 +620,13 @@ public final class RepCommand implements CommandExecutor {
                     }
                     PlayerRecord target = record.get();
                     return punishmentService.unbanProfile(target.uuid())
-                            .thenCompose(profileResult -> punishmentService.pardon(target.uuid(), target.name(), reason, actor)
+                            .thenCompose(profileResult -> punishmentService.pardon(
+                                            target.uuid(),
+                                            target.name(),
+                                            reason,
+                                            actor,
+                                            profileResult.wasProfileBanned()
+                                    )
                                     .thenApply(pardonResult -> new PardonCompletion(record, profileResult, pardonResult)));
                 })
                 .thenAccept(result -> plugin.runSync(() -> {
@@ -541,6 +685,22 @@ public final class RepCommand implements CommandExecutor {
             return;
         }
         plugin.reloadPluginConfig();
+        auditService.recordEvent(AuditEvent.create(
+                AuditEventType.CONFIG_RELOADED,
+                senderUuid(sender),
+                sender.getName(),
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                "config reload",
+                AuditMetadata.create().put("source", "command").toJson(),
+                System.currentTimeMillis()
+        ));
         sender.sendMessage(ReputationBanPlugin.PREFIX + "設定を再読み込みしました。");
     }
 
@@ -573,11 +733,48 @@ public final class RepCommand implements CommandExecutor {
         return value ? "はい" : "いいえ";
     }
 
+    private OptionalInt parseAuditLimit(CommandSender sender, String value, int max) {
+        if (value == null || value.isBlank()) {
+            return OptionalInt.of(Math.min(10, Math.max(1, max)));
+        }
+        OptionalInt parsed = CommandArgumentParser.parseLimit(value, Math.max(1, max));
+        if (parsed.isPresent()) {
+            return parsed;
+        }
+        sender.sendMessage(ReputationBanPlugin.PREFIX + "limit は 1〜" + max + " の数値で指定してください。");
+        return OptionalInt.empty();
+    }
+
+    private static void sendAuditEvents(CommandSender sender, String label, List<AuditEvent> events) {
+        sender.sendMessage(ReputationBanPlugin.PREFIX + "監査ログ " + label + " " + events.size() + "件");
+        for (AuditEvent event : events) {
+            sender.sendMessage(ReputationBanPlugin.PREFIX + "#%d %s actor=%s target=%s report=%s delta=%s %s".formatted(
+                    event.id(),
+                    event.eventType().databaseValue(),
+                    fallbackDash(event.actorName()),
+                    fallbackDash(event.targetName()),
+                    event.reportId() == null ? "-" : "#" + event.reportId(),
+                    event.delta() == null ? "-" : signed(event.delta()),
+                    FORMATTER.format(Instant.ofEpochMilli(event.createdAt()))
+            ));
+        }
+    }
+
+    private Void auditFailure(CommandSender sender, Throwable throwable) {
+        plugin.getLogger().severe("Failed to process audit command: " + throwable.getMessage());
+        plugin.runSync(() -> sender.sendMessage(ReputationBanPlugin.PREFIX + "監査ログ処理に失敗しました。"));
+        return null;
+    }
+
     private static String actorId(CommandSender sender) {
         if (sender instanceof Player player) {
             return BanAuditMetadata.actorId(player.getUniqueId());
         }
         return BanAuditMetadata.CONSOLE_ACTOR;
+    }
+
+    private static UUID senderUuid(CommandSender sender) {
+        return sender instanceof Player player ? player.getUniqueId() : null;
     }
 
     private String unbanDiscord(
@@ -636,6 +833,12 @@ public final class RepCommand implements CommandExecutor {
     }
 
     private record HistoryResult(Optional<PlayerRecord> record, java.util.List<ScoreService.ScoreHistoryEntry> history) {
+    }
+
+    private record AuditListResult(Optional<PlayerRecord> record, List<AuditEvent> events, String label) {
+    }
+
+    private record AuditExportResult(Optional<PlayerRecord> record, java.nio.file.Path path) {
     }
 
     private record MutationResult(Optional<PlayerRecord> record, ScoreService.ScoreChange change, boolean banned) {

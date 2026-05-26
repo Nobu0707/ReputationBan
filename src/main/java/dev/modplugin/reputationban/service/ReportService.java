@@ -2,8 +2,11 @@ package dev.modplugin.reputationban.service;
 
 import dev.modplugin.reputationban.config.PluginConfig;
 import dev.modplugin.reputationban.database.DatabaseManager;
+import dev.modplugin.reputationban.model.AuditEvent;
+import dev.modplugin.reputationban.model.AuditEventType;
 import dev.modplugin.reputationban.model.ReportCategory;
 import dev.modplugin.reputationban.model.ReportStatus;
+import dev.modplugin.reputationban.util.AuditMetadata;
 import dev.modplugin.reputationban.util.ReporterPenalty;
 import dev.modplugin.reputationban.util.ReviewApprovalGate;
 import dev.modplugin.reputationban.util.ScoreMath;
@@ -26,11 +29,13 @@ public final class ReportService {
 
     private final DatabaseManager database;
     private final ScoreService scoreService;
+    private final AuditService auditService;
     private volatile PluginConfig config;
 
-    public ReportService(DatabaseManager database, ScoreService scoreService, PluginConfig config) {
+    public ReportService(DatabaseManager database, ScoreService scoreService, AuditService auditService, PluginConfig config) {
         this.database = database;
         this.scoreService = scoreService;
+        this.auditService = auditService;
         this.config = config;
     }
 
@@ -84,6 +89,20 @@ public final class ReportService {
                         0,
                         now
                 );
+                auditService.recordEventInTransaction(connection, reportCreatedAudit(
+                        reporterUuid,
+                        reporterName,
+                        targetUuid,
+                        targetName,
+                        reportId,
+                        category,
+                        reason,
+                        "pending",
+                        0,
+                        0,
+                        0,
+                        now
+                ));
                 return ReportResult.accepted(reportId, "pending", 0, true, null, null, false);
             }
 
@@ -149,6 +168,20 @@ public final class ReportService {
                     reportId,
                     now
             );
+            auditService.recordEventInTransaction(connection, reportCreatedAudit(
+                    reporterUuid,
+                    reporterName,
+                    targetUuid,
+                    targetName,
+                    reportId,
+                    category,
+                    reason,
+                    "auto_accepted",
+                    deduction,
+                    0,
+                    0,
+                    now
+            ));
             connection.commit();
             return ReportResult.accepted(
                     reportId,
@@ -202,6 +235,20 @@ public final class ReportService {
                     windowCutoff
             );
             if (!ThresholdReportPolicy.thresholdReached(requiredReports, currentUniqueReports)) {
+                auditService.recordEventInTransaction(connection, reportCreatedAudit(
+                        reporterUuid,
+                        reporterName,
+                        targetUuid,
+                        targetName,
+                        reportId,
+                        category,
+                        reason,
+                        "threshold_pending",
+                        0,
+                        currentUniqueReports,
+                        requiredReports,
+                        now
+                ));
                 connection.commit();
                 return ReportResult.thresholdPending(reportId, requiredReports, currentUniqueReports);
             }
@@ -227,6 +274,42 @@ public final class ReportService {
                     currentUniqueReports,
                     requiredReports
             );
+            auditService.recordEventInTransaction(connection, reportCreatedAudit(
+                    reporterUuid,
+                    reporterName,
+                    targetUuid,
+                    targetName,
+                    reportId,
+                    category,
+                    reason,
+                    "auto_accepted",
+                    deduction,
+                    currentUniqueReports,
+                    requiredReports,
+                    now
+            ));
+            auditService.recordEventInTransaction(connection, AuditEvent.create(
+                    AuditEventType.REPORT_THRESHOLD_REACHED,
+                    null,
+                    "SYSTEM",
+                    targetUuid,
+                    targetName,
+                    reportId,
+                    null,
+                    change.scoreHistoryId(),
+                    change.oldScore(),
+                    change.newScore(),
+                    change.delta(),
+                    "threshold reached",
+                    AuditMetadata.create()
+                            .put("category", category.key())
+                            .put("acceptedReportCount", acceptedReportCount)
+                            .put("thresholdCurrent", currentUniqueReports)
+                            .put("thresholdRequired", requiredReports)
+                            .put("actualDeduction", deduction)
+                            .toJson(),
+                    now
+            ));
             connection.commit();
             return ReportResult.thresholdReached(
                     reportId,
@@ -279,6 +362,44 @@ public final class ReportService {
                 return generated.next() ? generated.getLong(1) : -1L;
             }
         }
+    }
+
+    private static AuditEvent reportCreatedAudit(
+            UUID reporterUuid,
+            String reporterName,
+            UUID targetUuid,
+            String targetName,
+            long reportId,
+            ReportCategory category,
+            String reason,
+            String status,
+            int deduction,
+            int thresholdCurrent,
+            int thresholdRequired,
+            long now
+    ) {
+        return AuditEvent.create(
+                AuditEventType.REPORT_CREATED,
+                reporterUuid,
+                reporterName,
+                targetUuid,
+                targetName,
+                reportId,
+                null,
+                null,
+                null,
+                null,
+                null,
+                reason,
+                AuditMetadata.create()
+                        .put("category", category.key())
+                        .put("status", status)
+                        .put("deduction", deduction)
+                        .put("thresholdCurrent", thresholdCurrent)
+                        .put("thresholdRequired", thresholdRequired)
+                        .toJson(),
+                now
+        );
     }
 
     public CompletableFuture<java.util.List<ReportSummary>> recentReports(int limit) {
@@ -383,6 +504,22 @@ public final class ReportService {
                         id,
                         now
                 );
+                auditService.recordEventInTransaction(connection, AuditEvent.create(
+                        AuditEventType.REPORT_APPROVED,
+                        moderatorUuid,
+                        moderatorName,
+                        report.targetUuid(),
+                        report.targetName(),
+                        id,
+                        null,
+                        change.scoreHistoryId(),
+                        change.oldScore(),
+                        change.newScore(),
+                        change.delta(),
+                        normalizeNote(note),
+                        AuditMetadata.create().put("category", category.key()).toJson(),
+                        now
+                ));
                 connection.commit();
                 return ReviewResult.approved(report, deduction, change);
             } catch (SQLException | RuntimeException exception) {
@@ -413,6 +550,47 @@ public final class ReportService {
 
                 updateReportReview(connection, id, "rejected", report.deduction(), moderatorUuid, moderatorName, note, now);
                 FalseReportPenalty penalty = incrementFalseReportPenalty(connection, report.reporterUuid(), now);
+                auditService.recordEventInTransaction(connection, AuditEvent.create(
+                        AuditEventType.REPORT_REJECTED,
+                        moderatorUuid,
+                        moderatorName,
+                        report.targetUuid(),
+                        report.targetName(),
+                        id,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        normalizeNote(note),
+                        AuditMetadata.create()
+                                .put("reporterUuid", report.reporterUuid())
+                                .put("reporterName", report.reporterName())
+                                .put("falseReportCount", penalty.falseReportCount())
+                                .toJson(),
+                        now
+                ));
+                if (penalty.reportBannedUntil() != null) {
+                    auditService.recordEventInTransaction(connection, AuditEvent.create(
+                            AuditEventType.REPORTER_PENALTY,
+                            moderatorUuid,
+                            moderatorName,
+                            report.reporterUuid(),
+                            report.reporterName(),
+                            id,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            "false report threshold reached",
+                            AuditMetadata.create()
+                                    .put("falseReportCount", penalty.falseReportCount())
+                                    .put("reportBannedUntil", penalty.reportBannedUntil())
+                                    .toJson(),
+                            now
+                    ));
+                }
                 connection.commit();
                 return ReviewResult.rejected(report, penalty.falseReportCount(), penalty.reportBannedUntil());
             } catch (SQLException | RuntimeException exception) {
