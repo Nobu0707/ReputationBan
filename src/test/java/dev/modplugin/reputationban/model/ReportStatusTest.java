@@ -1,6 +1,7 @@
 package dev.modplugin.reputationban.model;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -19,5 +20,19 @@ class ReportStatusTest {
     @Test
     void rejectsUnknownStatus() {
         assertThrows(IllegalArgumentException.class, () -> ReportStatus.parse("unknown"));
+    }
+
+    @Test
+    void exposesValidDatabaseValuesForListCommand() {
+        assertTrue(ReportStatus.isDatabaseValue("pending"));
+        assertTrue(ReportStatus.isDatabaseValue("approved"));
+        assertTrue(ReportStatus.isDatabaseValue("rejected"));
+        assertTrue(ReportStatus.isDatabaseValue("auto_accepted"));
+        assertTrue(ReportStatus.isDatabaseValue("cancelled"));
+        assertFalse(ReportStatus.isDatabaseValue("all"));
+        assertEquals(
+                java.util.List.of("pending", "auto_accepted", "approved", "rejected", "cancelled"),
+                ReportStatus.databaseValues()
+        );
     }
 }

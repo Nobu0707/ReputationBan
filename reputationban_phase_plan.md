@@ -56,9 +56,24 @@
 - BAN履歴表示
 - 手動unban補助
 
-## Phase 3 / v0.3.0: 外部連携・高度な悪用対策
+## Phase 3 / v0.3.0: 通報者ペナルティ・スコア回復
 
-目的: 公開サーバー運用で使いやすい高度なモデレーション機能へ拡張する。
+目的: スタッフ審査を土台に、虚偽通報への抑止とスコアの自然回復を追加する。
+
+実装範囲:
+
+- 手動スコア変更時のBAN権限ゲート強化
+- /reports reject 時の false_report_count 加算
+- false_report_count しきい値到達時の一時通報停止
+- /reportbad 時の report_banned_until 確認
+- /rep check への虚偽通報回数・通報停止状態表示
+- score-recovery 設定による定期スコア回復
+- score_history への recovery 記録
+- players.last_recovery_at による二重回復防止
+- /reports list <status> [limit]
+- review_code.sh / make-review-archive.sh 強化
+
+## Phase 4以降: 外部連携・高度な悪用対策
 
 実装候補:
 

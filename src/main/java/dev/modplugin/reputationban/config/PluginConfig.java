@@ -28,6 +28,13 @@ public final class PluginConfig {
     private final boolean notifyConsole;
     private final boolean notifyInGameStaff;
     private final String staffPermission;
+    private final boolean reporterPenaltyEnabled;
+    private final int falseReportThreshold;
+    private final int reportBanDays;
+    private final boolean scoreRecoveryEnabled;
+    private final int recoveryPointsPerDay;
+    private final int recoveryMaxScore;
+    private final int recoveryNoReportDaysRequired;
     private final String databaseFile;
     private final Map<String, ReportCategory> categories;
 
@@ -51,6 +58,13 @@ public final class PluginConfig {
         notifyConsole = config.getBoolean("notify.console", true);
         notifyInGameStaff = config.getBoolean("notify.in-game-staff", true);
         staffPermission = config.getString("notify.staff-permission", "reputationban.notify");
+        reporterPenaltyEnabled = config.getBoolean("reporter-penalty.enabled", true);
+        falseReportThreshold = config.getInt("reporter-penalty.false-report-threshold", 5);
+        reportBanDays = config.getInt("reporter-penalty.report-ban-days", 7);
+        scoreRecoveryEnabled = config.getBoolean("score-recovery.enabled", true);
+        recoveryPointsPerDay = config.getInt("score-recovery.points-per-day", 2);
+        recoveryMaxScore = config.getInt("score-recovery.max-score", maxScore);
+        recoveryNoReportDaysRequired = config.getInt("score-recovery.no-report-days-required", 7);
         databaseFile = config.getString("database.file", "reputationban.db");
         categories = loadCategories(config);
     }
@@ -154,6 +168,34 @@ public final class PluginConfig {
 
     public String staffPermission() {
         return staffPermission;
+    }
+
+    public boolean reporterPenaltyEnabled() {
+        return reporterPenaltyEnabled;
+    }
+
+    public int falseReportThreshold() {
+        return falseReportThreshold;
+    }
+
+    public int reportBanDays() {
+        return reportBanDays;
+    }
+
+    public boolean scoreRecoveryEnabled() {
+        return scoreRecoveryEnabled;
+    }
+
+    public int recoveryPointsPerDay() {
+        return recoveryPointsPerDay;
+    }
+
+    public int recoveryMaxScore() {
+        return recoveryMaxScore;
+    }
+
+    public int recoveryNoReportDaysRequired() {
+        return recoveryNoReportDaysRequired;
     }
 
     public String databaseFile() {

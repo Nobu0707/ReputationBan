@@ -9,6 +9,7 @@ public record PlayerRecord(
         int banCount,
         int falseReportCount,
         Long reportBannedUntil,
+        Long lastRecoveryAt,
         Long firstSeen,
         Long lastSeen
 ) {

@@ -1,5 +1,7 @@
 package dev.modplugin.reputationban.model;
 
+import java.util.Arrays;
+import java.util.List;
 import java.util.Locale;
 
 public enum ReportStatus {
@@ -38,5 +40,18 @@ public enum ReportStatus {
 
     public static boolean canReview(String value) {
         return parse(value).reviewable();
+    }
+
+    public static boolean isDatabaseValue(String value) {
+        try {
+            parse(value);
+            return true;
+        } catch (IllegalArgumentException exception) {
+            return false;
+        }
+    }
+
+    public static List<String> databaseValues() {
+        return Arrays.stream(values()).map(ReportStatus::databaseValue).toList();
     }
 }

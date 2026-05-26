@@ -44,7 +44,7 @@ public final class PlayerDataService {
     public CompletableFuture<Optional<PlayerRecord>> getPlayerRecord(UUID uuid) {
         return database.supplyAsync(connection -> {
             try (PreparedStatement statement = connection.prepareStatement("""
-                    SELECT uuid, name, score, ban_count, false_report_count, report_banned_until, first_seen, last_seen
+                    SELECT uuid, name, score, ban_count, false_report_count, report_banned_until, last_recovery_at, first_seen, last_seen
                     FROM players
                     WHERE uuid = ?
                     """)) {
@@ -62,7 +62,7 @@ public final class PlayerDataService {
     public CompletableFuture<Optional<PlayerRecord>> findByName(String name) {
         return database.supplyAsync(connection -> {
             try (PreparedStatement statement = connection.prepareStatement("""
-                    SELECT uuid, name, score, ban_count, false_report_count, report_banned_until, first_seen, last_seen
+                    SELECT uuid, name, score, ban_count, false_report_count, report_banned_until, last_recovery_at, first_seen, last_seen
                     FROM players
                     WHERE lower(name) = lower(?)
                     ORDER BY last_seen DESC
@@ -111,6 +111,7 @@ public final class PlayerDataService {
                 result.getInt("ban_count"),
                 result.getInt("false_report_count"),
                 reportBannedUntil,
+                nullableLong(result, "last_recovery_at"),
                 nullableLong(result, "first_seen"),
                 nullableLong(result, "last_seen")
         );

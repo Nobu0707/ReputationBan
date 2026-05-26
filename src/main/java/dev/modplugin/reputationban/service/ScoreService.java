@@ -3,6 +3,7 @@ package dev.modplugin.reputationban.service;
 import dev.modplugin.reputationban.config.PluginConfig;
 import dev.modplugin.reputationban.database.DatabaseManager;
 import dev.modplugin.reputationban.util.ScoreMath;
+import dev.modplugin.reputationban.util.ScoreRecoveryPolicy;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -181,6 +182,131 @@ public final class ScoreService {
         });
     }
 
+    public CompletableFuture<RecoveryRunResult> runRecovery() {
+        PluginConfig currentConfig = config;
+        if (!currentConfig.scoreRecoveryEnabled() || currentConfig.recoveryPointsPerDay() <= 0) {
+            return CompletableFuture.completedFuture(new RecoveryRunResult(0, 0));
+        }
+        long now = System.currentTimeMillis();
+        return database.supplyAsync(connection -> {
+            boolean previousAutoCommit = connection.getAutoCommit();
+            connection.setAutoCommit(false);
+            try {
+                RecoveryRunResult result = runRecoveryInTransaction(connection, currentConfig, now);
+                connection.commit();
+                return result;
+            } catch (SQLException | RuntimeException exception) {
+                connection.rollback();
+                throw exception;
+            } finally {
+                connection.setAutoCommit(previousAutoCommit);
+            }
+        });
+    }
+
+    private RecoveryRunResult runRecoveryInTransaction(Connection connection, PluginConfig currentConfig, long now) throws SQLException {
+        List<RecoveryCandidate> candidates = new ArrayList<>();
+        int recovered = 0;
+        try (PreparedStatement select = connection.prepareStatement("""
+                SELECT uuid, name, score, last_recovery_at
+                FROM players
+                WHERE score < ?
+                """)) {
+            select.setInt(1, currentConfig.recoveryMaxScore());
+            try (ResultSet result = select.executeQuery()) {
+                while (result.next()) {
+                    candidates.add(new RecoveryCandidate(
+                            UUID.fromString(result.getString("uuid")),
+                            result.getString("name"),
+                            result.getInt("score"),
+                            nullableLong(result, "last_recovery_at")
+                    ));
+                }
+            }
+        }
+        for (RecoveryCandidate candidate : candidates) {
+            if (ScoreRecoveryPolicy.recentlyRecovered(candidate.lastRecoveryAt(), now)) {
+                continue;
+            }
+            Long lastValidReportAt = lastValidReportAt(connection, candidate.uuid());
+            if (!ScoreRecoveryPolicy.hasEnoughNoReportTime(
+                    lastValidReportAt,
+                    currentConfig.recoveryNoReportDaysRequired(),
+                    now
+            )) {
+                continue;
+            }
+
+            int newScore = ScoreRecoveryPolicy.recoveredScore(
+                    candidate.score(),
+                    currentConfig.recoveryPointsPerDay(),
+                    currentConfig.recoveryMaxScore()
+            );
+            int delta = newScore - candidate.score();
+            if (delta <= 0) {
+                continue;
+            }
+            updateRecoveredPlayer(connection, candidate.uuid(), candidate.name(), candidate.score(), newScore, delta, now);
+            recovered++;
+        }
+        return new RecoveryRunResult(candidates.size(), recovered);
+    }
+
+    private static Long lastValidReportAt(Connection connection, UUID targetUuid) throws SQLException {
+        try (PreparedStatement statement = connection.prepareStatement("""
+                SELECT MAX(created_at)
+                FROM reports
+                WHERE target_uuid = ? AND status IN ('approved', 'auto_accepted')
+                """)) {
+            statement.setString(1, targetUuid.toString());
+            try (ResultSet result = statement.executeQuery()) {
+                if (!result.next()) {
+                    return null;
+                }
+                long value = result.getLong(1);
+                return result.wasNull() ? null : value;
+            }
+        }
+    }
+
+    private static void updateRecoveredPlayer(
+            Connection connection,
+            UUID targetUuid,
+            String targetName,
+            int oldScore,
+            int newScore,
+            int delta,
+            long now
+    ) throws SQLException {
+        try (PreparedStatement update = connection.prepareStatement("""
+                UPDATE players
+                SET score = ?, last_recovery_at = ?
+                WHERE uuid = ?
+                """)) {
+            update.setInt(1, newScore);
+            update.setLong(2, now);
+            update.setString(3, targetUuid.toString());
+            update.executeUpdate();
+        }
+        try (PreparedStatement insert = connection.prepareStatement("""
+                INSERT INTO score_history (
+                  target_uuid, target_name, old_score, new_score, delta, reason, source_type, source_id, created_at
+                )
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """)) {
+            insert.setString(1, targetUuid.toString());
+            insert.setString(2, targetName);
+            insert.setInt(3, oldScore);
+            insert.setInt(4, newScore);
+            insert.setInt(5, delta);
+            insert.setString(6, "問題なし期間によるスコア回復");
+            insert.setString(7, "recovery");
+            insert.setNull(8, Types.INTEGER);
+            insert.setLong(9, now);
+            insert.executeUpdate();
+        }
+    }
+
     private int getCurrentScore(Connection connection, UUID targetUuid) throws SQLException {
         try (PreparedStatement select = connection.prepareStatement("SELECT score FROM players WHERE uuid = ?")) {
             select.setString(1, targetUuid.toString());
@@ -229,5 +355,11 @@ public final class ScoreService {
             Long sourceId,
             long createdAt
     ) {
+    }
+
+    public record RecoveryRunResult(int checkedPlayers, int recoveredPlayers) {
+    }
+
+    private record RecoveryCandidate(UUID uuid, String name, int score, Long lastRecoveryAt) {
     }
 }

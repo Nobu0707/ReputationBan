@@ -27,7 +27,7 @@ if [[ -n "$EXPECTED_SUBJECT" && "$HEAD_SUBJECT" != *"$EXPECTED_SUBJECT"* ]]; the
   exit 2
 fi
 
-OUTDIR="$ROOT/build/reputationban-review-$HEAD_SHA-$STAMP"
+OUTDIR="/tmp/reputationban-review-$HEAD_SHA-$STAMP"
 ARCHIVE="$ROOT/reputationban-review-$HEAD_SHA-$STAMP.tar.gz"
 LATEST="$ROOT/reputationban-review-latest.tar.gz"
 
@@ -81,8 +81,10 @@ done < "$OUTDIR/meta/changed-files.txt"
 # These checks do not mutate the repo. Full builds are still run separately by Codex.
 git diff --check > "$OUTDIR/checks/git-diff-check.txt" 2>&1 || true
 
-if [[ -f "$ROOT/build/review_code_output.txt" ]]; then
-  cp "$ROOT/build/review_code_output.txt" "$OUTDIR/checks/review-code-output.txt"
+./gradlew clean test build --warning-mode all > "$OUTDIR/checks/gradle-clean-test-build.txt" 2>&1 || true
+
+if [[ -x "$ROOT/scripts/review_code.sh" ]]; then
+  "$ROOT/scripts/review_code.sh" > "$OUTDIR/checks/review-code.txt" 2>&1 || true
 fi
 
 if compgen -G "$ROOT/build/test-results/test/*.xml" >/dev/null; then
@@ -93,13 +95,13 @@ if compgen -G "$ROOT/build/test-results/test/*.xml" >/dev/null; then
     echo "Suite summary:"
     grep -h "<testsuite " "$ROOT"/build/test-results/test/*.xml \
       | sed -E 's/.*name="([^"]+)".*tests="([^"]+)".*skipped="([^"]+)".*failures="([^"]+)".*errors="([^"]+)".*/\1 tests=\2 skipped=\3 failures=\4 errors=\5/' || true
-  } > "$OUTDIR/checks/gradle-test-results-summary.txt"
+  } > "$OUTDIR/checks/junit-summary.txt"
 fi
 
 if [[ -d "$ROOT/build/libs" ]]; then
   find "$ROOT/build/libs" -maxdepth 1 -type f -print | sort > "$OUTDIR/checks/built-jars.txt"
-  if find "$ROOT/build/libs" -maxdepth 1 -type f -name '*.jar' | grep -q .; then
-    (cd "$ROOT" && sha256sum build/libs/*.jar) > "$OUTDIR/checks/built-jars-sha256.txt"
+  if [[ -f "$ROOT/build/libs/ReputationBan-0.3.0.jar" ]]; then
+    (cd "$ROOT" && sha256sum build/libs/ReputationBan-0.3.0.jar) > "$OUTDIR/checks/jar-sha256.txt"
   fi
 fi
 

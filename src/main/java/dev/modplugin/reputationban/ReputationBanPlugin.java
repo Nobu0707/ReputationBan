@@ -52,7 +52,8 @@ public final class ReputationBanPlugin extends JavaPlugin {
         registerCommand("rep", new RepCommand(this, playerDataService, scoreService, punishmentService));
         registerCommand("reportbad", new ReportBadCommand(this, playerDataService, reportService, punishmentService));
         registerCommand("reports", new ReportsCommand(this, reportService, punishmentService));
-        getLogger().info("ReputationBan v0.2.0 enabled.");
+        startScoreRecoveryTask();
+        getLogger().info("ReputationBan v0.3.0 enabled.");
     }
 
     @Override
@@ -124,5 +125,21 @@ public final class ReputationBanPlugin extends JavaPlugin {
     private void registerCommand(String name, org.bukkit.command.CommandExecutor executor) {
         PluginCommand command = Objects.requireNonNull(getCommand(name), "Missing command in plugin.yml: " + name);
         command.setExecutor(executor);
+    }
+
+    private void startScoreRecoveryTask() {
+        long initialDelayTicks = 5L * 60L * 20L;
+        long periodTicks = 24L * 60L * 60L * 20L;
+        Bukkit.getScheduler().runTaskTimer(this, () -> scoreService.runRecovery()
+                .thenAccept(result -> {
+                    if (result.recoveredPlayers() > 0) {
+                        getLogger().info("Score recovery completed: "
+                                + result.recoveredPlayers() + "/" + result.checkedPlayers() + " players recovered.");
+                    }
+                })
+                .exceptionally(throwable -> {
+                    getLogger().log(Level.SEVERE, "Score recovery failed", throwable);
+                    return null;
+                }), initialDelayTicks, periodTicks);
     }
 }

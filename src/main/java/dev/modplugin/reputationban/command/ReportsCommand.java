@@ -1,6 +1,7 @@
 package dev.modplugin.reputationban.command;
 
 import dev.modplugin.reputationban.ReputationBanPlugin;
+import dev.modplugin.reputationban.model.ReportStatus;
 import dev.modplugin.reputationban.service.PunishmentService;
 import dev.modplugin.reputationban.service.ReportService;
 import java.time.Instant;
@@ -51,13 +52,17 @@ public final class ReportsCommand implements CommandExecutor {
             return true;
         }
 
-        sender.sendMessage(ReputationBanPlugin.PREFIX + "使い方: /reports list [pending|approved|rejected|auto_accepted|all] [limit]");
+        sender.sendMessage(ReputationBanPlugin.PREFIX + "使い方: /reports list [pending|approved|rejected|auto_accepted|cancelled|all] [limit]");
         sender.sendMessage(ReputationBanPlugin.PREFIX + "使い方: /reports view <id>, /reports approve <id> [note], /reports reject <id> [note]");
         return true;
     }
 
     private void listReports(CommandSender sender, String[] args) {
         String status = args.length >= 2 ? args[1] : "pending";
+        if (!"all".equalsIgnoreCase(status) && !ReportStatus.isDatabaseValue(status)) {
+            sender.sendMessage(ReputationBanPlugin.PREFIX + "使い方: /reports list [pending|approved|rejected|auto_accepted|cancelled|all] [limit]");
+            return;
+        }
         int limit = parseLimit(args.length >= 3 ? args[2] : "10", 10);
         reportService.listReports(status, limit)
                 .thenAccept(reports -> plugin.runSync(() -> {
@@ -151,6 +156,11 @@ public final class ReportsCommand implements CommandExecutor {
         }
         if (result.rejected()) {
             sender.sendMessage(ReputationBanPlugin.PREFIX + "通報 #" + result.report().id() + " を却下しました。");
+            sender.sendMessage(ReputationBanPlugin.PREFIX + "通報者の虚偽通報回数: " + result.falseReportCount());
+            if (result.reportBannedUntil() != null) {
+                sender.sendMessage(ReputationBanPlugin.PREFIX + "通報者は一時的に通報停止されました。解除予定: "
+                        + FORMATTER.format(Instant.ofEpochMilli(result.reportBannedUntil())));
+            }
             return;
         }
         sender.sendMessage(ReputationBanPlugin.PREFIX + "通報 #" + result.report().id() + " を承認しました。対象スコア: "

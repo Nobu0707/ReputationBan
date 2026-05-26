@@ -4,8 +4,11 @@ import dev.modplugin.reputationban.config.PluginConfig;
 import java.io.File;
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -55,6 +58,7 @@ public final class DatabaseManager implements AutoCloseable {
                   ban_count INTEGER NOT NULL DEFAULT 0,
                   false_report_count INTEGER NOT NULL DEFAULT 0,
                   report_banned_until INTEGER,
+                  last_recovery_at INTEGER,
                   first_seen INTEGER,
                   last_seen INTEGER
                 )
@@ -107,6 +111,20 @@ public final class DatabaseManager implements AutoCloseable {
         execute("CREATE INDEX IF NOT EXISTS idx_reports_reporter_target_created ON reports(reporter_uuid, target_uuid, created_at)");
         execute("CREATE INDEX IF NOT EXISTS idx_reports_target_created ON reports(target_uuid, created_at)");
         execute("CREATE INDEX IF NOT EXISTS idx_score_history_target_created ON score_history(target_uuid, created_at)");
+        migratePlayersTable();
+    }
+
+    private void migratePlayersTable() throws SQLException {
+        Set<String> columns = new HashSet<>();
+        try (Statement statement = connection.createStatement();
+                ResultSet result = statement.executeQuery("PRAGMA table_info(players)")) {
+            while (result.next()) {
+                columns.add(result.getString("name"));
+            }
+        }
+        if (!columns.contains("last_recovery_at")) {
+            execute("ALTER TABLE players ADD COLUMN last_recovery_at INTEGER");
+        }
     }
 
     private void execute(String sql) throws SQLException {

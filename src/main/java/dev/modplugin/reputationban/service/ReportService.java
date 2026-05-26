@@ -4,16 +4,23 @@ import dev.modplugin.reputationban.config.PluginConfig;
 import dev.modplugin.reputationban.database.DatabaseManager;
 import dev.modplugin.reputationban.model.ReportCategory;
 import dev.modplugin.reputationban.model.ReportStatus;
+import dev.modplugin.reputationban.util.ReporterPenalty;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.time.Duration;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
 public final class ReportService {
+    private static final DateTimeFormatter REPORT_BAN_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")
+            .withZone(ZoneId.systemDefault());
+
     private final DatabaseManager database;
     private final ScoreService scoreService;
     private volatile PluginConfig config;
@@ -44,8 +51,9 @@ public final class ReportService {
 
         return database.supplyAsync(connection -> {
             Long reportBanUntil = getReportBannedUntil(connection, reporterUuid);
-            if (reportBanUntil != null && reportBanUntil > now) {
-                return ReportResult.rejected("現在、通報機能の利用が一時停止されています。");
+            if (ReporterPenalty.isReportBanned(reportBanUntil, now)) {
+                return ReportResult.rejected("あなたは現在、通報機能の利用を一時停止されています。解除予定: "
+                        + REPORT_BAN_FORMATTER.format(Instant.ofEpochMilli(reportBanUntil)));
             }
             if (countReports(connection, reporterUuid, null, globalCutoff) > 0) {
                 return ReportResult.rejected("通報クールダウン中です。しばらく待ってから再試行してください。");
@@ -292,8 +300,9 @@ public final class ReportService {
                 }
 
                 updateReportReview(connection, id, "rejected", report.deduction(), moderatorUuid, moderatorName, note, now);
+                FalseReportPenalty penalty = incrementFalseReportPenalty(connection, report.reporterUuid(), now);
                 connection.commit();
-                return ReviewResult.rejected(report);
+                return ReviewResult.rejected(report, penalty.falseReportCount(), penalty.reportBannedUntil());
             } catch (SQLException | RuntimeException exception) {
                 connection.rollback();
                 throw exception;
@@ -320,12 +329,57 @@ public final class ReportService {
                 """)) {
             statement.setString(1, status);
             statement.setInt(2, deduction);
-            statement.setString(3, moderatorUuid + ":" + moderatorName);
+            statement.setString(3, moderatorUuid.getMostSignificantBits() == 0L && moderatorUuid.getLeastSignificantBits() == 0L
+                    ? "CONSOLE"
+                    : moderatorUuid.toString());
             statement.setLong(4, now);
             statement.setString(5, normalizeNote(note));
             statement.setLong(6, id);
             statement.executeUpdate();
         }
+    }
+
+    private FalseReportPenalty incrementFalseReportPenalty(Connection connection, UUID reporterUuid, long now) throws SQLException {
+        try (PreparedStatement update = connection.prepareStatement("""
+                UPDATE players
+                SET false_report_count = false_report_count + 1
+                WHERE uuid = ?
+                """)) {
+            update.setString(1, reporterUuid.toString());
+            update.executeUpdate();
+        }
+
+        int falseReportCount;
+        try (PreparedStatement select = connection.prepareStatement("""
+                SELECT false_report_count
+                FROM players
+                WHERE uuid = ?
+                """)) {
+            select.setString(1, reporterUuid.toString());
+            try (ResultSet result = select.executeQuery()) {
+                falseReportCount = result.next() ? result.getInt("false_report_count") : 0;
+            }
+        }
+
+        Long reportBannedUntil = ReporterPenalty.nextReportBannedUntil(
+                config.reporterPenaltyEnabled(),
+                falseReportCount,
+                config.falseReportThreshold(),
+                config.reportBanDays(),
+                now
+        );
+        if (reportBannedUntil != null) {
+            try (PreparedStatement update = connection.prepareStatement("""
+                    UPDATE players
+                    SET report_banned_until = ?
+                    WHERE uuid = ?
+                    """)) {
+                update.setLong(1, reportBannedUntil);
+                update.setString(2, reporterUuid.toString());
+                update.executeUpdate();
+            }
+        }
+        return new FalseReportPenalty(falseReportCount, reportBannedUntil);
     }
 
     private static java.util.Optional<ReportRecord> loadReport(Connection connection, long id) throws SQLException {
@@ -483,18 +537,23 @@ public final class ReportService {
             ReportRecord report,
             int deduction,
             ScoreService.ScoreChange scoreChange,
-            boolean rejected
+            boolean rejected,
+            int falseReportCount,
+            Long reportBannedUntil
     ) {
         static ReviewResult failed(String message) {
-            return new ReviewResult(false, message, null, 0, null, false);
+            return new ReviewResult(false, message, null, 0, null, false, 0, null);
         }
 
         static ReviewResult approved(ReportRecord report, int deduction, ScoreService.ScoreChange scoreChange) {
-            return new ReviewResult(true, "通報を承認しました。", report, deduction, scoreChange, false);
+            return new ReviewResult(true, "通報を承認しました。", report, deduction, scoreChange, false, 0, null);
         }
 
-        static ReviewResult rejected(ReportRecord report) {
-            return new ReviewResult(true, "通報を却下しました。", report, 0, null, true);
+        static ReviewResult rejected(ReportRecord report, int falseReportCount, Long reportBannedUntil) {
+            return new ReviewResult(true, "通報を却下しました。", report, 0, null, true, falseReportCount, reportBannedUntil);
         }
+    }
+
+    private record FalseReportPenalty(int falseReportCount, Long reportBannedUntil) {
     }
 }

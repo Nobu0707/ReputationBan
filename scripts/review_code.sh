@@ -2,7 +2,7 @@
 set -euo pipefail
 
 PROJECT_NAME="ReputationBan"
-EXPECTED_VERSION="0.2.0"
+EXPECTED_VERSION="0.3.0"
 EXPECTED_MAIN="dev.modplugin.reputationban.ReputationBanPlugin"
 EXPECTED_API_VERSION="26.1.2"
 EXPECTED_PACKAGE_DIR="src/main/java/dev/modplugin/reputationban"
@@ -39,6 +39,7 @@ require_dir "$EXPECTED_PACKAGE_DIR"
 [[ -x ./scripts/make-review-archive.sh ]] || fail "make-review-archive.sh is not executable"
 
 grep -q "io.papermc.paper:paper-api:26.1.2.build" build.gradle.kts || fail "Paper API 26.1.2 dependency not found"
+grep -q 'version = "0.3.0"' build.gradle.kts || fail "build.gradle.kts version is not 0.3.0"
 grep -q "JavaLanguageVersion.of(25)" build.gradle.kts || fail "Java 25 toolchain not found"
 grep -q "options.release.set(25)" build.gradle.kts || fail "Java release 25 not found"
 
@@ -62,6 +63,8 @@ grep -q "^categories:" "$CFG" || fail "Missing categories"
 grep -q "same-target-cooldown-days" "$CFG" || fail "Missing same-target-cooldown-days"
 grep -q "global-report-seconds" "$CFG" || fail "Missing global-report-seconds"
 grep -q "threshold:[[:space:]]*0" "$CFG" || fail "Missing ban threshold 0"
+grep -q "^score-recovery:" "$CFG" || fail "Missing score-recovery config"
+grep -q "^reporter-penalty:" "$CFG" || fail "Missing reporter-penalty config"
 
 grep -R "extends JavaPlugin" src/main/java >/dev/null || fail "Main JavaPlugin class not found"
 grep -R "PlayerJoinEvent" src/main/java >/dev/null || fail "PlayerJoinEvent handling not found"
@@ -75,6 +78,13 @@ grep -R "\"history\"" src/main/java/dev/modplugin/reputationban/command/RepComma
 grep -R "\"add\"" src/main/java/dev/modplugin/reputationban/command/RepCommand.java >/dev/null || fail "/rep add handling not found"
 grep -R "\"remove\"" src/main/java/dev/modplugin/reputationban/command/RepCommand.java >/dev/null || fail "/rep remove handling not found"
 grep -R "\"set\"" src/main/java/dev/modplugin/reputationban/command/RepCommand.java >/dev/null || fail "/rep set handling not found"
+grep -R "false_report_count[[:space:]]*=[[:space:]]*false_report_count[[:space:]]*+[[:space:]]*1" src/main/java >/dev/null || fail "false_report_count increment not found"
+grep -R "report_banned_until" src/main/java/dev/modplugin/reputationban >/dev/null || fail "report_banned_until handling not found"
+grep -R "scoreRecoveryEnabled\\|recoveryPointsPerDay\\|recoveryNoReportDaysRequired" src/main/java >/dev/null || fail "score-recovery config reads not found"
+grep -R '"recovery"' src/main/java >/dev/null || fail "recovery score_history source_type not found"
+grep -R "last_recovery_at\\|recentlyRecovered" src/main/java >/dev/null || fail "recovery duplicate prevention not found"
+grep -R "isDatabaseValue\\|cancelled|all" src/main/java/dev/modplugin/reputationban/command/ReportsCommand.java >/dev/null || fail "/reports list status handling not found"
+grep -R "ManualScoreChangeGate\\|requiresBanPermission" src/main/java/dev/modplugin/reputationban/command/RepCommand.java src/main/java/dev/modplugin/reputationban/util >/dev/null || fail "manual score ban gate logic not found"
 grep -R "setAutoCommit(false)" src/main/java >/dev/null || fail "Transactional setAutoCommit(false) pattern not found"
 grep -R "commit()" src/main/java >/dev/null || fail "Transactional commit() pattern not found"
 grep -R "rollback()" src/main/java >/dev/null || fail "Transactional rollback() pattern not found"
@@ -88,8 +98,8 @@ fi
 
 ./gradlew clean test build --warning-mode all
 
-JAR="$(find build/libs -maxdepth 1 -type f -name "${EXPECTED_JAR_PREFIX}-*.jar" | sort | tail -n 1 || true)"
-[[ -n "$JAR" ]] || fail "Built jar not found"
+JAR="build/libs/${EXPECTED_JAR_PREFIX}-${EXPECTED_VERSION}.jar"
+[[ -f "$JAR" ]] || fail "Expected jar not found: $JAR"
 require_command jar
 jar tf "$JAR" | grep -q "plugin.yml" || fail "plugin.yml missing from jar"
 jar tf "$JAR" | grep -q "dev/modplugin/reputationban/ReputationBanPlugin.class" || fail "Main class missing from jar"

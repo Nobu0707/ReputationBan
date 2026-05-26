@@ -5,6 +5,9 @@ import dev.modplugin.reputationban.model.PlayerRecord;
 import dev.modplugin.reputationban.service.PlayerDataService;
 import dev.modplugin.reputationban.service.PunishmentService;
 import dev.modplugin.reputationban.service.ScoreService;
+import dev.modplugin.reputationban.util.ManualScoreChangeGate;
+import dev.modplugin.reputationban.util.ReporterPenalty;
+import dev.modplugin.reputationban.util.ScoreMath;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
@@ -20,6 +23,8 @@ import org.bukkit.entity.Player;
 
 public final class RepCommand implements CommandExecutor {
     private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")
+            .withZone(ZoneId.systemDefault());
+    private static final DateTimeFormatter FULL_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")
             .withZone(ZoneId.systemDefault());
 
     private final ReputationBanPlugin plugin;
@@ -112,6 +117,13 @@ public final class RepCommand implements CommandExecutor {
                             + value.score() + " / " + plugin.pluginConfig().maxScore());
                     sender.sendMessage(ReputationBanPlugin.PREFIX + "BAN回数: " + value.banCount()
                             + " / 虚偽通報回数: " + value.falseReportCount());
+                    long now = System.currentTimeMillis();
+                    if (ReporterPenalty.isReportBanned(value.reportBannedUntil(), now)) {
+                        sender.sendMessage(ReputationBanPlugin.PREFIX + "通報停止中: はい / 解除予定: "
+                                + FULL_FORMATTER.format(Instant.ofEpochMilli(value.reportBannedUntil())));
+                    } else {
+                        sender.sendMessage(ReputationBanPlugin.PREFIX + "通報停止中: いいえ");
+                    }
                 }))
                 .exceptionally(throwable -> {
                     plugin.getLogger().severe("Failed to check reputation score: " + throwable.getMessage());
@@ -179,20 +191,26 @@ public final class RepCommand implements CommandExecutor {
             sender.sendMessage(ReputationBanPlugin.PREFIX + "数値は0以上で指定してください。");
             return;
         }
-        if ("set".equalsIgnoreCase(args[0]) && amount < plugin.pluginConfig().banThreshold()
-                && !sender.hasPermission("reputationban.admin.ban")) {
-            sender.sendMessage(ReputationBanPlugin.PREFIX + "BANしきい値未満に設定するには reputationban.admin.ban が必要です。");
-            return;
-        }
-
         String suppliedReason = args.length >= 4 ? String.join(" ", Arrays.copyOfRange(args, 3, args.length)) : "理由未指定";
         String reason = "Admin " + sender.getName() + ": " + suppliedReason;
+        boolean senderCanBan = sender.hasPermission("reputationban.admin.ban");
         resolvePlayer(args[1], false)
                 .thenCompose(record -> {
                     if (record.isEmpty()) {
                         return CompletableFuture.completedFuture(new MutationResult(Optional.empty(), null, false));
                     }
                     PlayerRecord target = record.get();
+                    int requestedScore = switch (args[0].toLowerCase()) {
+                        case "add" -> target.score() + amount;
+                        case "remove" -> target.score() - amount;
+                        case "set" -> amount;
+                        default -> throw new IllegalArgumentException("unknown command");
+                    };
+                    int newScore = ScoreMath.clampToMax(requestedScore, plugin.pluginConfig().maxScore());
+                    if (ManualScoreChangeGate.requiresBanPermission(target.score(), newScore, plugin.pluginConfig().banThreshold())
+                            && !senderCanBan) {
+                        return CompletableFuture.completedFuture(new MutationResult(record, null, false));
+                    }
                     CompletableFuture<ScoreService.ScoreChange> change = switch (args[0].toLowerCase()) {
                         case "add" -> scoreService.applyDelta(target.uuid(), target.name(), amount, reason, "admin", null);
                         case "remove" -> scoreService.applyDelta(target.uuid(), target.name(), -amount, reason, "admin", null);
@@ -218,6 +236,11 @@ public final class RepCommand implements CommandExecutor {
                         return;
                     }
                     ScoreService.ScoreChange change = result.change();
+                    if (change == null) {
+                        sender.sendMessage(ReputationBanPlugin.PREFIX
+                                + "この操作は対象をBANしきい値以下にするため、reputationban.admin.ban 権限が必要です。");
+                        return;
+                    }
                     sender.sendMessage(ReputationBanPlugin.PREFIX + result.record().get().name() + " のスコアを変更しました: "
                             + change.oldScore() + " -> " + change.newScore() + " (" + signed(change.delta()) + ")");
                     if (result.banned()) {

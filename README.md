@@ -20,7 +20,7 @@ ReputationBan is a PaperMC moderation plugin that tracks player reputation score
 - `/rep set <player> <score> [reason...]`: set an exact score.
 - `/rep reload`: reload configuration.
 - `/reports`: list pending reports.
-- `/reports list [pending|approved|rejected|auto_accepted|all] [limit]`: list reports.
+- `/reports list [pending|approved|rejected|auto_accepted|cancelled|all] [limit]`: list reports.
 - `/reports view <id>`: show report details.
 - `/reports approve <id> [note...]`: approve a pending report and apply score deduction.
 - `/reports reject <id> [note...]`: reject a pending report.
@@ -32,7 +32,7 @@ ReputationBan is a PaperMC moderation plugin that tracks player reputation score
 - `reputationban.score.others`: view other players' scores and histories.
 - `reputationban.admin.score`: use score administration commands.
 - `reputationban.admin.reports`: review reports.
-- `reputationban.admin.ban`: allow manual score set below the ban threshold.
+- `reputationban.admin.ban`: allow manual score changes that cross into the ban threshold.
 - `reputationban.notify`: receive staff notifications.
 - `reputationban.bypass`: bypass reports, deductions, and automatic bans while online.
 - `reputationban.admin`: grants the main admin permissions.
@@ -44,7 +44,7 @@ ReputationBan is a PaperMC moderation plugin that tracks player reputation score
 ./scripts/review_code.sh
 ```
 
-The plugin jar is written to `build/libs/ReputationBan-0.2.0.jar`.
+The plugin jar is written to `build/libs/ReputationBan-0.3.0.jar`.
 
 ## Current Limitations
 
