@@ -58,6 +58,22 @@ public final class RepCommand implements CommandExecutor {
             history(sender, args);
             return true;
         }
+        if ("banhistory".equalsIgnoreCase(args[0])) {
+            banHistory(sender, args);
+            return true;
+        }
+        if ("baninfo".equalsIgnoreCase(args[0])) {
+            banInfo(sender, args);
+            return true;
+        }
+        if ("unban".equalsIgnoreCase(args[0])) {
+            unban(sender, args);
+            return true;
+        }
+        if ("pardon".equalsIgnoreCase(args[0])) {
+            pardon(sender, args);
+            return true;
+        }
         if ("add".equalsIgnoreCase(args[0]) || "remove".equalsIgnoreCase(args[0]) || "set".equalsIgnoreCase(args[0])) {
             mutateScore(sender, args);
             return true;
@@ -69,6 +85,7 @@ public final class RepCommand implements CommandExecutor {
 
         sender.sendMessage(ReputationBanPlugin.PREFIX + "使い方: /rep, /rep check <player>, /rep history <player> [limit]");
         sender.sendMessage(ReputationBanPlugin.PREFIX + "使い方: /rep add <player> <points>, /rep remove <player> <points>, /rep set <player> <score>");
+        sender.sendMessage(ReputationBanPlugin.PREFIX + "使い方: /rep banhistory <player> [limit], /rep baninfo <player>, /rep unban <player> [reason], /rep pardon <player> [reason]");
         return true;
     }
 
@@ -254,6 +271,180 @@ public final class RepCommand implements CommandExecutor {
                 });
     }
 
+    private void banHistory(CommandSender sender, String[] args) {
+        if (!sender.hasPermission("reputationban.admin.ban")) {
+            sender.sendMessage(ReputationBanPlugin.PREFIX + "権限がありません。");
+            return;
+        }
+        if (args.length < 2) {
+            sender.sendMessage(ReputationBanPlugin.PREFIX + "使い方: /rep banhistory <player> [limit]");
+            return;
+        }
+        int limit = args.length >= 3 ? parsePositiveInt(args[2], 10, 50) : 10;
+        resolvePlayer(args[1], true)
+                .thenCompose(record -> {
+                    if (record.isEmpty()) {
+                        return CompletableFuture.completedFuture(new BanHistoryResult(Optional.empty(), java.util.List.of()));
+                    }
+                    return punishmentService.banHistory(record.get().uuid(), limit)
+                            .thenApply(history -> new BanHistoryResult(record, history));
+                })
+                .thenAccept(result -> plugin.runSync(() -> {
+                    if (result.record().isEmpty()) {
+                        sender.sendMessage(ReputationBanPlugin.PREFIX + "対象プレイヤーが見つかりません。");
+                        return;
+                    }
+                    sender.sendMessage(ReputationBanPlugin.PREFIX + result.record().get().name()
+                            + " のBAN履歴: " + result.history().size() + "件");
+                    for (PunishmentService.BanHistoryEntry entry : result.history()) {
+                        sender.sendMessage(ReputationBanPlugin.PREFIX + "#%d [%s] 作成:%s 期限:%s 解除:%s".formatted(
+                                entry.id(),
+                                entry.banType(),
+                                FORMATTER.format(Instant.ofEpochMilli(entry.createdAt())),
+                                formatNullable(entry.expiresAt()),
+                                formatNullable(entry.unbannedAt())
+                        ));
+                        sender.sendMessage(ReputationBanPlugin.PREFIX + "理由: " + entry.reason()
+                                + " / created_by: " + entry.createdBy()
+                                + " / unbanned_by: " + (entry.unbannedBy() == null ? "-" : entry.unbannedBy()));
+                    }
+                }))
+                .exceptionally(throwable -> {
+                    plugin.getLogger().severe("Failed to load ban history: " + throwable.getMessage());
+                    plugin.runSync(() -> sender.sendMessage(ReputationBanPlugin.PREFIX + "BAN履歴の取得に失敗しました。"));
+                    return null;
+                });
+    }
+
+    private void banInfo(CommandSender sender, String[] args) {
+        if (!sender.hasPermission("reputationban.admin.ban")) {
+            sender.sendMessage(ReputationBanPlugin.PREFIX + "権限がありません。");
+            return;
+        }
+        if (args.length < 2) {
+            sender.sendMessage(ReputationBanPlugin.PREFIX + "使い方: /rep baninfo <player>");
+            return;
+        }
+        resolvePlayer(args[1], true)
+                .thenCompose(record -> {
+                    if (record.isEmpty()) {
+                        return CompletableFuture.completedFuture(new BanInfoResult(Optional.empty(), false, null));
+                    }
+                    UUID targetUuid = record.get().uuid();
+                    CompletableFuture<Boolean> profileBanned = plugin.supplySync(() -> Bukkit.getOfflinePlayer(targetUuid).isBanned());
+                    CompletableFuture<PunishmentService.CurrentBanInfo> dbInfo = punishmentService.currentBanInfo(targetUuid);
+                    return profileBanned.thenCombine(dbInfo, (paperBanned, info) -> new BanInfoResult(record, paperBanned, info));
+                })
+                .thenAccept(result -> plugin.runSync(() -> {
+                    if (result.record().isEmpty()) {
+                        sender.sendMessage(ReputationBanPlugin.PREFIX + "対象プレイヤーが見つかりません。");
+                        return;
+                    }
+                    PlayerRecord record = result.record().get();
+                    PunishmentService.CurrentBanInfo dbInfo = result.dbInfo();
+                    sender.sendMessage(ReputationBanPlugin.PREFIX + record.name() + " のBAN情報");
+                    sender.sendMessage(ReputationBanPlugin.PREFIX + "Paper/Profile BAN中: " + yesNo(result.profileBanned()));
+                    sender.sendMessage(ReputationBanPlugin.PREFIX + "ReputationBan DB有効BAN: "
+                            + yesNo(dbInfo.activeBanCount() > 0) + " (" + dbInfo.activeBanCount() + "件)");
+                    sender.sendMessage(ReputationBanPlugin.PREFIX + "BAN回数: " + dbInfo.banCount());
+                    if (dbInfo.latestActiveBan().isPresent()) {
+                        PunishmentService.BanHistoryEntry latest = dbInfo.latestActiveBan().get();
+                        sender.sendMessage(ReputationBanPlugin.PREFIX + "最新BAN ID: #" + latest.id()
+                                + " / 理由: " + latest.reason()
+                                + " / 期限: " + formatNullable(latest.expiresAt()));
+                    }
+                    if (result.profileBanned() != (dbInfo.activeBanCount() > 0)) {
+                        sender.sendMessage(ReputationBanPlugin.PREFIX + "注意: Paper側とReputationBan DB側のBAN状態が一致していません。");
+                    }
+                }))
+                .exceptionally(throwable -> {
+                    plugin.getLogger().severe("Failed to load ban info: " + throwable.getMessage());
+                    plugin.runSync(() -> sender.sendMessage(ReputationBanPlugin.PREFIX + "BAN情報の取得に失敗しました。"));
+                    return null;
+                });
+    }
+
+    private void unban(CommandSender sender, String[] args) {
+        if (!sender.hasPermission("reputationban.admin.ban")) {
+            sender.sendMessage(ReputationBanPlugin.PREFIX + "権限がありません。");
+            return;
+        }
+        if (args.length < 2) {
+            sender.sendMessage(ReputationBanPlugin.PREFIX + "使い方: /rep unban <player> [reason]");
+            return;
+        }
+        String reason = adminReason(sender, args, 2);
+        resolvePlayer(args[1], true)
+                .thenCompose(record -> {
+                    if (record.isEmpty()) {
+                        return CompletableFuture.completedFuture(new UnbanCompletion(Optional.empty(), null, null));
+                    }
+                    UUID targetUuid = record.get().uuid();
+                    return punishmentService.unbanProfile(targetUuid)
+                            .thenCompose(profileResult -> punishmentService.markActiveBansUnbanned(targetUuid, reason)
+                                    .thenApply(dbResult -> new UnbanCompletion(record, profileResult, dbResult)));
+                })
+                .thenAccept(result -> plugin.runSync(() -> {
+                    if (result.record().isEmpty()) {
+                        sender.sendMessage(ReputationBanPlugin.PREFIX + "対象プレイヤーが見つかりません。");
+                        return;
+                    }
+                    sender.sendMessage(ReputationBanPlugin.PREFIX + result.record().get().name() + " のProfile BANを解除しました。");
+                    sender.sendMessage(ReputationBanPlugin.PREFIX + "DB上の有効BAN "
+                            + result.dbResult().updatedActiveBans() + "件をunban済みに更新しました。");
+                    if (!result.profileResult().wasProfileBanned()) {
+                        sender.sendMessage(ReputationBanPlugin.PREFIX + "Paper/Profile BANは既に解除済みでした。");
+                    }
+                }))
+                .exceptionally(throwable -> {
+                    plugin.getLogger().severe("Failed to unban player: " + throwable.getMessage());
+                    plugin.runSync(() -> sender.sendMessage(ReputationBanPlugin.PREFIX + "BAN解除に失敗しました。"));
+                    return null;
+                });
+    }
+
+    private void pardon(CommandSender sender, String[] args) {
+        if (!sender.hasPermission("reputationban.admin.score") || !sender.hasPermission("reputationban.admin.ban")) {
+            sender.sendMessage(ReputationBanPlugin.PREFIX + "権限がありません。");
+            return;
+        }
+        if (args.length < 2) {
+            sender.sendMessage(ReputationBanPlugin.PREFIX + "使い方: /rep pardon <player> [reason]");
+            return;
+        }
+        String reason = adminReason(sender, args, 2);
+        resolvePlayer(args[1], true)
+                .thenCompose(record -> {
+                    if (record.isEmpty()) {
+                        return CompletableFuture.completedFuture(new PardonCompletion(Optional.empty(), null, null));
+                    }
+                    PlayerRecord target = record.get();
+                    return punishmentService.unbanProfile(target.uuid())
+                            .thenCompose(profileResult -> punishmentService.pardon(target.uuid(), target.name(), reason, reason)
+                                    .thenApply(pardonResult -> new PardonCompletion(record, profileResult, pardonResult)));
+                })
+                .thenAccept(result -> plugin.runSync(() -> {
+                    if (result.record().isEmpty()) {
+                        sender.sendMessage(ReputationBanPlugin.PREFIX + "対象プレイヤーが見つかりません。");
+                        return;
+                    }
+                    sender.sendMessage(ReputationBanPlugin.PREFIX + result.record().get().name() + " をpardonしました。");
+                    sender.sendMessage(ReputationBanPlugin.PREFIX + "DB上の有効BAN "
+                            + result.pardonResult().updatedActiveBans() + "件をunban済みに更新しました。");
+                    sender.sendMessage(ReputationBanPlugin.PREFIX + "スコア: " + result.pardonResult().oldScore()
+                            + " -> " + result.pardonResult().newScore()
+                            + " (" + signed(result.pardonResult().delta()) + ")");
+                    if (!result.profileResult().wasProfileBanned()) {
+                        sender.sendMessage(ReputationBanPlugin.PREFIX + "Paper/Profile BANは既に解除済みでした。");
+                    }
+                }))
+                .exceptionally(throwable -> {
+                    plugin.getLogger().severe("Failed to pardon player: " + throwable.getMessage());
+                    plugin.runSync(() -> sender.sendMessage(ReputationBanPlugin.PREFIX + "pardon処理に失敗しました。"));
+                    return null;
+                });
+    }
+
     private CompletableFuture<Optional<PlayerRecord>> resolvePlayer(String name, boolean createOnlineRecord) {
         Player online = Bukkit.getPlayerExact(name);
         if (online != null) {
@@ -306,9 +497,46 @@ public final class RepCommand implements CommandExecutor {
         return value >= 0 ? "+" + value : Integer.toString(value);
     }
 
+    private static String formatNullable(Long epochMillis) {
+        return epochMillis == null ? "-" : FORMATTER.format(Instant.ofEpochMilli(epochMillis));
+    }
+
+    private static String yesNo(boolean value) {
+        return value ? "はい" : "いいえ";
+    }
+
+    private static String adminReason(CommandSender sender, String[] args, int startIndex) {
+        String suppliedReason = args.length > startIndex ? String.join(" ", Arrays.copyOfRange(args, startIndex, args.length)) : "理由未指定";
+        return "Admin " + sender.getName() + ": " + suppliedReason;
+    }
+
     private record HistoryResult(Optional<PlayerRecord> record, java.util.List<ScoreService.ScoreHistoryEntry> history) {
     }
 
     private record MutationResult(Optional<PlayerRecord> record, ScoreService.ScoreChange change, boolean banned) {
+    }
+
+    private record BanHistoryResult(Optional<PlayerRecord> record, java.util.List<PunishmentService.BanHistoryEntry> history) {
+    }
+
+    private record BanInfoResult(
+            Optional<PlayerRecord> record,
+            boolean profileBanned,
+            PunishmentService.CurrentBanInfo dbInfo
+    ) {
+    }
+
+    private record UnbanCompletion(
+            Optional<PlayerRecord> record,
+            PunishmentService.ProfileUnbanResult profileResult,
+            PunishmentService.UnbanResult dbResult
+    ) {
+    }
+
+    private record PardonCompletion(
+            Optional<PlayerRecord> record,
+            PunishmentService.ProfileUnbanResult profileResult,
+            PunishmentService.PardonResult pardonResult
+    ) {
     }
 }

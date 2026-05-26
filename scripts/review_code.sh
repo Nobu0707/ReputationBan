@@ -2,7 +2,7 @@
 set -euo pipefail
 
 PROJECT_NAME="ReputationBan"
-EXPECTED_VERSION="0.3.0"
+EXPECTED_VERSION="0.4.0"
 EXPECTED_MAIN="dev.modplugin.reputationban.ReputationBanPlugin"
 EXPECTED_API_VERSION="26.1.2"
 EXPECTED_PACKAGE_DIR="src/main/java/dev/modplugin/reputationban"
@@ -39,7 +39,7 @@ require_dir "$EXPECTED_PACKAGE_DIR"
 [[ -x ./scripts/make-review-archive.sh ]] || fail "make-review-archive.sh is not executable"
 
 grep -q "io.papermc.paper:paper-api:26.1.2.build" build.gradle.kts || fail "Paper API 26.1.2 dependency not found"
-grep -q 'version = "0.3.0"' build.gradle.kts || fail "build.gradle.kts version is not 0.3.0"
+grep -q 'version = "0.4.0"' build.gradle.kts || fail "build.gradle.kts version is not 0.4.0"
 grep -q "JavaLanguageVersion.of(25)" build.gradle.kts || fail "Java 25 toolchain not found"
 grep -q "options.release.set(25)" build.gradle.kts || fail "Java release 25 not found"
 
@@ -75,6 +75,10 @@ grep -R "OfflinePlayer.*ban\\|\\.ban(reason" src/main/java >/dev/null || fail "P
 grep -R "\"approve\"" src/main/java/dev/modplugin/reputationban/command/ReportsCommand.java >/dev/null || fail "/reports approve handling not found"
 grep -R "\"reject\"" src/main/java/dev/modplugin/reputationban/command/ReportsCommand.java >/dev/null || fail "/reports reject handling not found"
 grep -R "\"history\"" src/main/java/dev/modplugin/reputationban/command/RepCommand.java >/dev/null || fail "/rep history handling not found"
+grep -R "\"banhistory\"" src/main/java/dev/modplugin/reputationban/command/RepCommand.java >/dev/null || fail "/rep banhistory handling not found"
+grep -R "\"baninfo\"" src/main/java/dev/modplugin/reputationban/command/RepCommand.java >/dev/null || fail "/rep baninfo handling not found"
+grep -R "\"unban\"" src/main/java/dev/modplugin/reputationban/command/RepCommand.java >/dev/null || fail "/rep unban handling not found"
+grep -R "\"pardon\"" src/main/java/dev/modplugin/reputationban/command/RepCommand.java >/dev/null || fail "/rep pardon handling not found"
 grep -R "\"add\"" src/main/java/dev/modplugin/reputationban/command/RepCommand.java >/dev/null || fail "/rep add handling not found"
 grep -R "\"remove\"" src/main/java/dev/modplugin/reputationban/command/RepCommand.java >/dev/null || fail "/rep remove handling not found"
 grep -R "\"set\"" src/main/java/dev/modplugin/reputationban/command/RepCommand.java >/dev/null || fail "/rep set handling not found"
@@ -85,6 +89,11 @@ grep -R '"recovery"' src/main/java >/dev/null || fail "recovery score_history so
 grep -R "last_recovery_at\\|recentlyRecovered" src/main/java >/dev/null || fail "recovery duplicate prevention not found"
 grep -R "isDatabaseValue\\|cancelled|all" src/main/java/dev/modplugin/reputationban/command/ReportsCommand.java >/dev/null || fail "/reports list status handling not found"
 grep -R "ManualScoreChangeGate\\|requiresBanPermission" src/main/java/dev/modplugin/reputationban/command/RepCommand.java src/main/java/dev/modplugin/reputationban/util >/dev/null || fail "manual score ban gate logic not found"
+grep -R "ReviewApprovalGate\\|hasBanPermission" src/main/java/dev/modplugin/reputationban >/dev/null || fail "/reports approve ban permission gate not found"
+grep -R "isTargetProtected\\|reputationban.bypass.*isOp\\|isOp.*reputationban.bypass" src/main/java/dev/modplugin/reputationban/command/ReportsCommand.java >/dev/null || fail "approve target protection check not found"
+grep -R "unbanned_at.*unbanned_by\\|unbanned_by.*unbanned_at" src/main/java >/dev/null || fail "ban unban DB update not found"
+grep -R '"pardon"' src/main/java >/dev/null || fail "pardon score_history source_type not found"
+grep -R "BanListType.PROFILE\\|ProfileBanList" src/main/java >/dev/null || fail "Profile BAN pardon API usage not found"
 grep -R "setAutoCommit(false)" src/main/java >/dev/null || fail "Transactional setAutoCommit(false) pattern not found"
 grep -R "commit()" src/main/java >/dev/null || fail "Transactional commit() pattern not found"
 grep -R "rollback()" src/main/java >/dev/null || fail "Transactional rollback() pattern not found"
@@ -92,8 +101,11 @@ grep -R "rollback()" src/main/java >/dev/null || fail "Transactional rollback() 
 if grep -R "net\.minecraft\|org\.bukkit\.craftbukkit\|CraftPlayer\|NMS" src/main/java >/dev/null; then
   fail "NMS/CraftBukkit usage detected"
 fi
-if grep -R "BanList.Type.NAME\|BanList\|@SuppressWarnings(\"deprecation\")" src/main/java >/dev/null; then
+if grep -R "BanList.Type.NAME\|getBanList(BanList.Type\|@SuppressWarnings(\"deprecation\")" src/main/java >/dev/null; then
   fail "Deprecated name ban usage detected"
+fi
+if grep -R "profileBanList\.pardon[[:space:]]*(.*targetName\|profileBanList\.pardon[[:space:]]*(.*Name\|profileBanList\.pardon[[:space:]]*(.*String" src/main/java >/dev/null; then
+  fail "Deprecated name pardon API usage detected"
 fi
 
 ./gradlew clean test build --warning-mode all

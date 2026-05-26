@@ -73,7 +73,23 @@
 - /reports list <status> [limit]
 - review_code.sh / make-review-archive.sh 強化
 
-## Phase 4以降: 外部連携・高度な悪用対策
+## Phase 4 / v0.4.0: BAN管理・審査安全化
+
+目的: BANを伴う審査と復帰操作を安全にし、運営者がBAN状態を確認・解除できるようにする。
+
+実装範囲:
+
+- /reports approve 時のBAN権限ゲート
+- approve直前のbypass/OP保護確認
+- /rep banhistory <player> [limit]
+- /rep baninfo <player>
+- /rep unban <player> [reason]
+- /rep pardon <player> [reason]
+- Profile BAN解除と bans.unbanned_at / unbanned_by 更新
+- pardon の score_history 記録
+- review_code.sh / make-review-archive.sh Phase 4対応
+
+## Phase 5以降: 外部連携・高度な悪用対策
 
 実装候補:
 

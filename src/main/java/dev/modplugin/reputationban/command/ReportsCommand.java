@@ -9,6 +9,9 @@ import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import org.bukkit.Bukkit;
+import org.bukkit.OfflinePlayer;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
@@ -123,9 +126,10 @@ public final class ReportsCommand implements CommandExecutor {
         String note = args.length >= 3 ? String.join(" ", Arrays.copyOfRange(args, 2, args.length)) : "";
         UUID moderatorUuid = sender instanceof Player player ? player.getUniqueId() : CONSOLE_UUID;
         String moderatorName = sender.getName();
+        boolean hasBanPermission = sender.hasPermission("reputationban.admin.ban");
 
-        java.util.concurrent.CompletableFuture<ReportService.ReviewResult> review = approve
-                ? reportService.approveReport(id, moderatorUuid, moderatorName, note)
+        CompletableFuture<ReportService.ReviewResult> review = approve
+                ? approveReportSafely(id, moderatorUuid, moderatorName, note, hasBanPermission)
                 : reportService.rejectReport(id, moderatorUuid, moderatorName, note);
 
         review.thenCompose(result -> {
@@ -145,6 +149,30 @@ public final class ReportsCommand implements CommandExecutor {
                     plugin.getLogger().severe("Failed to review report: " + throwable.getMessage());
                     plugin.runSync(() -> sender.sendMessage(ReputationBanPlugin.PREFIX + "通報審査に失敗しました。"));
                     return null;
+                });
+    }
+
+    private CompletableFuture<ReportService.ReviewResult> approveReportSafely(
+            long id,
+            UUID moderatorUuid,
+            String moderatorName,
+            String note,
+            boolean hasBanPermission
+    ) {
+        return reportService.getReport(id)
+                .thenCompose(report -> {
+                    if (report.isEmpty()) {
+                        return reportService.approveReport(id, moderatorUuid, moderatorName, note, hasBanPermission, false);
+                    }
+                    return plugin.supplySync(() -> isTargetProtected(report.get().targetUuid()))
+                            .thenCompose(targetProtected -> reportService.approveReport(
+                                    id,
+                                    moderatorUuid,
+                                    moderatorName,
+                                    note,
+                                    hasBanPermission,
+                                    targetProtected
+                            ));
                 });
     }
 
@@ -203,6 +231,15 @@ public final class ReportsCommand implements CommandExecutor {
             sender.sendMessage(ReputationBanPlugin.PREFIX + "IDは数値で指定してください。");
             return null;
         }
+    }
+
+    private static boolean isTargetProtected(UUID targetUuid) {
+        Player online = Bukkit.getPlayer(targetUuid);
+        if (online != null) {
+            return online.hasPermission("reputationban.bypass") || online.isOp();
+        }
+        OfflinePlayer offline = Bukkit.getOfflinePlayer(targetUuid);
+        return offline.isOp();
     }
 
     private record ReviewCompletion(ReportService.ReviewResult result, boolean banned) {

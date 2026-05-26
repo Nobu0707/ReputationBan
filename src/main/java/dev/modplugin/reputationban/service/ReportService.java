@@ -5,6 +5,8 @@ import dev.modplugin.reputationban.database.DatabaseManager;
 import dev.modplugin.reputationban.model.ReportCategory;
 import dev.modplugin.reputationban.model.ReportStatus;
 import dev.modplugin.reputationban.util.ReporterPenalty;
+import dev.modplugin.reputationban.util.ReviewApprovalGate;
+import dev.modplugin.reputationban.util.ScoreMath;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -237,7 +239,14 @@ public final class ReportService {
         return database.supplyAsync(connection -> loadReport(connection, id));
     }
 
-    public CompletableFuture<ReviewResult> approveReport(long id, UUID moderatorUuid, String moderatorName, String note) {
+    public CompletableFuture<ReviewResult> approveReport(
+            long id,
+            UUID moderatorUuid,
+            String moderatorName,
+            String note,
+            boolean hasBanPermission,
+            boolean targetProtected
+    ) {
         long now = System.currentTimeMillis();
         return database.supplyAsync(connection -> {
             boolean previousAutoCommit = connection.getAutoCommit();
@@ -258,8 +267,18 @@ public final class ReportService {
                     connection.rollback();
                     return ReviewResult.failed("設定にカテゴリが見つかりません: " + report.category());
                 }
+                if (targetProtected) {
+                    connection.rollback();
+                    return ReviewResult.failed("対象プレイヤーは保護されているため承認できません。");
+                }
 
                 int deduction = category.deduction();
+                int oldScore = ScoreService.currentScoreInTransaction(connection, report.targetUuid(), config.initialScore());
+                int newScore = ScoreMath.clampToMax(oldScore - deduction, config.maxScore());
+                if (!ReviewApprovalGate.canApprove(false, oldScore, newScore, config.banThreshold(), hasBanPermission)) {
+                    connection.rollback();
+                    return ReviewResult.failed("この承認は対象をBANしきい値以下にするため、reputationban.admin.ban 権限が必要です。");
+                }
                 updateReportReview(connection, id, "approved", deduction, moderatorUuid, moderatorName, note, now);
                 ScoreService.ScoreChange change = scoreService.mutateScoreInTransaction(
                         connection,

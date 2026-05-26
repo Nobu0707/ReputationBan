@@ -308,10 +308,14 @@ public final class ScoreService {
     }
 
     private int getCurrentScore(Connection connection, UUID targetUuid) throws SQLException {
+        return currentScoreInTransaction(connection, targetUuid, config.initialScore());
+    }
+
+    public static int currentScoreInTransaction(Connection connection, UUID targetUuid, int fallbackScore) throws SQLException {
         try (PreparedStatement select = connection.prepareStatement("SELECT score FROM players WHERE uuid = ?")) {
             select.setString(1, targetUuid.toString());
             try (ResultSet result = select.executeQuery()) {
-                return result.next() ? result.getInt("score") : config.initialScore();
+                return result.next() ? result.getInt("score") : fallbackScore;
             }
         }
     }

@@ -2,18 +2,24 @@ package dev.modplugin.reputationban.service;
 
 import dev.modplugin.reputationban.ReputationBanPlugin;
 import dev.modplugin.reputationban.config.PluginConfig;
+import dev.modplugin.reputationban.util.BanManagementPolicy;
 import dev.modplugin.reputationban.util.DurationParser;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Types;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
+import io.papermc.paper.ban.BanListType;
 import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
+import org.bukkit.ban.ProfileBanList;
 import org.bukkit.entity.Player;
 
 public final class PunishmentService {
@@ -146,6 +152,213 @@ public final class PunishmentService {
         plugin.notifyStaff("自動BAN: " + targetName + " / 理由: " + reason);
     }
 
+    public CompletableFuture<List<BanHistoryEntry>> banHistory(UUID targetUuid, int limit) {
+        return database.supplyAsync(connection -> {
+            List<BanHistoryEntry> history = new ArrayList<>();
+            try (PreparedStatement statement = connection.prepareStatement("""
+                    SELECT id, reason, ban_type, created_at, expires_at, created_by, unbanned_at, unbanned_by
+                    FROM bans
+                    WHERE target_uuid = ?
+                    ORDER BY created_at DESC
+                    LIMIT ?
+                    """)) {
+                statement.setString(1, targetUuid.toString());
+                statement.setInt(2, limit);
+                try (ResultSet result = statement.executeQuery()) {
+                    while (result.next()) {
+                        history.add(readBanHistoryEntry(result));
+                    }
+                }
+            }
+            return history;
+        });
+    }
+
+    public CompletableFuture<CurrentBanInfo> currentBanInfo(UUID targetUuid) {
+        long now = System.currentTimeMillis();
+        return database.supplyAsync(connection -> {
+            int banCount = getBanCount(connection, targetUuid);
+            int activeCount;
+            try (PreparedStatement count = connection.prepareStatement("""
+                    SELECT COUNT(*)
+                    FROM bans
+                    WHERE target_uuid = ?
+                      AND unbanned_at IS NULL
+                      AND (expires_at IS NULL OR expires_at > ?)
+                    """)) {
+                count.setString(1, targetUuid.toString());
+                count.setLong(2, now);
+                try (ResultSet result = count.executeQuery()) {
+                    activeCount = result.next() ? result.getInt(1) : 0;
+                }
+            }
+
+            Optional<BanHistoryEntry> latest = Optional.empty();
+            try (PreparedStatement statement = connection.prepareStatement("""
+                    SELECT id, reason, ban_type, created_at, expires_at, created_by, unbanned_at, unbanned_by
+                    FROM bans
+                    WHERE target_uuid = ?
+                      AND unbanned_at IS NULL
+                      AND (expires_at IS NULL OR expires_at > ?)
+                    ORDER BY created_at DESC
+                    LIMIT 1
+                    """)) {
+                statement.setString(1, targetUuid.toString());
+                statement.setLong(2, now);
+                try (ResultSet result = statement.executeQuery()) {
+                    if (result.next()) {
+                        latest = Optional.of(readBanHistoryEntry(result));
+                    }
+                }
+            }
+            return new CurrentBanInfo(activeCount, latest, banCount);
+        });
+    }
+
+    public CompletableFuture<ProfileUnbanResult> unbanProfile(UUID targetUuid) {
+        return plugin.supplySync(() -> {
+            OfflinePlayer offlinePlayer = Bukkit.getOfflinePlayer(targetUuid);
+            ProfileBanList profileBanList = Bukkit.getBanList(BanListType.PROFILE);
+            boolean wasBanned = profileBanList.isBanned(offlinePlayer.getPlayerProfile());
+            profileBanList.pardon(offlinePlayer.getPlayerProfile());
+            return new ProfileUnbanResult(wasBanned);
+        });
+    }
+
+    public CompletableFuture<UnbanResult> markActiveBansUnbanned(UUID targetUuid, String unbannedBy) {
+        long now = System.currentTimeMillis();
+        return database.supplyAsync(connection -> {
+            boolean previousAutoCommit = connection.getAutoCommit();
+            connection.setAutoCommit(false);
+            try {
+                int updated = markActiveBansUnbannedInTransaction(connection, targetUuid, unbannedBy, now);
+                connection.commit();
+                return new UnbanResult(updated);
+            } catch (SQLException | RuntimeException exception) {
+                connection.rollback();
+                throw exception;
+            } finally {
+                connection.setAutoCommit(previousAutoCommit);
+            }
+        });
+    }
+
+    public CompletableFuture<PardonResult> pardon(UUID targetUuid, String targetName, String reason, String actor) {
+        long now = System.currentTimeMillis();
+        return database.supplyAsync(connection -> {
+            boolean previousAutoCommit = connection.getAutoCommit();
+            connection.setAutoCommit(false);
+            try {
+                int updatedBans = markActiveBansUnbannedInTransaction(connection, targetUuid, actor, now);
+                int oldScore = ScoreService.currentScoreInTransaction(connection, targetUuid, config.initialScore());
+                int newScore = BanManagementPolicy.pardonTargetScore(oldScore, config.maxScore());
+                int delta = newScore - oldScore;
+
+                try (PreparedStatement update = connection.prepareStatement("""
+                        UPDATE players
+                        SET score = ?, name = ?, report_banned_until = NULL
+                        WHERE uuid = ?
+                        """)) {
+                    update.setInt(1, newScore);
+                    update.setString(2, targetName);
+                    update.setString(3, targetUuid.toString());
+                    update.executeUpdate();
+                }
+
+                if (delta != 0) {
+                    try (PreparedStatement insert = connection.prepareStatement("""
+                            INSERT INTO score_history (
+                              target_uuid, target_name, old_score, new_score, delta, reason, source_type, source_id, created_at
+                            )
+                            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                            """)) {
+                        insert.setString(1, targetUuid.toString());
+                        insert.setString(2, targetName);
+                        insert.setInt(3, oldScore);
+                        insert.setInt(4, newScore);
+                        insert.setInt(5, delta);
+                        insert.setString(6, reason);
+                        insert.setString(7, "pardon");
+                        insert.setNull(8, Types.INTEGER);
+                        insert.setLong(9, now);
+                        insert.executeUpdate();
+                    }
+                }
+
+                connection.commit();
+                return new PardonResult(updatedBans, oldScore, newScore, delta);
+            } catch (SQLException | RuntimeException exception) {
+                connection.rollback();
+                throw exception;
+            } finally {
+                connection.setAutoCommit(previousAutoCommit);
+            }
+        });
+    }
+
+    private static int markActiveBansUnbannedInTransaction(
+            Connection connection,
+            UUID targetUuid,
+            String unbannedBy,
+            long now
+    ) throws SQLException {
+        try (PreparedStatement update = connection.prepareStatement("""
+                UPDATE bans
+                SET unbanned_at = ?, unbanned_by = ?
+                WHERE target_uuid = ?
+                  AND unbanned_at IS NULL
+                  AND (expires_at IS NULL OR expires_at > ?)
+                """)) {
+            update.setLong(1, now);
+            update.setString(2, unbannedBy);
+            update.setString(3, targetUuid.toString());
+            update.setLong(4, now);
+            return update.executeUpdate();
+        }
+    }
+
+    private static BanHistoryEntry readBanHistoryEntry(ResultSet result) throws SQLException {
+        return new BanHistoryEntry(
+                result.getLong("id"),
+                result.getString("reason"),
+                result.getString("ban_type"),
+                result.getLong("created_at"),
+                nullableLong(result, "expires_at"),
+                result.getString("created_by"),
+                nullableLong(result, "unbanned_at"),
+                result.getString("unbanned_by")
+        );
+    }
+
+    private static Long nullableLong(ResultSet result, String column) throws SQLException {
+        long value = result.getLong(column);
+        return result.wasNull() ? null : value;
+    }
+
     private record BanPlan(Instant expiresAt, String banType) {
+    }
+
+    public record BanHistoryEntry(
+            long id,
+            String reason,
+            String banType,
+            long createdAt,
+            Long expiresAt,
+            String createdBy,
+            Long unbannedAt,
+            String unbannedBy
+    ) {
+    }
+
+    public record CurrentBanInfo(int activeBanCount, Optional<BanHistoryEntry> latestActiveBan, int banCount) {
+    }
+
+    public record ProfileUnbanResult(boolean wasProfileBanned) {
+    }
+
+    public record UnbanResult(int updatedActiveBans) {
+    }
+
+    public record PardonResult(int updatedActiveBans, int oldScore, int newScore, int delta) {
     }
 }

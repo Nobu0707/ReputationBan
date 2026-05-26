@@ -33,6 +33,8 @@ LATEST="$ROOT/reputationban-review-latest.tar.gz"
 
 rm -rf "$OUTDIR"
 mkdir -p "$OUTDIR"/{meta,diff,file-diffs,files,checks}
+COMMAND_STATUS="$OUTDIR/checks/command-status.txt"
+: > "$COMMAND_STATUS"
 
 {
   echo "generatedAt=$STAMP"
@@ -78,13 +80,27 @@ done < "$OUTDIR/meta/changed-files.txt"
   rg -n "ReputationBan|diff-tree --root|Zone.Identifier|gitattributes|review_code" .gitattributes .gitignore scripts || true
 } > "$OUTDIR/checks/rg-review-signals.txt"
 
-# These checks do not mutate the repo. Full builds are still run separately by Codex.
-git diff --check > "$OUTDIR/checks/git-diff-check.txt" 2>&1 || true
+run_logged() {
+  local name="$1"
+  local output="$2"
+  shift 2
+  set +e
+  "$@" > "$output" 2>&1
+  local code=$?
+  set -e
+  echo "$name=$code" >> "$COMMAND_STATUS"
+}
 
-./gradlew clean test build --warning-mode all > "$OUTDIR/checks/gradle-clean-test-build.txt" 2>&1 || true
+run_logged "git diff --check" "$OUTDIR/checks/git-diff-check.txt" git diff --check
+
+run_logged "./gradlew clean test build --warning-mode all" \
+  "$OUTDIR/checks/gradle-clean-test-build.txt" \
+  ./gradlew clean test build --warning-mode all
 
 if [[ -x "$ROOT/scripts/review_code.sh" ]]; then
-  "$ROOT/scripts/review_code.sh" > "$OUTDIR/checks/review-code.txt" 2>&1 || true
+  run_logged "./scripts/review_code.sh" "$OUTDIR/checks/review-code.txt" "$ROOT/scripts/review_code.sh"
+else
+  echo "./scripts/review_code.sh=missing" >> "$COMMAND_STATUS"
 fi
 
 if compgen -G "$ROOT/build/test-results/test/*.xml" >/dev/null; then
@@ -100,8 +116,8 @@ fi
 
 if [[ -d "$ROOT/build/libs" ]]; then
   find "$ROOT/build/libs" -maxdepth 1 -type f -print | sort > "$OUTDIR/checks/built-jars.txt"
-  if [[ -f "$ROOT/build/libs/ReputationBan-0.3.0.jar" ]]; then
-    (cd "$ROOT" && sha256sum build/libs/ReputationBan-0.3.0.jar) > "$OUTDIR/checks/jar-sha256.txt"
+  if [[ -f "$ROOT/build/libs/ReputationBan-0.4.0.jar" ]]; then
+    (cd "$ROOT" && sha256sum build/libs/ReputationBan-0.4.0.jar) > "$OUTDIR/checks/jar-sha256.txt"
   fi
 fi
 
