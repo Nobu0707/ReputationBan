@@ -1,32 +1,32 @@
 # Support Bundle
 
-`/rep support bundle` creates a diagnostic ZIP for support, review, and incident investigation.
+`/rep support bundle` は support、review、incident investigation のために診断 ZIP を作成します。DB や server logs を共有せず、必要な状態だけを確認できるようにする機能です。
 
-## Output
+## 出力
 
 - Directory: `plugins/ReputationBan/support/`
 - File name: `reputationban-support-YYYYMMDD-HHMMSS.zip`
 - Permission: `reputationban.admin.diagnostics`
 
-## Included Files
+## 含まれるもの
 
-- `meta.txt`: generation time, plugin version, server version, Java version, and a shared-safe plugin data folder placeholder.
-- `doctor.txt`: `/rep doctor`-style health details without webhook URLs.
-- `counts.txt`: table row counts only.
-- `config-redacted.yml`: `config.yml` with sensitive keys redacted.
-- `README-SHARING.txt`: sharing safety notes.
-- `plugin.yml` and `changelog-excerpt.txt` when available.
+- `meta.txt`: generation time、plugin version、server version、Java version、共有用に丸めた plugin data folder placeholder。
+- `doctor.txt`: `/rep doctor` 相当の health details。Webhook URLs は含みません。
+- `counts.txt`: table row counts のみ。
+- `config-redacted.yml`: sensitive keys を伏せた `config.yml`。
+- `README-SHARING.txt`: 共有前の安全確認メモ。
+- `plugin.yml` と `changelog-excerpt.txt`: 利用可能な場合に含まれます。
 
-## Excluded Files
+## 含まれないもの
 
-The bundle must not include:
+bundle には次を含めない方針です。
 
-- `reputationban.db`, `reputationban.db-wal`, or `reputationban.db-shm`
-- server logs such as `latest.log` or `debug.log`
+- `reputationban.db`、`reputationban.db-wal`、`reputationban.db-shm`
+- `latest.log` や `debug.log` などの server logs
 - live `config.yml`
-- Discord Webhook URLs, passwords, tokens, sessions, cookies, or other secrets
-- shared-unnecessary absolute paths such as user home directories or server filesystem layouts
+- Discord Webhook URLs、passwords、tokens、sessions、cookies、その他 secrets
+- user home directories や server filesystem layouts など共有不要な absolute paths
 
-## Before Sharing
+## 共有前確認
 
-Open `config-redacted.yml` and confirm that webhook URLs and tokens are not present. `meta.txt` and `doctor.txt` intentionally use a placeholder such as `<plugin-data-folder>` instead of exposing the local absolute path. The bundle is designed to be safe by default, but operators should still inspect it before posting it to tickets or review threads.
+共有前に `config-redacted.yml` を開き、Webhook URL や token が残っていないことを確認してください。`meta.txt` と `doctor.txt` は local absolute path の代わりに `<plugin-data-folder>` のような placeholder を使います。bundle は safe by default を目指していますが、tickets や review threads に投稿する前の目視確認は必須です。

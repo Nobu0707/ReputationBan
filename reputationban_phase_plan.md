@@ -285,7 +285,34 @@
 - release zipに実config.yml、DB、logsを含めない。
 - Phase 13ではGUI、外部保護プラグイン連携、Folia対応は実装しない。
 
-## Phase 14以降: 外部連携・高度な悪用対策
+## Phase 14 / v0.14.0: 日本語ドキュメント整備
+
+目的: v1.0.0候補へ進む前に、README.md と docs/*.md を日本語読者向けに整え、配布物とレビューアーカイブの確認対象を v0.14.0 に更新する。
+
+実装範囲:
+
+- version 0.14.0
+- README.md の日本語化
+- docs/*.md の日本語化
+- `docs/phase-14.md`
+- `CHANGELOG.md` の日本語読者向け整理
+- command names、permission nodes、config keys、file names、package names、script names は翻訳しない
+- Discord Webhook URL の実例を追加しない
+- support bundle と review archive に Webhook URL、DB、logs を含めない方針の明文化
+- `scripts/review_code.sh` の Phase 14 対応
+- `scripts/run-local-smoke-check.sh` の v0.14.0 対応
+- `scripts/create-release-artifact.sh` の v0.14.0 対応
+- `scripts/verify-release-artifact.sh` の v0.14.0 対応
+- `scripts/make-review-archive.sh` の Phase 14 review signals 追加
+
+注意:
+
+- Phase 14では Java 本体の機能追加、DBスキーマ変更、コマンド追加は行わない。
+- YAML key、permission node、command name は変更しない。
+- Webhook URLは表示、ログ、監査metadata、CSV、support bundle、release artifact、レビューアーカイブへ出さない。
+- secret scanは確認用であり、説明文に `token` や `secret` があるだけでは即失敗にしない。
+
+## Phase 15以降: 外部連携・高度な悪用対策
 
 実装候補:
 

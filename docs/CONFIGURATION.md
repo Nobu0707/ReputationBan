@@ -1,78 +1,78 @@
 # Configuration
 
-This document summarizes the main `config.yml` sections for ReputationBan 0.13.0.
+このドキュメントでは ReputationBan 0.14.0 の主な `config.yml` セクションを説明します。YAML key は変更しないでください。
 
 ## Score
 
-- `initial-score`: score assigned to a player when first recorded.
-- `max-score`: upper bound for normal score recovery and display.
+- `initial-score`: 初めて記録されるプレイヤーに付与する初期スコアです。
+- `max-score`: 通常の回復と表示で使うスコア上限です。
 
 ## Rating
 
-- `rating.enabled`: enables report-based score changes.
-- `rating.default-deduction`: fallback deduction when a category does not override it.
-- `rating.min-reason-length`: minimum report reason length.
-- `rating.min-unique-reports-before-deduction`: number of unique reporters required before automatic deduction.
-- `rating.report-window-days`: time window for multi-report threshold aggregation.
+- `rating.enabled`: report によるスコア変更を有効化します。
+- `rating.default-deduction`: category に個別指定がない場合の減点値です。
+- `rating.min-reason-length`: report reason の最小文字数です。
+- `rating.min-unique-reports-before-deduction`: 自動減点に必要なユニーク通報者数です。
+- `rating.report-window-days`: 複数通報しきい値の集計期間です。
 
 ## Categories
 
-`categories` defines report category keys, display names, deductions, and whether staff review is required. Keep keys stable once players and reports exist.
+`categories` は report category key、表示名、deduction、staff review が必要かどうかを定義します。players や reports が作成された後は、category key を安易に変更しないでください。
 
 ## Cooldowns
 
-- `cooldowns.global-report-seconds`: minimum time between reports from the same reporter.
-- `cooldowns.same-target-cooldown-days`: minimum time before the same reporter can report the same target again.
-- `cooldowns.max-reports-per-day`: daily report limit.
-- `cooldowns.max-reports-per-week`: weekly report limit.
+- `cooldowns.global-report-seconds`: 同じ reporter が次に report できるまでの最短秒数です。
+- `cooldowns.same-target-cooldown-days`: 同じ reporter が同じ target を再通報できるまでの日数です。
+- `cooldowns.max-reports-per-day`: 1日あたりの report 上限です。
+- `cooldowns.max-reports-per-week`: 1週間あたりの report 上限です。
 
 ## Report Requirements
 
-- `report-requirements.min-playtime-minutes`: minimum server playtime before reporting.
-- `report-requirements.min-account-age-days`: minimum days since ReputationBan first saw the player on this server.
+- `report-requirements.min-playtime-minutes`: `/reportbad` に必要な server playtime です。
+- `report-requirements.min-account-age-days`: ReputationBan がその player を初めて見た日から必要な日数です。Mojang account creation date ではありません。
 
 ## Score Thresholds
 
-`score-thresholds` controls warning, watch, restricted, final-warning, and ban threshold values. Non-ban thresholds trigger staff notifications when crossed downward.
+`score-thresholds` は `warning`、`watch`、`restricted`、`final-warning`、`ban` のしきい値を制御します。BAN 以外のしきい値を下方向に跨いだ場合は staff notification が送信されます。
 
 ## Score Recovery
 
-- `score-recovery.enabled`: enables scheduled recovery.
-- `score-recovery.points-per-day`: recovery amount.
-- `score-recovery.max-score`: recovery cap.
-- `score-recovery.no-report-days-required`: quiet period before recovery.
+- `score-recovery.enabled`: scheduled recovery を有効化します。
+- `score-recovery.points-per-day`: 1日あたりの回復量です。
+- `score-recovery.max-score`: 回復上限です。
+- `score-recovery.no-report-days-required`: 回復前に必要な report なし期間です。
 
 ## Ban
 
-- `ban.enabled`: enables automatic profile bans.
-- `ban.threshold`: score at or below which automatic ban logic applies.
-- `ban.source`: source shown for bans.
-- `ban.durations`: duration by repeated ban count.
+- `ban.enabled`: automatic profile bans を有効化します。
+- `ban.threshold`: score がこの値以下のとき automatic ban logic の対象になります。
+- `ban.source`: BAN に表示する source です。
+- `ban.durations`: BAN 回数ごとの duration です。
 
 ## Notify
 
-- `notify.console`: sends staff notifications to console.
-- `notify.in-game-staff`: sends staff notifications to online staff.
-- `notify.staff-permission`: permission for staff notification recipients.
+- `notify.console`: staff notification を console に送信します。
+- `notify.in-game-staff`: online staff に staff notification を送信します。
+- `notify.staff-permission`: staff notification の受信権限です。
 
-## Discord Webhook
+## Notify Discord Webhook
 
-`notify.discord-webhook` is disabled by default. The `url` value is a secret. Never commit it, paste it into review archives, or share it in support logs. ReputationBan should only display whether the URL is configured.
+`notify.discord-webhook` はデフォルトで無効です。`url` はシークレットです。commit、review archive、support logs、screenshots に含めないでください。ReputationBan は URL そのものではなく、設定済みかどうかだけを表示する方針です。
 
-`/rep support bundle` writes `config-redacted.yml` instead of the live config and redacts keys containing `url`, `webhook`, `password`, `token`, `secret`, `session`, or `cookie`.
+`/rep support bundle` は live config ではなく `config-redacted.yml` を書き出します。`url`、`webhook`、`password`、`token`、`secret`、`session`、`cookie` を含む key は `<redacted>` に置換されます。
 
 ## Audit
 
-- `audit.enabled`: controls audit event recording.
-- `audit.export-directory`: CSV export directory, constrained under the plugin data folder.
-- `audit.max-display-limit`: maximum command display limit.
-- `audit.max-export-limit`: maximum CSV export limit.
+- `audit.enabled`: audit event recording を制御します。
+- `audit.export-directory`: CSV export directory です。plugin data folder の内側へ制限されます。
+- `audit.max-display-limit`: command display の上限です。
+- `audit.max-export-limit`: CSV export の上限です。
 
 ## Retention
 
-Retention settings control cleanup for audit events, rejected reports, cancelled reports, score history, and bans. `score-history-days` and `bans-days` default to `0`, meaning no cleanup.
+Retention settings は audit events、rejected reports、cancelled reports、score history、bans の cleanup を制御します。`score-history-days` と `bans-days` はデフォルト `0` で、削除しない設定です。
 
 ## Database
 
-- `database.type`: currently SQLite.
-- `database.file`: SQLite file name under `plugins/ReputationBan/`.
+- `database.type`: 現在は SQLite です。
+- `database.file`: `plugins/ReputationBan/` 配下の SQLite file name です。

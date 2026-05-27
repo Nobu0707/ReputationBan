@@ -1,22 +1,22 @@
 # Phase 3 / v0.3.0
 
-Phase 3 builds on the staff review workflow with reporter accountability, score recovery, and stricter manual score safety.
+Phase 3 では、reporter accountability、score recovery、manual score safety を強化しました。
 
-## Changes
+## 主な変更
 
-- Bumped plugin version to `0.3.0`.
-- Requires `reputationban.admin.ban` when a manual score change crosses from above the ban threshold to the threshold or below.
-- Increments `players.false_report_count` when a pending report is rejected.
-- Applies temporary report bans through `players.report_banned_until` when false report counts reach the configured threshold.
-- Rejects `/reportbad` while the reporter is report-banned.
-- Shows false report count and report-ban status in `/rep check <player>`.
-- Adds scheduled score recovery with `score_history.source_type = recovery`.
-- Adds `players.last_recovery_at` migration for recovery duplicate prevention.
-- Supports `/reports list <status> [limit]`, including `cancelled` and `all`.
-- Updates review scripts and review archive contents for Phase 3 checks.
+- plugin version を `0.3.0` に更新しました。
+- manual score change が ban threshold を跨ぐ場合に `reputationban.admin.ban` を要求します。
+- `/reports reject` 時に `players.false_report_count` を加算します。
+- false report count がしきい値に達した場合、`players.report_banned_until` による一時 report ban を適用します。
+- report-banned reporter の `/reportbad` を拒否します。
+- `/rep check <player>` に false report count と report-ban status を表示します。
+- `score-recovery` による scheduled recovery と `score_history.source_type = recovery` を追加しました。
+- `players.last_recovery_at` migration を追加しました。
+- `/reports list <status> [limit]` に `cancelled` と `all` を含めました。
+- review scripts と review archive を Phase 3 用に更新しました。
 
-## Validation
+## 検証
 
 - `./gradlew clean test build`
 - `./scripts/review_code.sh`
-- `./scripts/make-review-archive.sh "Phase 3"` after the Phase 3 commit
+- `./scripts/make-review-archive.sh "Phase 3"`

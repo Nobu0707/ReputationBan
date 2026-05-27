@@ -1,23 +1,23 @@
 # Phase 13 / v0.13.0
 
-Phase 13 is the final hardening pass before moving toward a v1.0.0 release candidate.
+Phase 13 は、v1.0.0 release candidate へ進む前の最終 hardening pass です。
 
-## Implemented
+## 主な変更
 
-- Updated project and plugin metadata to `0.13.0`.
-- Strengthened free-text redaction for webhook, URL, password, token, secret, session/sessionId, and cookie-like values.
-- Reduced support bundle absolute path exposure by using `<plugin-data-folder>` in shared diagnostics.
-- Added support bundle safety checks for forbidden entry names, webhook URLs, URLs, and absolute paths.
-- Added `scripts/verify-release-artifact.sh`.
-- Updated `scripts/create-release-artifact.sh` to write SHA256 files for both the JAR and release ZIP.
-- Added `docs/SECURITY_REDACTION.md`.
-- Added `docs/PAPER_RUNTIME_SMOKE_REPORT_TEMPLATE.md`.
-- Added `scripts/record-paper-runtime-smoke-result.sh`.
-- Updated review archive generation to include release verification output and the latest Paper runtime smoke summary.
+- project と plugin metadata を `0.13.0` に更新しました。
+- webhook、URL、password、token、secret、session/sessionId、cookie-like values の free-text redaction を強化しました。
+- support bundle の `meta.txt` と `doctor.txt` で `<plugin-data-folder>` を使い、absolute path exposure を減らしました。
+- forbidden entry names、Webhook URLs、URLs、absolute paths に対する support bundle safety checks を追加しました。
+- `scripts/verify-release-artifact.sh` を追加しました。
+- JAR と release ZIP の両方に SHA256 files を作成するよう `scripts/create-release-artifact.sh` を更新しました。
+- `docs/SECURITY_REDACTION.md` を追加しました。
+- `docs/PAPER_RUNTIME_SMOKE_REPORT_TEMPLATE.md` を追加しました。
+- `scripts/record-paper-runtime-smoke-result.sh` を追加しました。
+- review archive に release verification output と最新の Paper runtime smoke summary を含めるよう更新しました。
 
 ## Deferred
 
-GUI, LuckPerms integration, CoreProtect integration, WorldGuard or other protection integrations, trust scoring, contact detection, full appeal workflows, and Folia support remain deferred.
+GUI、LuckPerms integration、CoreProtect integration、WorldGuard や他 protection integrations、trust scoring、contact detection、full appeal workflows、Folia support は後続に残しています。
 
 ## Validation
 

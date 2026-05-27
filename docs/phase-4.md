@@ -1,23 +1,20 @@
 # Phase 4 / v0.4.0
 
-Phase 4 strengthens ban-sensitive report review and adds staff ban management commands.
+Phase 4 では、BAN を伴う report review と staff ban management を安全化しました。
 
-## Changes
+## 主な変更
 
-- Bumped plugin version to `0.4.0`.
-- Requires `reputationban.admin.ban` when `/reports approve` would cross the ban threshold.
-- Re-checks bypass/OP protection before report approval.
-- Adds `/rep banhistory <player> [limit]`.
-- Adds `/rep baninfo <player>`.
-- Adds `/rep unban <player> [reason]`.
-- Adds `/rep pardon <player> [reason]`.
-- Uses Profile BAN pardon through Paper's profile ban list, not name bans.
-- Marks active DB bans with `unbanned_at` and `unbanned_by`.
-- Records pardon score restoration in `score_history` with `source_type = pardon`.
-- Updates review scripts and review archive command status capture for Phase 4.
+- plugin version を `0.4.0` に更新しました。
+- `/reports approve` が ban threshold を跨ぐ場合に `reputationban.admin.ban` を要求します。
+- approve 直前に bypass/OP protection を再確認します。
+- `/rep banhistory <player> [limit]`、`/rep baninfo <player>`、`/rep unban <player> [reason]`、`/rep pardon <player> [reason]` を追加しました。
+- Paper Profile BAN list による pardon を使い、name bans は使いません。
+- active DB bans に `unbanned_at` と `unbanned_by` を記録します。
+- pardon の score restoration を `score_history` に `source_type = pardon` で記録します。
+- review scripts と review archive を Phase 4 用に更新しました。
 
-## Validation
+## 検証
 
 - `./gradlew clean test build --warning-mode all`
 - `./scripts/review_code.sh`
-- `./scripts/make-review-archive.sh "Phase 4"` after the Phase 4 commit
+- `./scripts/make-review-archive.sh "Phase 4"`

@@ -2,7 +2,7 @@
 set -euo pipefail
 
 PROJECT_NAME="ReputationBan"
-EXPECTED_VERSION="0.13.0"
+EXPECTED_VERSION="0.14.0"
 EXPECTED_MAIN="dev.modplugin.reputationban.ReputationBanPlugin"
 EXPECTED_API_VERSION="26.1.2"
 EXPECTED_PACKAGE_DIR="src/main/java/dev/modplugin/reputationban"
@@ -36,6 +36,7 @@ require_file scripts/run-paper-runtime-smoke-helper.sh
 require_file scripts/create-release-artifact.sh
 require_file scripts/verify-release-artifact.sh
 require_file scripts/record-paper-runtime-smoke-result.sh
+require_file README.md
 require_file CHANGELOG.md
 require_file docs/INSTALLATION.md
 require_file docs/CONFIGURATION.md
@@ -45,6 +46,7 @@ require_file docs/SUPPORT_BUNDLE.md
 require_file docs/SECURITY_REDACTION.md
 require_file docs/PAPER_RUNTIME_SMOKE_REPORT_TEMPLATE.md
 require_file docs/phase-13.md
+require_file docs/phase-14.md
 require_file docs/runtime-smoke-checklist.md
 require_file src/main/resources/plugin.yml
 require_file src/main/resources/config.yml
@@ -62,7 +64,7 @@ YML=src/main/resources/plugin.yml
 grep -q "io.papermc.paper:paper-api:26.1.2.build" build.gradle.kts || fail "Paper API 26.1.2 dependency not found"
 grep -q "org.xerial:sqlite-jdbc" "$YML" || fail "Missing sqlite-jdbc library"
 grep -q "JavaLanguageVersion.of(25)" build.gradle.kts || fail "Java 25 toolchain not found"
-grep -q 'version = "0.13.0"' build.gradle.kts || fail "build.gradle.kts version is not 0.13.0"
+grep -q 'version = "0.14.0"' build.gradle.kts || fail "build.gradle.kts version is not 0.14.0"
 grep -q "options.release.set(25)" build.gradle.kts || fail "Java release 25 not found"
 
 [[ "$(extract_yaml_value "$YML" name)" == "$PROJECT_NAME" ]] || fail "Invalid plugin.yml name"
@@ -249,9 +251,26 @@ fi
 if grep -RE "https://(canary\\.|ptb\\.)?discord(app)?\\.com/api/webhooks/[0-9]+/[A-Za-z0-9_-]{20,}" src/main/java src/main/resources >/dev/null; then
   fail "Concrete Discord webhook URL detected in main sources/resources"
 fi
+if grep -RE "https://(canary\\.|ptb\\.)?discord(app)?\\.com/api/webhooks/[0-9]+/[A-Za-z0-9_-]{20,}" README.md CHANGELOG.md docs scripts >/dev/null; then
+  fail "Concrete Discord webhook URL detected in docs or scripts"
+fi
 if grep -R "logger\.\(info\|warning\|severe\|log\).*url\|url.*logger\.\(info\|warning\|severe\|log\)" src/main/java/dev/modplugin/reputationban/notification >/dev/null; then
   fail "Possible webhook URL logging detected"
 fi
+
+DOC_COUNT="$(find docs -name '*.md' -type f | wc -l | tr -d ' ')"
+[[ "$DOC_COUNT" -gt 0 ]] || fail "No docs/*.md files found"
+for japanese_doc in \
+  README.md \
+  docs/INSTALLATION.md \
+  docs/CONFIGURATION.md \
+  docs/RELEASE_READINESS.md \
+  docs/SUPPORT_BUNDLE.md \
+  docs/SECURITY_REDACTION.md \
+  docs/PAPER_RUNTIME_SMOKE_REPORT_TEMPLATE.md \
+  docs/phase-14.md; do
+  grep -Pq '[\p{Hiragana}\p{Katakana}\p{Han}]' "$japanese_doc" || fail "$japanese_doc does not appear to contain Japanese text"
+done
 
 ./gradlew clean test build --warning-mode all
 
@@ -261,14 +280,14 @@ require_command jar
 jar tf "$JAR" | grep -q "plugin.yml" || fail "plugin.yml missing from jar"
 jar tf "$JAR" | grep -q "dev/modplugin/reputationban/ReputationBanPlugin.class" || fail "Main class missing from jar"
 
-grep -q "EXPECTED_VERSION=\"0.13.0\"" scripts/run-local-smoke-check.sh || fail "run-local-smoke-check.sh does not check v0.13.0"
+grep -q "EXPECTED_VERSION=\"0.14.0\"" scripts/run-local-smoke-check.sh || fail "run-local-smoke-check.sh does not check v0.14.0"
 grep -q "REPUTATIONBAN_SKIP_BUILD" scripts/run-local-smoke-check.sh || fail "run-local-smoke-check.sh does not support REPUTATIONBAN_SKIP_BUILD"
-grep -q "VERSION=\"0.13.0\"" scripts/create-release-artifact.sh || fail "create-release-artifact.sh does not target v0.13.0"
+grep -q "VERSION=\"0.14.0\"" scripts/create-release-artifact.sh || fail "create-release-artifact.sh does not target v0.14.0"
 grep -q "build/release" scripts/create-release-artifact.sh || fail "create-release-artifact.sh does not write build/release"
 grep -q "sha256sum" scripts/create-release-artifact.sh || fail "create-release-artifact.sh does not create sha256"
 grep -q "release.zip" scripts/create-release-artifact.sh || fail "create-release-artifact.sh does not create release zip"
 grep -q "RELEASE_ZIP_SHA" scripts/create-release-artifact.sh || fail "create-release-artifact.sh does not create release zip sha256"
-grep -q "VERSION=\"0.13.0\"" scripts/verify-release-artifact.sh || fail "verify-release-artifact.sh does not target v0.13.0"
+grep -q "VERSION=\"0.14.0\"" scripts/verify-release-artifact.sh || fail "verify-release-artifact.sh does not target v0.14.0"
 grep -q "sha256sum -c" scripts/verify-release-artifact.sh || fail "verify-release-artifact.sh does not verify sha256"
 grep -q "record-paper-runtime-smoke-result" scripts/record-paper-runtime-smoke-result.sh || fail "record paper runtime smoke script missing usage text"
 grep -q "local-smoke-check.txt" scripts/make-review-archive.sh || fail "make-review-archive.sh does not create local-smoke-check.txt"
@@ -285,13 +304,13 @@ bash -n scripts/create-release-artifact.sh || fail "create-release-artifact.sh s
 bash -n scripts/verify-release-artifact.sh || fail "verify-release-artifact.sh syntax check failed"
 bash -n scripts/record-paper-runtime-smoke-result.sh || fail "record-paper-runtime-smoke-result.sh syntax check failed"
 ./scripts/create-release-artifact.sh
-[[ -f "build/release/ReputationBan-0.13.0.jar" ]] || fail "release jar not found"
-[[ -f "build/release/ReputationBan-0.13.0.jar.sha256" ]] || fail "release jar sha256 not found"
-[[ -f "build/release/ReputationBan-0.13.0-release.zip" ]] || fail "release zip not found"
-[[ -f "build/release/ReputationBan-0.13.0-release.zip.sha256" ]] || fail "release zip sha256 not found"
+[[ -f "build/release/ReputationBan-0.14.0.jar" ]] || fail "release jar not found"
+[[ -f "build/release/ReputationBan-0.14.0.jar.sha256" ]] || fail "release jar sha256 not found"
+[[ -f "build/release/ReputationBan-0.14.0-release.zip" ]] || fail "release zip not found"
+[[ -f "build/release/ReputationBan-0.14.0-release.zip.sha256" ]] || fail "release zip sha256 not found"
 ./scripts/verify-release-artifact.sh
-jar tf "build/release/ReputationBan-0.13.0-release.zip" | grep -q "README.md" || fail "release zip missing README.md"
-if jar tf "build/release/ReputationBan-0.13.0-release.zip" | grep -E '(^|/)(config\.yml|reputationban\.db|latest\.log|debug\.log)$|(^|/)logs/' >/dev/null; then
+jar tf "build/release/ReputationBan-0.14.0-release.zip" | grep -q "README.md" || fail "release zip missing README.md"
+if jar tf "build/release/ReputationBan-0.14.0-release.zip" | grep -E '(^|/)(config\.yml|reputationban\.db|latest\.log|debug\.log)$|(^|/)logs/' >/dev/null; then
   fail "release zip contains forbidden config, DB, or logs"
 fi
 

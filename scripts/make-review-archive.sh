@@ -4,7 +4,7 @@ set -euo pipefail
 # ReputationBan review archive generator.
 # Usage:
 #   bash scripts/make-review-archive.sh
-#   bash scripts/make-review-archive.sh "Phase 13"
+#   bash scripts/make-review-archive.sh "Phase 14"
 #
 # The optional argument is an expected substring of HEAD's commit subject.
 # If it does not match, the script exits before producing an archive, which
@@ -102,6 +102,9 @@ done < "$OUTDIR/meta/changed-files.txt"
   echo
   echo "## rg phase 13 release candidate hardening"
   rg -n "verify-release-artifact|record-paper-runtime-smoke-result|PAPER_RUNTIME_SMOKE_REPORT_TEMPLATE|SECURITY_REDACTION|SupportBundleSafety|PathRedactor|redactSecretLikeValue|release.zip.sha256" src/main/java src/test/java src/main/resources README.md CHANGELOG.md docs reputationban_phase_plan.md scripts || true
+  echo
+  echo "## rg phase 14 documentation localization"
+  rg -n "日本語化|README|INSTALLATION|CONFIGURATION|RELEASE_READINESS|SUPPORT_BUNDLE|SECURITY_REDACTION|phase-14|0\\.14\\.0" README.md CHANGELOG.md docs reputationban_phase_plan.md scripts build.gradle.kts src/main/resources/plugin.yml || true
 } > "$OUTDIR/checks/rg-review-signals.txt"
 
 {
@@ -167,8 +170,8 @@ fi
 
 if [[ -d "$ROOT/build/libs" ]]; then
   find "$ROOT/build/libs" -maxdepth 1 -type f -print | sort > "$OUTDIR/checks/built-jars.txt"
-  if [[ -f "$ROOT/build/libs/ReputationBan-0.13.0.jar" ]]; then
-    (cd "$ROOT" && sha256sum build/libs/ReputationBan-0.13.0.jar) > "$OUTDIR/checks/jar-sha256.txt"
+  if [[ -f "$ROOT/build/libs/ReputationBan-0.14.0.jar" ]]; then
+    (cd "$ROOT" && sha256sum build/libs/ReputationBan-0.14.0.jar) > "$OUTDIR/checks/jar-sha256.txt"
   fi
 fi
 

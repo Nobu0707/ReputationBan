@@ -1,24 +1,24 @@
 # Phase 9 / v0.9.0
 
-Phase 9 hardens operational paths before v1.0.0.
+Phase 9 では、v1.0.0 前に operational paths を hardening しました。
 
 ## Audit And CSV
 
-- Command actors preserve `actor_uuid` and `actor_name` separately.
-- Console actions use `actor_uuid=NULL` and `actor_name=CONSOLE`.
-- Audit CSV exports are constrained to `plugins/ReputationBan/`; unsafe relative or absolute export paths fall back to `exports`.
+- command actors は `actor_uuid` と `actor_name` を分離して保持します。
+- console actions は `actor_uuid=NULL`、`actor_name=CONSOLE` を使います。
+- audit CSV exports は `plugins/ReputationBan/` 配下に制限されます。unsafe relative path や absolute path は `exports` に fallback します。
 
 ## Maintenance
 
-- `/rep maintenance preview` counts cleanup candidates without deleting data.
-- `/rep maintenance run` only prints the confirm guidance.
-- `/rep maintenance run confirm` creates `backups/reputationban-before-maintenance-YYYYMMDD-HHMMSS.db` before deleting retained data.
-- `MAINTENANCE_PREVIEW` and `MAINTENANCE_RUN` audit events record cleanup counts.
+- `/rep maintenance preview` は削除せず cleanup candidates を数えます。
+- `/rep maintenance run` は confirm guidance のみを表示します。
+- `/rep maintenance run confirm` は削除前に `backups/reputationban-before-maintenance-YYYYMMDD-HHMMSS.db` を作成します。
+- `MAINTENANCE_PREVIEW` と `MAINTENANCE_RUN` audit events は cleanup counts を記録します。
 
 ## Config Validation
 
-Startup and `/rep reload` validate score bounds, cooldowns, report requirements, retention days, audit limits, Discord timeout range, and unsafe audit export paths. Errors do not disable the plugin in Phase 9, but they are logged clearly and reload senders receive a summary.
+startup と `/rep reload` で score bounds、cooldowns、report requirements、retention days、audit limits、Discord timeout range、unsafe audit export paths を検証します。Phase 9 では errors が plugin を無効化するわけではありませんが、logs と reload sender summary に明確に表示します。
 
 ## Runtime Smoke
 
-Use `scripts/run-local-smoke-check.sh` for repository-side checks, then follow `docs/runtime-smoke-checklist.md` on a Paper 26.1.2 server with Java 25.
+repository-side checks には `scripts/run-local-smoke-check.sh` を使い、その後 PaperMC 26.1.2 server と Java 25 で `docs/runtime-smoke-checklist.md` に従って確認します。

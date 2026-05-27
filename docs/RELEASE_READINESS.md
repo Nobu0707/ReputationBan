@@ -1,32 +1,33 @@
 # Release Readiness
 
-Use this checklist before treating 0.13.0 as ready for a v1.0.0 candidate.
+0.14.0 を v1.0.0 candidate へ進める前に、次の項目を確認してください。
 
-- `./gradlew clean test build --warning-mode all` succeeds.
-- `./scripts/review_code.sh` succeeds.
-- `./scripts/run-local-smoke-check.sh` succeeds.
-- `./scripts/create-release-artifact.sh` succeeds.
-- `./scripts/verify-release-artifact.sh` succeeds.
-- `./scripts/make-review-archive.sh "Phase 13"` creates an archive.
-- `scripts/run-paper-runtime-smoke-helper.sh` passes `bash -n`.
-- `scripts/create-release-artifact.sh` passes `bash -n`.
-- `scripts/verify-release-artifact.sh` passes `bash -n`.
-- `scripts/record-paper-runtime-smoke-result.sh` passes `bash -n`.
-- Paper runtime smoke is performed on a PaperMC 26.1.2 server with Java 25.
-- `config.yml` is generated and reviewed.
-- `/rep version` reports 0.13.0.
-- `/rep doctor` reports expected database, table, config, audit export, Discord, and backup status.
-- `/rep backup before-release` creates `backups/reputationban-manual-backup-*.db`.
-- `/rep support bundle` creates `support/reputationban-support-*.zip`.
-- The support bundle contains `meta.txt`, `doctor.txt`, `counts.txt`, `config-redacted.yml`, and `README-SHARING.txt`.
-- The support bundle does not contain SQLite DB files, server logs, webhook URLs, or shared-unnecessary absolute paths.
-- `/rep maintenance preview` does not delete data.
-- `/rep audit export recent 10` writes a CSV under the configured safe export directory.
-- `build/release/ReputationBan-0.13.0.jar`, `.jar.sha256`, `ReputationBan-0.13.0-release.zip`, and `ReputationBan-0.13.0-release.zip.sha256` exist.
-- The release ZIP contains the JAR, checksum, README, CHANGELOG, and install/config/migration/readiness docs.
-- The release ZIP does not contain live `config.yml`, SQLite DB files, or logs.
-- Paper runtime smoke results are recorded with `scripts/record-paper-runtime-smoke-result.sh` when a manual smoke run is performed.
-- Discord webhook is disabled by default.
-- Webhook URL values do not appear in logs, command output, audit metadata, CSV files, or review archives.
-- BAN-related checks use test users only.
-- Existing SQLite DB and server directories are not deleted by helper scripts.
+- `./gradlew clean test build --warning-mode all` が成功します。
+- `./scripts/review_code.sh` が成功します。
+- `./scripts/run-local-smoke-check.sh` が成功します。
+- `./scripts/create-release-artifact.sh` が成功します。
+- `./scripts/verify-release-artifact.sh` が成功します。
+- `./scripts/make-review-archive.sh "Phase 14"` が archive を作成します。
+- `bash -n scripts/run-paper-runtime-smoke-helper.sh` が成功します。
+- `bash -n scripts/create-release-artifact.sh` が成功します。
+- `bash -n scripts/verify-release-artifact.sh` が成功します。
+- `bash -n scripts/record-paper-runtime-smoke-result.sh` が成功します。
+- Paper runtime smoke を PaperMC 26.1.2 server と Java 25 で実施します。
+- `config.yml` が生成され、内容を確認済みです。
+- `/rep version` が 0.14.0 を表示します。
+- `/rep doctor` が database、tables、config、audit export、Discord、backup status を期待通りに表示します。
+- `/rep backup before-release` が `backups/reputationban-manual-backup-*.db` を作成します。
+- `/rep support bundle` が `support/reputationban-support-*.zip` を作成します。
+- support bundle に `meta.txt`、`doctor.txt`、`counts.txt`、`config-redacted.yml`、`README-SHARING.txt` が含まれます。
+- support bundle に SQLite DB files、server logs、Webhook URLs、共有不要な absolute paths が含まれません。
+- `/rep maintenance preview` は data を削除しません。
+- `/rep audit export recent 10` は安全な export directory 配下に CSV を作成します。
+- `build/release/ReputationBan-0.14.0.jar`、`.jar.sha256`、`ReputationBan-0.14.0-release.zip`、`ReputationBan-0.14.0-release.zip.sha256` が存在します。
+- release ZIP には JAR、checksum、README、CHANGELOG、docs が含まれます。
+- release ZIP に live `config.yml`、SQLite DB files、logs は含まれません。
+- Paper runtime smoke を手動実施した場合は `scripts/record-paper-runtime-smoke-result.sh` で結果を記録します。
+- Discord Webhook はデフォルトで無効です。
+- Webhook URL values は logs、command output、audit metadata、CSV files、review archives に出ません。
+- BAN 関連確認は test users のみに行います。
+- helper scripts は既存 SQLite DB や server directories を削除しません。
+- secret scan は確認用です。説明文に `token` や `secret` が含まれるだけでは即失敗にしません。

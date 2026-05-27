@@ -4,28 +4,28 @@
 
 - PaperMC 26.1.2
 - Java 25
-- Fresh or disposable test server
-- ReputationBan config with Discord webhook disabled by default
+- Fresh または disposable test server
+- Discord webhook がデフォルト無効の ReputationBan config
 
 ## Install
 
-1. Run `./gradlew clean test build --warning-mode all`.
-2. Copy `build/libs/ReputationBan-0.13.0.jar` to the Paper `plugins` directory.
-3. Start Paper with Java 25.
+1. `./gradlew clean test build --warning-mode all` を実行します。
+2. `build/libs/ReputationBan-0.14.0.jar` を Paper `plugins` directory へコピーします。
+3. Java 25 で Paper を起動します。
 
 ## Startup
 
-- Verify `/plugins` lists ReputationBan.
-- Verify `plugins/ReputationBan/config.yml` exists.
-- Verify `plugins/ReputationBan/reputationban.db` exists.
-- Confirm startup logs do not print a Discord webhook URL.
+- `/plugins` に ReputationBan が表示されることを確認します。
+- `plugins/ReputationBan/config.yml` が存在することを確認します。
+- `plugins/ReputationBan/reputationban.db` が存在することを確認します。
+- startup logs に Discord Webhook URL が出ていないことを確認します。
 
 ## Commands
 
 - `/rep help`
 - `/rep version`
 - `/reports help`
-- `/reportbad <TAB>` and category TAB completion
+- `/reportbad <TAB>` と category TAB completion
 - `/rep audit recent`
 - `/rep audit export recent`
 - `/rep doctor`
@@ -38,21 +38,21 @@
 
 ## Safety Checks
 
-- Confirm `/rep maintenance preview` only displays counts.
-- Confirm `/rep maintenance run` does not delete data and asks for `run confirm`.
-- Confirm `/rep maintenance run confirm` creates `plugins/ReputationBan/backups/reputationban-before-maintenance-*.db`.
-- Confirm `/rep backup before-runtime-smoke` creates `plugins/ReputationBan/backups/reputationban-manual-backup-*.db`.
-- Confirm `/rep support bundle` creates `plugins/ReputationBan/support/reputationban-support-*.zip`.
-- Confirm the support ZIP contains `config-redacted.yml` and `README-SHARING.txt`, and does not contain DB files, server logs, webhook URLs, or shared-unnecessary absolute paths.
-- Confirm `/rep doctor` displays database/table/config/Discord status and lightweight counts.
-- Confirm Discord webhook is disabled by default.
-- Confirm webhook URLs are not printed in logs, `/rep doctor`, audit output, CSV output, or review archive files.
-- Run BAN and pardon commands only against disposable test users.
-- Record the result with `./scripts/record-paper-runtime-smoke-result.sh --result PASS --note "local Paper smoke passed"` or the matching FAIL note.
+- `/rep maintenance preview` が件数表示のみで data を削除しないことを確認します。
+- `/rep maintenance run` が data を削除せず、`run confirm` を案内することを確認します。
+- `/rep maintenance run confirm` が `plugins/ReputationBan/backups/reputationban-before-maintenance-*.db` を作成することを確認します。
+- `/rep backup before-runtime-smoke` が `plugins/ReputationBan/backups/reputationban-manual-backup-*.db` を作成することを確認します。
+- `/rep support bundle` が `plugins/ReputationBan/support/reputationban-support-*.zip` を作成することを確認します。
+- support ZIP に `config-redacted.yml` と `README-SHARING.txt` が含まれ、DB files、server logs、Webhook URLs、共有不要な absolute paths が含まれないことを確認します。
+- `/rep doctor` が database/table/config/Discord status と lightweight counts を表示することを確認します。
+- Discord webhook がデフォルトで無効であることを確認します。
+- Webhook URLs が logs、`/rep doctor`、audit output、CSV output、review archive files に出ていないことを確認します。
+- BAN と pardon commands は disposable test users のみに実行します。
+- 結果は `./scripts/record-paper-runtime-smoke-result.sh --result PASS --note "local Paper smoke passed"`、または FAIL の note で記録します。
 
 ## Rollback
 
-- Stop the server.
-- Move the current `plugins/ReputationBan/reputationban.db` aside.
-- Restore the latest `plugins/ReputationBan/backups/reputationban-before-maintenance-*.db`.
-- Start the server and re-check `/rep audit recent`.
+- server を停止します。
+- 現在の `plugins/ReputationBan/reputationban.db` を退避します。
+- 最新の `plugins/ReputationBan/backups/reputationban-before-maintenance-*.db` を復元します。
+- server を起動し、`/rep audit recent` を再確認します。

@@ -1,20 +1,17 @@
 # Phase 2 / v0.2.0
 
-## What Changed
+Phase 2 では、staff review と score administration を追加しました。
 
-- Added pending report listing, viewing, approval, and rejection.
-- Approval now applies the configured category deduction transactionally with report status and score history updates.
-- Added `/rep history`, `/rep add`, `/rep remove`, and `/rep set`.
-- Centralized score mutation through `ScoreService` so report and admin score changes share threshold crossing logic.
-- Updated automatic ban completion so the returned future completes after the Bukkit profile ban call succeeds or fails.
-- Strengthened review archive generation with remotes, tags, build outputs, test summaries, and review script output.
-- Bumped plugin version to `0.2.0`.
+## 主な変更
 
-## Deferred To Phase 3+
+- pending report の list、view、approve、reject を追加しました。
+- approve 時に category deduction、report status、score history を transaction で更新します。
+- `/rep history`、`/rep add`、`/rep remove`、`/rep set` を追加しました。
+- score mutation を `ScoreService` に集約しました。
+- automatic ban completion は Paper Profile BAN call の成功または失敗後に future が完了します。
+- review archive に remotes、tags、build outputs、test summaries、review script output を追加しました。
+- plugin version を `0.2.0` に更新しました。
 
-- Discord webhook delivery.
-- GUI moderation menus.
-- LuckPerms, CoreProtect, WorldGuard, and GriefPrevention integration.
-- Trust weighting, contact/proximity checks, and abuse clustering.
-- Full appeal, pardon, and unban workflows.
-- Folia support.
+## 後続フェーズへ残したもの
+
+Discord webhook delivery、GUI moderation menus、LuckPerms/CoreProtect/WorldGuard/GriefPrevention integration、trust weighting、contact checks、abuse clustering、appeal/pardon/unban workflow、Folia support。

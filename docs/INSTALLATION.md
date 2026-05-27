@@ -1,29 +1,35 @@
 # Installation
 
-ReputationBan 0.13.0 targets PaperMC 26.1.2 and Java 25.
+ReputationBan 0.14.0 は PaperMC 26.1.2 と Java 25 を対象にしています。
 
-## Requirements
+## 導入条件
 
-- PaperMC 26.1.2 test or production server
+- PaperMC 26.1.2 の test server または production server
 - Java 25 runtime
-- `build/libs/ReputationBan-0.13.0.jar`
-- SQLite JDBC is loaded through `plugin.yml`
+- `build/libs/ReputationBan-0.14.0.jar`
+- SQLite JDBC は `plugin.yml` の `libraries` から読み込まれます。
 
-## First Install
+## 初回導入
 
-1. Stop the Paper server.
-2. Copy `ReputationBan-0.13.0.jar` to the server `plugins/` directory.
-3. Start the server once to generate `plugins/ReputationBan/config.yml`.
-4. Confirm `plugins/ReputationBan/reputationban.db` is created.
-5. Stop and restart the server after reviewing configuration.
-6. Run `/rep version`.
-7. Run `/rep doctor`.
+1. Paper server を停止します。
+2. `ReputationBan-0.14.0.jar` を server の `plugins/` ディレクトリへ配置します。
+3. server を一度起動し、`plugins/ReputationBan/config.yml` を生成します。
+4. `plugins/ReputationBan/reputationban.db` が生成されていることを確認します。
+5. `config.yml` を確認してから server を再起動します。
+6. `/rep version` を実行します。
+7. `/rep doctor` を実行します。
 
-Discord webhook notifications are disabled by default. If enabled later, treat the webhook URL as a secret and do not paste it into tickets, logs, review archives, or screenshots.
+Discord Webhook 通知はデフォルトで無効です。あとから有効化する場合も、Webhook URL はシークレットとして扱い、tickets、logs、review archives、screenshots へ貼らないでください。
+
+## アップデート時の注意
+
+- 更新前に `plugins/ReputationBan/reputationban.db` をバックアップしてください。
+- `plugins/ReputationBan/config.yml` も一緒に保管してください。
+- 既存 server では、先に test server で `/rep doctor` と smoke commands を確認してください。
 
 ## Smoke Commands
 
-Use these on a test server before production rollout:
+production rollout 前に test server で確認してください。
 
 - `/plugins`
 - `/rep version`
@@ -35,4 +41,4 @@ Use these on a test server before production rollout:
 - `/rep audit recent 10`
 - `/rep maintenance preview`
 
-Use BAN-related commands only with test users during smoke checks.
+BAN 関連コマンドは smoke check 用の test users のみに実行してください。

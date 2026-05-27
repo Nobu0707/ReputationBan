@@ -1,18 +1,18 @@
 # Migration
 
-ReputationBan 0.13.0 uses SQLite under `plugins/ReputationBan/reputationban.db` by default.
+ReputationBan 0.14.0 はデフォルトで `plugins/ReputationBan/reputationban.db` に SQLite database を保存します。
 
-## Before Updating
+## 更新前
 
-1. Stop the server.
-2. Back up `plugins/ReputationBan/reputationban.db`.
-3. Back up `plugins/ReputationBan/config.yml`.
-4. Replace the plugin JAR with `ReputationBan-0.13.0.jar`.
-5. Start the server and run `/rep doctor`.
+1. server を停止します。
+2. `plugins/ReputationBan/reputationban.db` をバックアップします。
+3. `plugins/ReputationBan/config.yml` をバックアップします。
+4. plugin JAR を `ReputationBan-0.14.0.jar` に置き換えます。
+5. server を起動して `/rep doctor` を実行します。
 
-## Automatic Schema Migration
+## 自動マイグレーション
 
-ReputationBan creates missing tables and adds known missing columns during startup. The current schema includes:
+ReputationBan は起動時に不足している tables を作成し、既知の不足 columns を追加します。現在の主な schema は次の通りです。
 
 - `players`
 - `reports`
@@ -20,7 +20,7 @@ ReputationBan creates missing tables and adds known missing columns during start
 - `bans`
 - `audit_events`
 
-Known migrations from earlier phases include:
+以前の phase からの既知 migration には次が含まれます。
 
 - `players.last_recovery_at`
 - `players.first_seen`
@@ -29,12 +29,12 @@ Known migrations from earlier phases include:
 - `bans.unbanned_by_name`
 - `audit_events`
 
-## Rollback Notes
+## ロールバック時の注意
 
-Do not roll back the JAR without also restoring the database backup from before the upgrade. Older plugin versions may not understand newer columns or audit data. If rollback is required, stop the server, move the current SQLite file aside, restore the backed-up SQLite file, restore the matching config, and then start the older JAR.
+アップデート前の database backup を復元せずに古い JAR へ戻さないでください。古い plugin version は新しい columns や audit data を理解できない可能性があります。rollback が必要な場合は server を停止し、現在の SQLite file を退避し、更新前の SQLite file と対応する config を復元してから古い JAR を起動してください。
 
 ## Maintenance Backups
 
-`/rep maintenance run confirm` creates `plugins/ReputationBan/backups/reputationban-before-maintenance-*.db` before retention cleanup. This backup is for maintenance rollback, not a replacement for full pre-upgrade backups.
+`/rep maintenance run confirm` は retention cleanup の前に `plugins/ReputationBan/backups/reputationban-before-maintenance-*.db` を作成します。これは maintenance rollback 用であり、アップデート前 backup の代わりではありません。
 
-`/rep backup [reason]` creates `plugins/ReputationBan/backups/reputationban-manual-backup-*.db` for pre-upgrade and pre-maintenance checkpoints. WAL/SHM sidecar files are copied when present.
+`/rep backup [reason]` は `plugins/ReputationBan/backups/reputationban-manual-backup-*.db` を作成します。アップデート前や maintenance 前の checkpoint として使えます。WAL/SHM sidecar files がある場合は一緒にコピーされます。

@@ -1,23 +1,23 @@
 # Phase 11 / v0.11.0
 
-Phase 11 prepares ReputationBan for easier distribution, installation, and real Paper server smoke checks before v1.0.0.
+Phase 11 では、v1.0.0 前に distribution、installation、real Paper server smoke checks を行いやすくしました。
 
-## Scope
+## 範囲
 
-- Version updated to `0.11.0`.
-- Added `/rep version`.
-- Added release and operation documents.
-- Added `CHANGELOG.md`.
-- Added Paper runtime smoke helper script.
-- Extended `/rep doctor` with release-readiness state checks.
-- Updated review scripts for Phase 11 artifacts and reduced repeated builds during archive generation.
+- version を `0.11.0` に更新しました。
+- `/rep version` を追加しました。
+- release と operation documents を追加しました。
+- `CHANGELOG.md` を追加しました。
+- Paper runtime smoke helper script を追加しました。
+- `/rep doctor` に release-readiness state checks を追加しました。
+- review scripts を Phase 11 artifacts に対応し、archive generation 中の重複 build を減らしました。
 
-## Not In Scope
+## 範囲外
 
 - GUI
-- LuckPerms, CoreProtect, WorldGuard, or protection plugin integration
-- Trust score systems beyond current reputation score
-- Appeal workflow implementation
+- LuckPerms、CoreProtect、WorldGuard、protection plugin integration
+- 現在の reputation score を超える trust score systems
+- appeal workflow implementation
 - Folia support
 
 ## Artifacts

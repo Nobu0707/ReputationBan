@@ -1,82 +1,91 @@
 # Changelog
 
+## 0.14.0
+
+- README.md を日本語トップページとして再整備しました。
+- docs/*.md を日本語化し、command names、permission nodes、config keys、file names は維持しました。
+- `docs/phase-14.md` を追加しました。
+- release artifact と review archive の対象を `ReputationBan-0.14.0.jar` に更新しました。
+- `scripts/review_code.sh` に日本語ドキュメント確認と v0.14.0 artifact 確認を追加しました。
+- Discord Webhook URL を docs、support bundle、review archive に含めない方針を日本語で明確化しました。
+
 ## 0.13.0
 
-- Hardened free-text redaction for token/password/secret/session/cookie/webhook/url-like values.
-- Reduced absolute path exposure in support bundle `meta.txt` and `doctor.txt`.
-- Added release artifact verification and release ZIP SHA256 generation.
-- Added Paper runtime smoke result recording and report template.
-- Added security/redaction documentation and expanded review archive collection.
+- token/password/secret/session/cookie/webhook/url-like values の free-text redaction を強化しました。
+- support bundle の `meta.txt` と `doctor.txt` で absolute path exposure を減らしました。
+- release artifact verification と release ZIP SHA256 generation を追加しました。
+- Paper runtime smoke result recording と report template を追加しました。
+- security/redaction documentation と review archive collection を拡充しました。
 
 ## 0.12.0
 
-- Added `/rep backup [reason]` for manual SQLite backups with `DB_BACKUP_CREATED` audit events.
-- Added `/rep support bundle` for secret-redacted diagnostic ZIPs that exclude DB files and server logs.
-- Added config redaction utilities for webhook URLs, URL-like values, passwords, tokens, secrets, sessions, and cookies.
-- Added `scripts/create-release-artifact.sh` to create `build/release` JAR, SHA256, and release ZIP artifacts.
-- Updated review archive, local smoke, runtime smoke, release readiness, and support bundle documentation for Phase 12.
+- `/rep backup [reason]` を追加し、`DB_BACKUP_CREATED` audit events 付きの manual SQLite backups を作成できるようにしました。
+- `/rep support bundle` を追加し、DB files と server logs を除外した secret-redacted diagnostic ZIPs を作成できるようにしました。
+- webhook URLs、URL-like values、passwords、tokens、secrets、sessions、cookies 向けの config redaction utilities を追加しました。
+- `scripts/create-release-artifact.sh` を追加し、`build/release` JAR、SHA256、release ZIP artifacts を作成できるようにしました。
+- review archive、local smoke、runtime smoke、release readiness、support bundle documentation を Phase 12 向けに更新しました。
 
 ## 0.11.0
 
-- Added release preparation and operation documents for installation, configuration, migration, and v1.0.0 readiness.
-- Added `/rep version` and TAB completion.
-- Added safe Paper runtime smoke helper script.
-- Extended `/rep doctor` with plugin data folder, database file, audit export, Discord webhook state, and backup directory checks without exposing webhook URLs.
-- Reduced duplicated build work between review archive generation and local smoke checks.
+- installation、configuration、migration、v1.0.0 readiness 向けの release preparation と operation documents を追加しました。
+- `/rep version` と TAB completion を追加しました。
+- safe Paper runtime smoke helper script を追加しました。
+- `/rep doctor` に plugin data folder、database file、audit export、Discord webhook state、backup directory checks を追加し、Webhook URL は出さないようにしました。
+- review archive generation と local smoke checks の重複 build を減らしました。
 
 ## 0.10.0
 
-- Added `/rep doctor` and `/rep diagnostics`.
-- Added `DIAGNOSTICS_RUN` audit metadata with safe booleans and counts.
-- Split `bans.unbanned_by` durable actor ID from `bans.unbanned_by_name` display name.
-- Collected local smoke output in review archives.
+- `/rep doctor` と `/rep diagnostics` を追加しました。
+- safe booleans と counts のみを含む `DIAGNOSTICS_RUN` audit metadata を追加しました。
+- `bans.unbanned_by` durable actor ID と `bans.unbanned_by_name` display name を分離しました。
+- review archives に local smoke output を収集するようにしました。
 
 ## 0.9.0
 
-- Added config validation and safe audit export path handling.
-- Added maintenance preview and confirmed cleanup flow.
-- Added SQLite backup before retention cleanup.
-- Added runtime smoke checklist and review archive secret scan.
+- config validation と safe audit export path handling を追加しました。
+- maintenance preview と confirmed cleanup flow を追加しました。
+- retention cleanup 前の SQLite backup を追加しました。
+- runtime smoke checklist と review archive secret scan を追加しました。
 
 ## 0.8.0
 
-- Added `audit_events`, audit commands, CSV export, and retention policy.
-- Recorded moderation, score, ban, recovery, reload, and maintenance audit events.
-- Kept webhook URLs and other secrets out of audit metadata and CSV output.
+- `audit_events`、audit commands、CSV export、retention policy を追加しました。
+- moderation、score、ban、recovery、reload、maintenance の audit events を記録するようにしました。
+- webhook URLs とその他 secrets を audit metadata と CSV output から除外しました。
 
 ## 0.7.0
 
-- Added reporter playtime and server account age gates.
-- Added multi-report threshold flow with `threshold_pending`.
-- Added score threshold notifications.
+- reporter playtime と server account age gates を追加しました。
+- `threshold_pending` を使う multi-report threshold flow を追加しました。
+- score threshold notifications を追加しました。
 
 ## 0.6.0
 
-- Added optional Discord webhook notifications.
-- Added event-level notification toggles, JSON escaping, content truncation, and failure log rate limiting.
+- optional Discord webhook notifications を追加しました。
+- event-level notification toggles、JSON escaping、content truncation、failure log rate limiting を追加しました。
 
 ## 0.5.0
 
-- Added TAB completion and help commands.
-- Added `bans.unban_reason` migration and improved ban history output.
-- Improved command input validation.
+- TAB completion と help commands を追加しました。
+- `bans.unban_reason` migration と ban history output 改善を追加しました。
+- command input validation を改善しました。
 
 ## 0.4.0
 
-- Added safer ban review gates and bypass checks.
-- Added ban history, ban info, unban, and pardon commands.
+- ban review gates と bypass checks を安全化しました。
+- ban history、ban info、unban、pardon commands を追加しました。
 
 ## 0.3.0
 
-- Added false-report penalties and report suspension.
-- Added score recovery and richer report listing.
+- false-report penalties と report suspension を追加しました。
+- score recovery と richer report listing を追加しました。
 
 ## 0.2.0
 
-- Added staff report review and score administration commands.
-- Added score history and manual recovery workflows.
+- staff report review と score administration commands を追加しました。
+- score history と manual recovery workflows を追加しました。
 
 ## 0.1.0
 
-- Initial PaperMC 26.1.2 / Java 25 plugin.
-- Added SQLite storage, player reputation scores, `/reportbad`, `/rep`, and basic automatic profile bans.
+- PaperMC 26.1.2 / Java 25 plugin の初期版です。
+- SQLite storage、player reputation scores、`/reportbad`、`/rep`、basic automatic profile bans を追加しました。
