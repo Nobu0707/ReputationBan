@@ -233,7 +233,35 @@
 - Paper runtime smoke helperは既存DBやサーバーディレクトリを削除しない。
 - Phase 11ではGUI、外部保護プラグイン連携、Folia対応は実装しない。
 
-## Phase 12以降: 外部連携・高度な悪用対策
+## Phase 12 / v0.12.0: サポートバンドル・配布artifact整備
+
+目的: v1.0.0前に、問題発生時に安全に調査できる状態と配布物を確実に作れる状態を整える。
+
+実装範囲:
+
+- version 0.12.0
+- `/rep backup [reason]`
+- `DB_BACKUP_CREATED`
+- `/rep support bundle`
+- `SUPPORT_BUNDLE_CREATED`
+- `config-redacted.yml` 生成用の Redactor / ConfigRedactor
+- support bundle からDB、WAL/SHM、server logs、Webhook URLを除外
+- `scripts/create-release-artifact.sh`
+- `build/release/ReputationBan-0.12.0.jar`
+- `build/release/ReputationBan-0.12.0.jar.sha256`
+- `build/release/ReputationBan-0.12.0-release.zip`
+- `docs/SUPPORT_BUNDLE.md`
+- `docs/phase-12.md`
+- review_code.sh / make-review-archive.sh Phase 12対応
+
+注意:
+
+- Webhook URLは表示、ログ、監査metadata、CSV、support bundle、release artifact、レビューアーカイブへ出さない。
+- support bundleにDBやserver logsを含めない。
+- release zipに実config.yml、DB、logsを含めない。
+- Phase 12ではGUI、外部保護プラグイン連携、Folia対応は実装しない。
+
+## Phase 13以降: 外部連携・高度な悪用対策
 
 実装候補:
 

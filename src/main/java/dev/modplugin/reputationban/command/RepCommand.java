@@ -13,6 +13,7 @@ import dev.modplugin.reputationban.service.DiagnosticService;
 import dev.modplugin.reputationban.service.PlayerDataService;
 import dev.modplugin.reputationban.service.PunishmentService;
 import dev.modplugin.reputationban.service.ScoreService;
+import dev.modplugin.reputationban.service.SupportBundleService;
 import dev.modplugin.reputationban.util.AuditCommandArgument;
 import dev.modplugin.reputationban.util.AuditCommandArgumentParser;
 import dev.modplugin.reputationban.util.AuditMetadata;
@@ -50,6 +51,7 @@ public final class RepCommand implements CommandExecutor {
     private final PunishmentService punishmentService;
     private final AuditService auditService;
     private final DiagnosticService diagnosticService;
+    private final SupportBundleService supportBundleService;
 
     public RepCommand(
             ReputationBanPlugin plugin,
@@ -57,7 +59,8 @@ public final class RepCommand implements CommandExecutor {
             ScoreService scoreService,
             PunishmentService punishmentService,
             AuditService auditService,
-            DiagnosticService diagnosticService
+            DiagnosticService diagnosticService,
+            SupportBundleService supportBundleService
     ) {
         this.plugin = plugin;
         this.playerDataService = playerDataService;
@@ -65,6 +68,7 @@ public final class RepCommand implements CommandExecutor {
         this.punishmentService = punishmentService;
         this.auditService = auditService;
         this.diagnosticService = diagnosticService;
+        this.supportBundleService = supportBundleService;
     }
 
     @Override
@@ -111,6 +115,14 @@ public final class RepCommand implements CommandExecutor {
         }
         if ("maintenance".equalsIgnoreCase(args[0])) {
             maintenance(sender, args);
+            return true;
+        }
+        if ("backup".equalsIgnoreCase(args[0])) {
+            backup(sender, args);
+            return true;
+        }
+        if ("support".equalsIgnoreCase(args[0])) {
+            support(sender, args);
             return true;
         }
         if ("doctor".equalsIgnoreCase(args[0]) || "diagnostics".equalsIgnoreCase(args[0])) {
@@ -164,9 +176,11 @@ public final class RepCommand implements CommandExecutor {
         if (sender.hasPermission("reputationban.admin.maintenance")) {
             sender.sendMessage(ReputationBanPlugin.PREFIX + "/rep maintenance preview - データ保持メンテナンスの予定件数");
             sender.sendMessage(ReputationBanPlugin.PREFIX + "/rep maintenance run confirm - バックアップ後にデータ保持メンテナンスを実行");
+            sender.sendMessage(ReputationBanPlugin.PREFIX + "/rep backup [reason] - DBバックアップを作成");
         }
         if (sender.hasPermission("reputationban.admin.diagnostics")) {
             sender.sendMessage(ReputationBanPlugin.PREFIX + "/rep doctor - ReputationBanの診断情報を表示");
+            sender.sendMessage(ReputationBanPlugin.PREFIX + "/rep support bundle - 安全なサポート用診断バンドルを作成");
         }
     }
 
@@ -470,6 +484,46 @@ public final class RepCommand implements CommandExecutor {
             }
             case HELP -> sender.sendMessage(ReputationBanPlugin.PREFIX + "使い方: /rep maintenance <preview|run confirm>");
         }
+    }
+
+    private void backup(CommandSender sender, String[] args) {
+        if (!sender.hasPermission("reputationban.admin.maintenance")) {
+            sender.sendMessage(ReputationBanPlugin.PREFIX + "権限がありません。");
+            return;
+        }
+        String reason = args.length >= 2 ? String.join(" ", Arrays.copyOfRange(args, 1, args.length)) : "";
+        auditService.createManualBackup(CommandActor.from(sender), reason)
+                .thenAccept(result -> plugin.runSync(() -> sender.sendMessage(ReputationBanPlugin.PREFIX
+                        + "DBバックアップを作成しました: " + result.relativePath())))
+                .exceptionally(throwable -> {
+                    plugin.getLogger().severe("Failed to create manual database backup: " + throwable.getMessage());
+                    plugin.runSync(() -> sender.sendMessage(ReputationBanPlugin.PREFIX
+                            + "DBバックアップに失敗しました。詳細はコンソールを確認してください。"));
+                    return null;
+                });
+    }
+
+    private void support(CommandSender sender, String[] args) {
+        if (!sender.hasPermission("reputationban.admin.diagnostics")) {
+            sender.sendMessage(ReputationBanPlugin.PREFIX + "権限がありません。");
+            return;
+        }
+        if (args.length != 2 || !"bundle".equalsIgnoreCase(args[1])) {
+            sender.sendMessage(ReputationBanPlugin.PREFIX + "使い方: /rep support bundle");
+            return;
+        }
+        String version = plugin.getPluginMeta().getVersion();
+        String server = Bukkit.getVersion();
+        String javaVersion = System.getProperty("java.version", "unknown");
+        supportBundleService.createBundle(CommandActor.from(sender), version, server, javaVersion)
+                .thenAccept(result -> plugin.runSync(() -> sender.sendMessage(ReputationBanPlugin.PREFIX
+                        + "サポート用診断バンドルを作成しました: " + result.relativePath())))
+                .exceptionally(throwable -> {
+                    plugin.getLogger().severe("Failed to create support bundle: " + throwable.getMessage());
+                    plugin.runSync(() -> sender.sendMessage(ReputationBanPlugin.PREFIX
+                            + "サポート用診断バンドルの作成に失敗しました。詳細はコンソールを確認してください。"));
+                    return null;
+                });
     }
 
     private void banHistory(CommandSender sender, String[] args) {

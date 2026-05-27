@@ -7,6 +7,7 @@ import dev.modplugin.reputationban.model.AuditEventType;
 import dev.modplugin.reputationban.model.CommandActor;
 import dev.modplugin.reputationban.util.AuditMetadata;
 import dev.modplugin.reputationban.util.CsvEscaper;
+import dev.modplugin.reputationban.util.Redactor;
 import dev.modplugin.reputationban.util.RetentionPolicy;
 import dev.modplugin.reputationban.util.SafePathResolver;
 import java.io.IOException;
@@ -179,7 +180,7 @@ public final class AuditService {
             boolean previousAutoCommit = connection.getAutoCommit();
             connection.setAutoCommit(false);
             try {
-                Path backupPath = backupDatabase(connection);
+                Path backupPath = backupDatabase(connection, "reputationban-before-maintenance-");
                 int rejectedReports = cleanupReports(connection, "rejected", config.retentionRejectedReportsDays(), now);
                 int cancelledReports = cleanupReports(connection, "cancelled", config.retentionCancelledReportsDays(), now);
                 int scoreHistory = cleanupByCreatedAt(connection, "score_history", config.retentionScoreHistoryDays(), now);
@@ -211,11 +212,49 @@ public final class AuditService {
                 ));
                 connection.commit();
                 return result;
+            } catch (IOException exception) {
+                connection.rollback();
+                throw new SQLException("Failed to create maintenance backup", exception);
             } catch (SQLException | RuntimeException exception) {
                 connection.rollback();
                 throw exception;
             } finally {
                 connection.setAutoCommit(previousAutoCommit);
+            }
+        });
+    }
+
+    public CompletableFuture<ManualBackupResult> createManualBackup(CommandActor actor, String reason) {
+        long now = System.currentTimeMillis();
+        return database.supplyAsync(connection -> {
+            try {
+                Path backupPath = backupDatabase(connection, "reputationban-manual-backup-");
+                String backupFileName = backupPath.getFileName().toString();
+                AuditMetadata metadata = AuditMetadata.create()
+                        .put("backupFile", backupFileName);
+                String safeReason = Redactor.redactSecretLikeValue(reason);
+                if (safeReason != null && !safeReason.isBlank()) {
+                    metadata.put("reason", safeReason);
+                }
+                recordEventInTransaction(connection, AuditEvent.create(
+                        AuditEventType.DB_BACKUP_CREATED,
+                        actor.uuid(),
+                        actor.name(),
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        "manual database backup",
+                        metadata.toJson(),
+                        now
+                ));
+                return new ManualBackupResult(backupFileName, "backups/" + backupFileName);
+            } catch (IOException exception) {
+                throw new SQLException("Failed to create manual database backup", exception);
             }
         });
     }
@@ -409,23 +448,22 @@ public final class AuditService {
         }
     }
 
-    private Path backupDatabase(Connection connection) throws SQLException {
+    private Path backupDatabase(Connection connection, String filePrefix) throws SQLException, IOException {
         try (Statement statement = connection.createStatement()) {
             statement.execute("PRAGMA wal_checkpoint(FULL)");
         }
-        try {
-            Path backups = plugin.getDataFolder().toPath().resolve("backups").toAbsolutePath().normalize();
-            Files.createDirectories(backups);
-            Path databasePath = database.databasePath();
-            String stamp = FILE_STAMP.format(Instant.now());
-            Path destination = backups.resolve("reputationban-before-maintenance-" + stamp + ".db").normalize();
-            Files.copy(databasePath, destination, StandardCopyOption.REPLACE_EXISTING);
-            copyIfExists(Path.of(databasePath.toString() + "-wal"), Path.of(destination.toString() + "-wal"));
-            copyIfExists(Path.of(databasePath.toString() + "-shm"), Path.of(destination.toString() + "-shm"));
-            return destination;
-        } catch (IOException exception) {
-            throw new SQLException("Failed to create maintenance backup", exception);
+        Path backups = plugin.getDataFolder().toPath().resolve("backups").toAbsolutePath().normalize();
+        Files.createDirectories(backups);
+        Path databasePath = database.databasePath();
+        String stamp = FILE_STAMP.format(Instant.now());
+        Path destination = backups.resolve(filePrefix + stamp + ".db").normalize();
+        if (!destination.startsWith(backups)) {
+            throw new IOException("Backup path escaped backups directory");
         }
+        Files.copy(databasePath, destination, StandardCopyOption.REPLACE_EXISTING);
+        copyIfExists(Path.of(databasePath.toString() + "-wal"), Path.of(destination.toString() + "-wal"));
+        copyIfExists(Path.of(databasePath.toString() + "-shm"), Path.of(destination.toString() + "-shm"));
+        return destination;
     }
 
     private static void copyIfExists(Path source, Path destination) throws IOException {
@@ -492,5 +530,8 @@ public final class AuditService {
             }
             return metadata.toJson();
         }
+    }
+
+    public record ManualBackupResult(String fileName, String relativePath) {
     }
 }

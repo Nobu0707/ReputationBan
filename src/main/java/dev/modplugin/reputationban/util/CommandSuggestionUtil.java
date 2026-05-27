@@ -52,10 +52,12 @@ public final class CommandSuggestionUtil {
         }
         if (hasPermission.test("reputationban.admin.maintenance")) {
             candidates.add("maintenance");
+            candidates.add("backup");
         }
         if (hasPermission.test("reputationban.admin.diagnostics")) {
             candidates.add("doctor");
             candidates.add("diagnostics");
+            candidates.add("support");
         }
         return filterByPrefix(candidates, prefix);
     }
@@ -75,6 +77,7 @@ public final class CommandSuggestionUtil {
                 yield filterByPrefix(candidates, prefix);
             }
             case "maintenance" -> filterByPrefix(List.of("preview", "run"), prefix);
+            case "support" -> filterByPrefix(List.of("bundle"), prefix);
             default -> repSubcommandNeedsPlayer(subcommand) ? filterByPrefix(playerNames, prefix) : List.of();
         };
     }

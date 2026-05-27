@@ -4,7 +4,7 @@ set -euo pipefail
 # ReputationBan review archive generator.
 # Usage:
 #   bash scripts/make-review-archive.sh
-#   bash scripts/make-review-archive.sh "Phase 11"
+#   bash scripts/make-review-archive.sh "Phase 12"
 #
 # The optional argument is an expected substring of HEAD's commit subject.
 # If it does not match, the script exits before producing an archive, which
@@ -96,6 +96,9 @@ done < "$OUTDIR/meta/changed-files.txt"
   echo
   echo "## rg phase 11 release readiness"
   rg -n "CHANGELOG|INSTALLATION|CONFIGURATION|MIGRATION|RELEASE_READINESS|run-paper-runtime-smoke-helper|/rep version|\"version\"|version" src/main/java src/test/java src/main/resources README.md CHANGELOG.md docs reputationban_phase_plan.md scripts || true
+  echo
+  echo "## rg phase 12 support and release artifacts"
+  rg -n "SupportBundleService|SupportBundleResult|SUPPORT_BUNDLE_CREATED|DB_BACKUP_CREATED|Redactor|ConfigRedactor|ZipOutputStream|create-release-artifact|support bundle|/rep backup" src/main/java src/test/java src/main/resources README.md CHANGELOG.md docs reputationban_phase_plan.md scripts || true
 } > "$OUTDIR/checks/rg-review-signals.txt"
 
 {
@@ -136,6 +139,12 @@ else
   echo "./scripts/run-local-smoke-check.sh=missing" >> "$COMMAND_STATUS"
 fi
 
+if [[ -x "$ROOT/scripts/create-release-artifact.sh" ]]; then
+  run_logged "./scripts/create-release-artifact.sh" "$OUTDIR/checks/create-release-artifact.txt" "$ROOT/scripts/create-release-artifact.sh"
+else
+  echo "./scripts/create-release-artifact.sh=missing" >> "$COMMAND_STATUS"
+fi
+
 if compgen -G "$ROOT/build/test-results/test/*.xml" >/dev/null; then
   {
     echo "JUnit XML files:"
@@ -149,8 +158,8 @@ fi
 
 if [[ -d "$ROOT/build/libs" ]]; then
   find "$ROOT/build/libs" -maxdepth 1 -type f -print | sort > "$OUTDIR/checks/built-jars.txt"
-  if [[ -f "$ROOT/build/libs/ReputationBan-0.11.0.jar" ]]; then
-    (cd "$ROOT" && sha256sum build/libs/ReputationBan-0.11.0.jar) > "$OUTDIR/checks/jar-sha256.txt"
+  if [[ -f "$ROOT/build/libs/ReputationBan-0.12.0.jar" ]]; then
+    (cd "$ROOT" && sha256sum build/libs/ReputationBan-0.12.0.jar) > "$OUTDIR/checks/jar-sha256.txt"
   fi
 fi
 

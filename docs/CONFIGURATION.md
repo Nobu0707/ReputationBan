@@ -1,6 +1,6 @@
 # Configuration
 
-This document summarizes the main `config.yml` sections for ReputationBan 0.11.0.
+This document summarizes the main `config.yml` sections for ReputationBan 0.12.0.
 
 ## Score
 
@@ -58,6 +58,8 @@ This document summarizes the main `config.yml` sections for ReputationBan 0.11.0
 ## Discord Webhook
 
 `notify.discord-webhook` is disabled by default. The `url` value is a secret. Never commit it, paste it into review archives, or share it in support logs. ReputationBan should only display whether the URL is configured.
+
+`/rep support bundle` writes `config-redacted.yml` instead of the live config and redacts keys containing `url`, `webhook`, `password`, `token`, `secret`, `session`, or `cookie`.
 
 ## Audit
 

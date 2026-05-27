@@ -38,6 +38,10 @@ class CommandSuggestionUtilTest {
         Predicate<String> diagnostics = Set.of("reputationban.admin.diagnostics")::contains;
         assertEquals(List.of("doctor"), CommandSuggestionUtil.repSubcommands(diagnostics, "doc"));
         assertEquals(List.of("diagnostics"), CommandSuggestionUtil.repSubcommands(diagnostics, "diag"));
+        assertEquals(List.of("support"), CommandSuggestionUtil.repSubcommands(diagnostics, "sup"));
+
+        Predicate<String> maintenance = Set.of("reputationban.admin.maintenance")::contains;
+        assertEquals(List.of("backup"), CommandSuggestionUtil.repSubcommands(maintenance, "back"));
     }
 
     @Test
@@ -62,5 +66,6 @@ class CommandSuggestionUtilTest {
         assertEquals(List.of("run"), CommandSuggestionUtil.repSecondArgumentSuggestions("maintenance", List.of(), "r"));
         assertEquals(List.of("preview"), CommandSuggestionUtil.repSecondArgumentSuggestions("maintenance", List.of(), "pre"));
         assertEquals(List.of("confirm"), CommandSuggestionUtil.repMaintenanceThirdArgumentSuggestions("run", "con"));
+        assertEquals(List.of("bundle"), CommandSuggestionUtil.repSecondArgumentSuggestions("support", List.of(), "bun"));
     }
 }

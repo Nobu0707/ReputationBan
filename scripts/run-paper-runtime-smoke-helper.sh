@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-EXPECTED_VERSION="0.11.0"
+EXPECTED_VERSION="0.12.0"
 PLUGIN_JAR="build/libs/ReputationBan-${EXPECTED_VERSION}.jar"
 
 usage() {
@@ -62,13 +62,17 @@ Manual runtime smoke:
   /rep version
   /rep help
   /rep doctor
+  /rep support bundle
   /reportbad <test-player> spam smoke-test
   /reports list all 10
   /rep audit recent 10
+  /rep backup before-runtime-smoke
   /rep maintenance preview
 
 Safety checks:
   Confirm plugins/ReputationBan/reputationban.db still exists or is created on first boot.
+  Confirm plugins/ReputationBan/support/reputationban-support-*.zip contains no DB or server logs.
+  Confirm plugins/ReputationBan/backups/reputationban-manual-backup-*.db is created.
   Confirm Discord webhook remains disabled unless intentionally configured.
   Confirm no Discord webhook URL is printed in console or logs.
   Use only test users for BAN-related commands.

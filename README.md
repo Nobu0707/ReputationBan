@@ -2,7 +2,7 @@
 
 ReputationBan is a PaperMC moderation plugin that tracks player reputation scores from reports and staff actions. It stores data in SQLite, supports pending report review, and can trigger profile-based temporary or permanent bans when scores cross the configured threshold.
 
-Current version: `0.11.0`
+Current version: `0.12.0`
 
 ## Requirements
 
@@ -18,6 +18,7 @@ Current version: `0.11.0`
 - [Configuration](docs/CONFIGURATION.md)
 - [Migration](docs/MIGRATION.md)
 - [Release readiness](docs/RELEASE_READINESS.md)
+- [Support bundle](docs/SUPPORT_BUNDLE.md)
 - [Changelog](CHANGELOG.md)
 
 ## Main Features
@@ -27,6 +28,7 @@ Current version: `0.11.0`
 - Staff score management, report review, ban history, unban, and pardon commands.
 - Profile-based BAN handling without name BAN APIs.
 - Audit log, CSV export, retention preview, and confirmed maintenance cleanup with backup.
+- Manual SQLite backup and secret-redacted support bundle generation.
 - Optional Discord webhook notifications with secret-safe diagnostics and audit metadata.
 
 ## Commands
@@ -49,8 +51,10 @@ Current version: `0.11.0`
 - `/rep maintenance preview`: show retention cleanup counts without deleting data.
 - `/rep maintenance run`: show the confirm guidance without deleting data.
 - `/rep maintenance run confirm`: back up the SQLite database and run retention cleanup.
+- `/rep backup [reason...]`: create a manual SQLite database backup.
 - `/rep doctor`: show operational diagnostics without exposing Discord webhook URLs.
 - `/rep diagnostics`: alias for `/rep doctor`.
+- `/rep support bundle`: create a support diagnostic ZIP without DB files or server logs.
 - `/rep add <player> <points> [reason...]`: add score points.
 - `/rep remove <player> <points> [reason...]`: remove score points.
 - `/rep set <player> <score> [reason...]`: set an exact score.
@@ -98,8 +102,15 @@ Current version: `0.11.0`
 - `/rep version` reports the installed plugin version and target runtime.
 - `/rep doctor` includes plugin data folder, database file existence, audit export safety, Discord enabled/urlConfigured booleans, and backup directory writability without printing webhook URLs.
 - Release documents cover installation, configuration, migration, and v1.0.0 readiness.
-- `scripts/run-paper-runtime-smoke-helper.sh` safely prepares a Paper test server by backing up existing plugin JARs and copying `ReputationBan-0.11.0.jar`.
+- `scripts/run-paper-runtime-smoke-helper.sh` safely prepares a Paper test server by backing up existing plugin JARs and copying the built ReputationBan JAR.
 - Review archive and local smoke scripts avoid unnecessary duplicate builds where possible.
+
+## Phase 12 Support And Release Artifacts
+
+- `/rep backup [reason]` creates `plugins/ReputationBan/backups/reputationban-manual-backup-*.db` and records `DB_BACKUP_CREATED` without absolute paths or webhook-like reason values.
+- `/rep support bundle` creates `plugins/ReputationBan/support/reputationban-support-*.zip` with diagnostics, counts, sharing guidance, and `config-redacted.yml`.
+- Support bundles exclude `reputationban.db`, WAL/SHM files, server logs, and webhook URLs.
+- `scripts/create-release-artifact.sh` copies the JAR, writes a checksum, and creates `build/release/ReputationBan-0.12.0-release.zip` with docs only.
 
 ## Permissions
 
@@ -110,8 +121,8 @@ Current version: `0.11.0`
 - `reputationban.admin.reports`: review reports.
 - `reputationban.admin.ban`: allow ban-sensitive approvals and ban management commands.
 - `reputationban.admin.audit`: view and export audit logs.
-- `reputationban.admin.maintenance`: preview and run confirmed retention cleanup.
-- `reputationban.admin.diagnostics`: view operational diagnostics.
+- `reputationban.admin.maintenance`: preview and run confirmed retention cleanup, and create manual DB backups.
+- `reputationban.admin.diagnostics`: view operational diagnostics and create support bundles.
 - `reputationban.notify`: receive staff notifications.
 - `reputationban.bypass`: bypass reports, deductions, and automatic bans while online.
 - `reputationban.admin`: grants the main admin permissions.
@@ -123,7 +134,7 @@ Current version: `0.11.0`
 ./scripts/review_code.sh
 ```
 
-The plugin jar is written to `build/libs/ReputationBan-0.11.0.jar`.
+The plugin jar is written to `build/libs/ReputationBan-0.12.0.jar`.
 
 ## Current Limitations
 

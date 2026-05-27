@@ -1,13 +1,13 @@
 # Migration
 
-ReputationBan 0.11.0 uses SQLite under `plugins/ReputationBan/reputationban.db` by default.
+ReputationBan 0.12.0 uses SQLite under `plugins/ReputationBan/reputationban.db` by default.
 
 ## Before Updating
 
 1. Stop the server.
 2. Back up `plugins/ReputationBan/reputationban.db`.
 3. Back up `plugins/ReputationBan/config.yml`.
-4. Replace the plugin JAR with `ReputationBan-0.11.0.jar`.
+4. Replace the plugin JAR with `ReputationBan-0.12.0.jar`.
 5. Start the server and run `/rep doctor`.
 
 ## Automatic Schema Migration
@@ -36,3 +36,5 @@ Do not roll back the JAR without also restoring the database backup from before 
 ## Maintenance Backups
 
 `/rep maintenance run confirm` creates `plugins/ReputationBan/backups/reputationban-before-maintenance-*.db` before retention cleanup. This backup is for maintenance rollback, not a replacement for full pre-upgrade backups.
+
+`/rep backup [reason]` creates `plugins/ReputationBan/backups/reputationban-manual-backup-*.db` for pre-upgrade and pre-maintenance checkpoints. WAL/SHM sidecar files are copied when present.

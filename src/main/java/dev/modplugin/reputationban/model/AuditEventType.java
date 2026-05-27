@@ -18,7 +18,9 @@ public enum AuditEventType {
     CONFIG_RELOADED,
     MAINTENANCE_PREVIEW,
     MAINTENANCE_RUN,
-    DIAGNOSTICS_RUN;
+    DIAGNOSTICS_RUN,
+    DB_BACKUP_CREATED,
+    SUPPORT_BUNDLE_CREATED;
 
     public String databaseValue() {
         return name();

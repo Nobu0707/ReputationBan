@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.12.0
+
+- Added `/rep backup [reason]` for manual SQLite backups with `DB_BACKUP_CREATED` audit events.
+- Added `/rep support bundle` for secret-redacted diagnostic ZIPs that exclude DB files and server logs.
+- Added config redaction utilities for webhook URLs, URL-like values, passwords, tokens, secrets, sessions, and cookies.
+- Added `scripts/create-release-artifact.sh` to create `build/release` JAR, SHA256, and release ZIP artifacts.
+- Updated review archive, local smoke, runtime smoke, release readiness, and support bundle documentation for Phase 12.
+
 ## 0.11.0
 
 - Added release preparation and operation documents for installation, configuration, migration, and v1.0.0 readiness.

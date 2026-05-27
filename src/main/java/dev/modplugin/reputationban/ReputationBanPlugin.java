@@ -21,6 +21,7 @@ import dev.modplugin.reputationban.service.PlayerDataService;
 import dev.modplugin.reputationban.service.PunishmentService;
 import dev.modplugin.reputationban.service.ReportService;
 import dev.modplugin.reputationban.service.ScoreService;
+import dev.modplugin.reputationban.service.SupportBundleService;
 import dev.modplugin.reputationban.util.ScoreThresholdPolicy;
 import java.sql.SQLException;
 import java.util.List;
@@ -44,6 +45,7 @@ public final class ReputationBanPlugin extends JavaPlugin {
     private ReportService reportService;
     private PunishmentService punishmentService;
     private DiagnosticService diagnosticService;
+    private SupportBundleService supportBundleService;
     private NotificationService notificationService;
 
     @Override
@@ -67,11 +69,12 @@ public final class ReputationBanPlugin extends JavaPlugin {
         reportService = new ReportService(databaseManager, scoreService, auditService, pluginConfig);
         punishmentService = new PunishmentService(this, databaseManager, auditService, pluginConfig);
         diagnosticService = new DiagnosticService(this, databaseManager, auditService, this::pluginConfig);
+        supportBundleService = new SupportBundleService(this, databaseManager, auditService, this::pluginConfig);
 
         getServer().getPluginManager().registerEvents(new PlayerJoinListener(playerDataService, getLogger()), this);
         registerCommand(
                 "rep",
-                new RepCommand(this, playerDataService, scoreService, punishmentService, auditService, diagnosticService),
+                new RepCommand(this, playerDataService, scoreService, punishmentService, auditService, diagnosticService, supportBundleService),
                 new RepTabCompleter()
         );
         registerCommand(
@@ -81,7 +84,7 @@ public final class ReputationBanPlugin extends JavaPlugin {
         );
         registerCommand("reports", new ReportsCommand(this, reportService, punishmentService), new ReportsTabCompleter());
         startScoreRecoveryTask();
-        getLogger().info("ReputationBan v0.11.0 enabled.");
+        getLogger().info("ReputationBan v0.12.0 enabled.");
     }
 
     @Override
