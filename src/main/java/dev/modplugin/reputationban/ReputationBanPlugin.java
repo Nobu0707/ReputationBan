@@ -81,7 +81,7 @@ public final class ReputationBanPlugin extends JavaPlugin {
         );
         registerCommand("reports", new ReportsCommand(this, reportService, punishmentService), new ReportsTabCompleter());
         startScoreRecoveryTask();
-        getLogger().info("ReputationBan v0.10.0 enabled.");
+        getLogger().info("ReputationBan v0.11.0 enabled.");
     }
 
     @Override

@@ -10,7 +10,7 @@
 ## Install
 
 1. Run `./gradlew clean test build --warning-mode all`.
-2. Copy `build/libs/ReputationBan-0.10.0.jar` to the Paper `plugins` directory.
+2. Copy `build/libs/ReputationBan-0.11.0.jar` to the Paper `plugins` directory.
 3. Start Paper with Java 25.
 
 ## Startup
@@ -23,6 +23,7 @@
 ## Commands
 
 - `/rep help`
+- `/rep version`
 - `/reports help`
 - `/reportbad <TAB>` and category TAB completion
 - `/rep audit recent`

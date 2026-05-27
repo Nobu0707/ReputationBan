@@ -26,6 +26,7 @@ public final class CommandSuggestionUtil {
     public static List<String> repSubcommands(Predicate<String> hasPermission, String prefix) {
         List<String> candidates = new ArrayList<>();
         candidates.add("help");
+        candidates.add("version");
         if (hasPermission.test("reputationban.score.others") || hasPermission.test("reputationban.admin.score")) {
             candidates.add("check");
             candidates.add("history");

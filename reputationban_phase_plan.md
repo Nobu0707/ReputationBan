@@ -206,7 +206,34 @@
 - release readiness docs
 - version 0.10.0
 
-## Phase 11以降: 外部連携・高度な悪用対策
+## Phase 11 / v0.11.0: リリース準備・実機スモーク支援
+
+目的: v1.0.0前に、配布・導入・実機確認しやすい状態へ整える。
+
+実装範囲:
+
+- version 0.11.0
+- `/rep version`
+- `/rep help` とTAB補完への `version` 追加
+- `/rep doctor` への `pluginDataFolder`、`databaseFileExists`、`discordWebhookEnabled`、`discordWebhookUrlConfigured`、`auditExportDirectorySafe`、`backupDirectoryWritable` 追加
+- `DIAGNOSTICS_RUN` metadata への安全なDB/backup状態追加
+- `CHANGELOG.md`
+- `docs/INSTALLATION.md`
+- `docs/CONFIGURATION.md`
+- `docs/MIGRATION.md`
+- `docs/RELEASE_READINESS.md`
+- `scripts/run-paper-runtime-smoke-helper.sh`
+- `run-local-smoke-check.sh` の `REPUTATIONBAN_SKIP_BUILD` 対応
+- `make-review-archive.sh` からの local smoke 重複ビルド軽減
+- review_code.sh / make-review-archive.sh Phase 11対応
+
+注意:
+
+- Webhook URLは表示、ログ、監査metadata、CSV、レビューアーカイブへ出さない。
+- Paper runtime smoke helperは既存DBやサーバーディレクトリを削除しない。
+- Phase 11ではGUI、外部保護プラグイン連携、Folia対応は実装しない。
+
+## Phase 12以降: 外部連携・高度な悪用対策
 
 実装候補:
 

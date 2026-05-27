@@ -2,6 +2,8 @@
 
 ReputationBan is a PaperMC moderation plugin that tracks player reputation scores from reports and staff actions. It stores data in SQLite, supports pending report review, and can trigger profile-based temporary or permanent bans when scores cross the configured threshold.
 
+Current version: `0.11.0`
+
 ## Requirements
 
 - Minecraft/PaperMC 26.1.2
@@ -10,10 +12,28 @@ ReputationBan is a PaperMC moderation plugin that tracks player reputation score
 - SQLite JDBC loaded through `plugin.yml` libraries
 - Optional Discord webhook for moderation notifications
 
+## Documentation
+
+- [Installation](docs/INSTALLATION.md)
+- [Configuration](docs/CONFIGURATION.md)
+- [Migration](docs/MIGRATION.md)
+- [Release readiness](docs/RELEASE_READINESS.md)
+- [Changelog](CHANGELOG.md)
+
+## Main Features
+
+- Reputation score storage in SQLite.
+- Player reports with categories, cooldowns, eligibility gates, and optional staff review.
+- Staff score management, report review, ban history, unban, and pardon commands.
+- Profile-based BAN handling without name BAN APIs.
+- Audit log, CSV export, retention preview, and confirmed maintenance cleanup with backup.
+- Optional Discord webhook notifications with secret-safe diagnostics and audit metadata.
+
 ## Commands
 
 - `/reportbad <player> <category> <reason>`: report a player.
 - `/rep`: show your own score.
+- `/rep version`: show the installed ReputationBan version and target runtime.
 - `/rep help`: show commands available to you.
 - `/rep check <player>`: show another player's score.
 - `/rep history <player> [limit]`: show recent score history.
@@ -73,6 +93,14 @@ ReputationBan is a PaperMC moderation plugin that tracks player reputation score
 - Review archives now include `checks/local-smoke-check.txt` and command status for `./scripts/run-local-smoke-check.sh`.
 - v0.10.0 is the pre-v1.0.0 operational diagnostics and release readiness phase.
 
+## Phase 11 Release Preparation
+
+- `/rep version` reports the installed plugin version and target runtime.
+- `/rep doctor` includes plugin data folder, database file existence, audit export safety, Discord enabled/urlConfigured booleans, and backup directory writability without printing webhook URLs.
+- Release documents cover installation, configuration, migration, and v1.0.0 readiness.
+- `scripts/run-paper-runtime-smoke-helper.sh` safely prepares a Paper test server by backing up existing plugin JARs and copying `ReputationBan-0.11.0.jar`.
+- Review archive and local smoke scripts avoid unnecessary duplicate builds where possible.
+
 ## Permissions
 
 - `reputationban.report`: use `/reportbad`.
@@ -95,7 +123,7 @@ ReputationBan is a PaperMC moderation plugin that tracks player reputation score
 ./scripts/review_code.sh
 ```
 
-The plugin jar is written to `build/libs/ReputationBan-0.10.0.jar`.
+The plugin jar is written to `build/libs/ReputationBan-0.11.0.jar`.
 
 ## Current Limitations
 

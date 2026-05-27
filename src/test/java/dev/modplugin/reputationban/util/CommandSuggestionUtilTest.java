@@ -22,8 +22,10 @@ class CommandSuggestionUtilTest {
     @Test
     void repSubcommandsRespectPermissions() {
         Predicate<String> scoreOnly = Set.of("reputationban.admin.score")::contains;
-        assertEquals(List.of("help", "check", "history", "add", "remove", "set"),
+        assertEquals(List.of("help", "version", "check", "history", "add", "remove", "set"),
                 CommandSuggestionUtil.repSubcommands(scoreOnly, ""));
+
+        assertEquals(List.of("version"), CommandSuggestionUtil.repSubcommands(permission -> false, "ver"));
 
         Predicate<String> banOnly = Set.of("reputationban.admin.ban")::contains;
         assertEquals(List.of("banhistory", "baninfo"),

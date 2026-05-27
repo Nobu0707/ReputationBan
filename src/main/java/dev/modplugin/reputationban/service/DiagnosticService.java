@@ -11,6 +11,9 @@ import dev.modplugin.reputationban.model.DiagnosticReport;
 import dev.modplugin.reputationban.model.DiagnosticStatus;
 import dev.modplugin.reputationban.util.AuditMetadata;
 import dev.modplugin.reputationban.util.SafePathResolver;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -67,6 +70,9 @@ public final class DiagnosticService {
                 plugin.getDataFolder().toPath().toAbsolutePath().normalize(),
                 config.auditExportDirectory()
         );
+        String pluginDataFolder = plugin.getDataFolder().toPath().toAbsolutePath().normalize().toString();
+        boolean databaseFileExists = Files.exists(database.databasePath());
+        boolean backupDirectoryWritable = backupDirectoryWritable(plugin.getDataFolder().toPath());
 
         return database.supplyAsync(connection -> {
             DiagnosticReport report = databaseReport(
@@ -75,9 +81,12 @@ public final class DiagnosticService {
                     version,
                     server,
                     javaVersion,
+                    pluginDataFolder,
                     warnings,
                     errors,
-                    auditExportSafe
+                    auditExportSafe,
+                    databaseFileExists,
+                    backupDirectoryWritable
             );
             recordDiagnosticsRun(connection, actor, report);
             return report;
@@ -90,9 +99,12 @@ public final class DiagnosticService {
             String version,
             String server,
             String javaVersion,
+            String pluginDataFolder,
             int warnings,
             int errors,
-            boolean auditExportSafe
+            boolean auditExportSafe,
+            boolean databaseFileExists,
+            boolean backupDirectoryWritable
     ) {
         boolean databaseOk = false;
         Set<String> tables = Set.of();
@@ -130,15 +142,18 @@ public final class DiagnosticService {
                 version,
                 server,
                 javaVersion,
+                pluginDataFolder,
                 databaseStatus,
                 tableStatus,
                 configStatus,
                 auditExportStatus,
                 warnings,
                 errors,
+                databaseFileExists,
                 config.discordWebhookConfig().enabled(),
                 config.discordWebhookConfig().hasUsableUrl(),
                 auditExportSafe,
+                backupDirectoryWritable,
                 retentionSummary(config),
                 pendingReports,
                 thresholdPendingReports,
@@ -167,6 +182,8 @@ public final class DiagnosticService {
                             .put("errors", report.configErrors())
                             .put("databaseOk", report.databaseOk())
                             .put("tablesOk", report.tablesOk())
+                            .put("databaseFileExists", report.databaseFileExists())
+                            .put("backupDirectoryWritable", report.backupDirectoryWritable())
                             .put("discordEnabled", report.discordEnabled())
                             .put("discordUrlConfigured", report.discordUrlConfigured())
                             .toJson(),
@@ -230,5 +247,15 @@ public final class DiagnosticService {
                 config.retentionScoreHistoryDays(),
                 config.retentionBansDays()
         );
+    }
+
+    private static boolean backupDirectoryWritable(Path dataFolder) {
+        try {
+            Path backups = dataFolder.resolve("backups").toAbsolutePath().normalize();
+            Files.createDirectories(backups);
+            return Files.isDirectory(backups) && Files.isWritable(backups);
+        } catch (IOException exception) {
+            return false;
+        }
     }
 }

@@ -2,7 +2,7 @@
 set -euo pipefail
 
 PROJECT_NAME="ReputationBan"
-EXPECTED_VERSION="0.10.0"
+EXPECTED_VERSION="0.11.0"
 EXPECTED_MAIN="dev.modplugin.reputationban.ReputationBanPlugin"
 EXPECTED_API_VERSION="26.1.2"
 EXPECTED_PACKAGE_DIR="src/main/java/dev/modplugin/reputationban"
@@ -32,6 +32,13 @@ require_file build.gradle.kts
 require_file gradlew
 require_file scripts/make-review-archive.sh
 require_file scripts/run-local-smoke-check.sh
+require_file scripts/run-paper-runtime-smoke-helper.sh
+require_file CHANGELOG.md
+require_file docs/INSTALLATION.md
+require_file docs/CONFIGURATION.md
+require_file docs/MIGRATION.md
+require_file docs/RELEASE_READINESS.md
+require_file docs/phase-11.md
 require_file docs/runtime-smoke-checklist.md
 require_file src/main/resources/plugin.yml
 require_file src/main/resources/config.yml
@@ -40,13 +47,15 @@ require_dir "$EXPECTED_PACKAGE_DIR"
 [[ -x ./scripts/review_code.sh ]] || fail "review_code.sh is not executable"
 [[ -x ./scripts/make-review-archive.sh ]] || fail "make-review-archive.sh is not executable"
 [[ -x ./scripts/run-local-smoke-check.sh ]] || fail "run-local-smoke-check.sh is not executable"
-
-grep -q "io.papermc.paper:paper-api:26.1.2.build" build.gradle.kts || fail "Paper API 26.1.2 dependency not found"
-grep -q 'version = "0.10.0"' build.gradle.kts || fail "build.gradle.kts version is not 0.10.0"
-grep -q "JavaLanguageVersion.of(25)" build.gradle.kts || fail "Java 25 toolchain not found"
-grep -q "options.release.set(25)" build.gradle.kts || fail "Java release 25 not found"
+[[ -x ./scripts/run-paper-runtime-smoke-helper.sh ]] || fail "run-paper-runtime-smoke-helper.sh is not executable"
 
 YML=src/main/resources/plugin.yml
+grep -q "io.papermc.paper:paper-api:26.1.2.build" build.gradle.kts || fail "Paper API 26.1.2 dependency not found"
+grep -q "org.xerial:sqlite-jdbc" "$YML" || fail "Missing sqlite-jdbc library"
+grep -q "JavaLanguageVersion.of(25)" build.gradle.kts || fail "Java 25 toolchain not found"
+grep -q 'version = "0.11.0"' build.gradle.kts || fail "build.gradle.kts version is not 0.11.0"
+grep -q "options.release.set(25)" build.gradle.kts || fail "Java release 25 not found"
+
 [[ "$(extract_yaml_value "$YML" name)" == "$PROJECT_NAME" ]] || fail "Invalid plugin.yml name"
 [[ "$(extract_yaml_value "$YML" version)" == "$EXPECTED_VERSION" ]] || fail "Invalid plugin.yml version"
 [[ "$(extract_yaml_value "$YML" main)" == "$EXPECTED_MAIN" ]] || fail "Invalid plugin.yml main"
@@ -99,6 +108,8 @@ grep -R "\"baninfo\"" src/main/java/dev/modplugin/reputationban/command/RepComma
 grep -R "\"unban\"" src/main/java/dev/modplugin/reputationban/command/RepCommand.java >/dev/null || fail "/rep unban handling not found"
 grep -R "\"pardon\"" src/main/java/dev/modplugin/reputationban/command/RepCommand.java >/dev/null || fail "/rep pardon handling not found"
 grep -R "\"help\"" src/main/java/dev/modplugin/reputationban/command/RepCommand.java >/dev/null || fail "/rep help handling not found"
+grep -R "\"version\"" src/main/java/dev/modplugin/reputationban/command/RepCommand.java >/dev/null || fail "/rep version handling not found"
+grep -R "/rep version - プラグインバージョンを表示" src/main/java/dev/modplugin/reputationban/command/RepCommand.java >/dev/null || fail "/rep help does not mention version"
 grep -R "\"help\"" src/main/java/dev/modplugin/reputationban/command/ReportsCommand.java >/dev/null || fail "/reports help handling not found"
 grep -R "\"add\"" src/main/java/dev/modplugin/reputationban/command/RepCommand.java >/dev/null || fail "/rep add handling not found"
 grep -R "\"remove\"" src/main/java/dev/modplugin/reputationban/command/RepCommand.java >/dev/null || fail "/rep remove handling not found"
@@ -172,11 +183,13 @@ grep -R "BanListType.PROFILE\\|ProfileBanList" src/main/java >/dev/null || fail 
 grep -R "TabCompleter\\|onTabComplete\\|TabExecutor" src/main/java/dev/modplugin/reputationban >/dev/null || fail "TAB completion implementation not found"
 grep -R "categories().keySet()" src/main/java/dev/modplugin/reputationban/command/ReportBadTabCompleter.java >/dev/null || fail "/reportbad category completion not found"
 grep -R "repSubcommands" src/main/java/dev/modplugin/reputationban/command/RepTabCompleter.java src/main/java/dev/modplugin/reputationban/util/CommandSuggestionUtil.java >/dev/null || fail "/rep subcommand completion not found"
+grep -R "candidates.add(\"version\")" src/main/java/dev/modplugin/reputationban/util/CommandSuggestionUtil.java >/dev/null || fail "/rep version TAB completion not found"
 grep -R "\"doctor\"" src/main/java/dev/modplugin/reputationban/command/RepCommand.java src/main/java/dev/modplugin/reputationban/util/CommandSuggestionUtil.java >/dev/null || fail "/rep doctor handling/completion not found"
 grep -R "\"diagnostics\"" src/main/java/dev/modplugin/reputationban/command/RepCommand.java src/main/java/dev/modplugin/reputationban/util/CommandSuggestionUtil.java >/dev/null || fail "/rep diagnostics handling/completion not found"
 grep -R "class DiagnosticService" src/main/java/dev/modplugin/reputationban/service >/dev/null || fail "DiagnosticService not found"
 grep -R "record DiagnosticReport" src/main/java/dev/modplugin/reputationban/model >/dev/null || fail "DiagnosticReport not found"
 grep -R "DIAGNOSTICS_RUN" src/main/java/dev/modplugin/reputationban src/test/java/dev/modplugin/reputationban >/dev/null || fail "DIAGNOSTICS_RUN audit event not found"
+grep -R "pluginDataFolder\\|databaseFileExists\\|backupDirectoryWritable\\|auditExportDirectorySafe" src/main/java/dev/modplugin/reputationban/model src/main/java/dev/modplugin/reputationban/service src/main/java/dev/modplugin/reputationban/command >/dev/null || fail "Phase 11 doctor fields not found"
 grep -R "reportStatuses\\|reportsSecondArgumentSuggestions" src/main/java/dev/modplugin/reputationban/command/ReportsTabCompleter.java src/main/java/dev/modplugin/reputationban/util/CommandSuggestionUtil.java >/dev/null || fail "/reports list status completion not found"
 grep -R "CommandArgumentParser.parseLimit" src/main/java/dev/modplugin/reputationban/command >/dev/null || fail "explicit limit parsing not found"
 grep -R "class NotificationService" src/main/java/dev/modplugin/reputationban/notification >/dev/null || fail "NotificationService not found"
@@ -225,12 +238,17 @@ require_command jar
 jar tf "$JAR" | grep -q "plugin.yml" || fail "plugin.yml missing from jar"
 jar tf "$JAR" | grep -q "dev/modplugin/reputationban/ReputationBanPlugin.class" || fail "Main class missing from jar"
 
-grep -q "EXPECTED_VERSION=\"0.10.0\"" scripts/run-local-smoke-check.sh || fail "run-local-smoke-check.sh does not check v0.10.0"
+grep -q "EXPECTED_VERSION=\"0.11.0\"" scripts/run-local-smoke-check.sh || fail "run-local-smoke-check.sh does not check v0.11.0"
+grep -q "REPUTATIONBAN_SKIP_BUILD" scripts/run-local-smoke-check.sh || fail "run-local-smoke-check.sh does not support REPUTATIONBAN_SKIP_BUILD"
 grep -q "local-smoke-check.txt" scripts/make-review-archive.sh || fail "make-review-archive.sh does not create local-smoke-check.txt"
 grep -q "./scripts/run-local-smoke-check.sh" scripts/make-review-archive.sh || fail "make-review-archive.sh does not record run-local-smoke-check.sh status"
+grep -q "secret-scan.txt" scripts/make-review-archive.sh || fail "make-review-archive.sh does not create secret-scan.txt"
+grep -q "run-paper-runtime-smoke-helper" scripts/make-review-archive.sh || fail "make-review-archive.sh review signals do not mention paper runtime helper"
+grep -Eq "CHANGELOG|INSTALLATION|CONFIGURATION|MIGRATION|RELEASE_READINESS" scripts/make-review-archive.sh || fail "make-review-archive.sh review signals do not mention release docs"
+bash -n scripts/run-paper-runtime-smoke-helper.sh || fail "run-paper-runtime-smoke-helper.sh syntax check failed"
 
 if [[ "${REPUTATIONBAN_SKIP_LOCAL_SMOKE:-0}" != "1" ]]; then
-  REPUTATIONBAN_SKIP_REVIEW_CODE=1 ./scripts/run-local-smoke-check.sh
+  REPUTATIONBAN_SKIP_REVIEW_CODE=1 REPUTATIONBAN_SKIP_BUILD=1 ./scripts/run-local-smoke-check.sh
 fi
 
 git rev-list --count HEAD >/dev/null || fail "No commits found"

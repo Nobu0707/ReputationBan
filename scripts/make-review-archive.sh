@@ -4,7 +4,7 @@ set -euo pipefail
 # ReputationBan review archive generator.
 # Usage:
 #   bash scripts/make-review-archive.sh
-#   bash scripts/make-review-archive.sh "Phase 10"
+#   bash scripts/make-review-archive.sh "Phase 11"
 #
 # The optional argument is an expected substring of HEAD's commit subject.
 # If it does not match, the script exits before producing an archive, which
@@ -93,6 +93,9 @@ done < "$OUTDIR/meta/changed-files.txt"
   echo
   echo "## rg phase 10 diagnostics readiness"
   rg -n "unbanned_by_name|databaseActorId|DiagnosticService|DiagnosticReport|DIAGNOSTICS_RUN|doctor|diagnostics|local-smoke-check" src/main/java src/test/java src/main/resources README.md docs reputationban_phase_plan.md scripts || true
+  echo
+  echo "## rg phase 11 release readiness"
+  rg -n "CHANGELOG|INSTALLATION|CONFIGURATION|MIGRATION|RELEASE_READINESS|run-paper-runtime-smoke-helper|/rep version|\"version\"|version" src/main/java src/test/java src/main/resources README.md CHANGELOG.md docs reputationban_phase_plan.md scripts || true
 } > "$OUTDIR/checks/rg-review-signals.txt"
 
 {
@@ -128,7 +131,7 @@ else
 fi
 
 if [[ -x "$ROOT/scripts/run-local-smoke-check.sh" ]]; then
-  run_logged "./scripts/run-local-smoke-check.sh" "$OUTDIR/checks/local-smoke-check.txt" "$ROOT/scripts/run-local-smoke-check.sh"
+  run_logged "./scripts/run-local-smoke-check.sh" "$OUTDIR/checks/local-smoke-check.txt" env REPUTATIONBAN_SKIP_REVIEW_CODE=1 REPUTATIONBAN_SKIP_BUILD=1 "$ROOT/scripts/run-local-smoke-check.sh"
 else
   echo "./scripts/run-local-smoke-check.sh=missing" >> "$COMMAND_STATUS"
 fi
@@ -146,8 +149,8 @@ fi
 
 if [[ -d "$ROOT/build/libs" ]]; then
   find "$ROOT/build/libs" -maxdepth 1 -type f -print | sort > "$OUTDIR/checks/built-jars.txt"
-  if [[ -f "$ROOT/build/libs/ReputationBan-0.10.0.jar" ]]; then
-    (cd "$ROOT" && sha256sum build/libs/ReputationBan-0.10.0.jar) > "$OUTDIR/checks/jar-sha256.txt"
+  if [[ -f "$ROOT/build/libs/ReputationBan-0.11.0.jar" ]]; then
+    (cd "$ROOT" && sha256sum build/libs/ReputationBan-0.11.0.jar) > "$OUTDIR/checks/jar-sha256.txt"
   fi
 fi
 

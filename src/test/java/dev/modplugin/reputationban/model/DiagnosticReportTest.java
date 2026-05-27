@@ -28,15 +28,18 @@ class DiagnosticReportTest {
     @Test
     void discordDiagnosticStateOnlyStoresBooleanConfigurationState() {
         DiagnosticReport report = new DiagnosticReport(
-                "0.10.0",
+                "0.11.0",
                 "Paper 26.1.2",
                 "25",
+                "/server/plugins/ReputationBan",
                 DiagnosticStatus.OK,
                 DiagnosticStatus.OK,
                 DiagnosticStatus.OK,
                 DiagnosticStatus.OK,
                 0,
                 0,
+                true,
+                true,
                 true,
                 true,
                 true,
@@ -51,6 +54,8 @@ class DiagnosticReportTest {
         assertEquals(true, report.discordUrlConfigured());
         assertFalse(Arrays.stream(DiagnosticReport.class.getRecordComponents())
                 .anyMatch(component -> component.getName().equals("discordWebhookUrl")));
+        assertFalse(Arrays.stream(DiagnosticReport.class.getRecordComponents())
+                .anyMatch(component -> component.getName().equals("webhookUrl")));
     }
 
     private static DiagnosticReport report(
@@ -60,18 +65,21 @@ class DiagnosticReportTest {
             DiagnosticStatus auditExport
     ) {
         return new DiagnosticReport(
-                "0.10.0",
+                "0.11.0",
                 "Paper",
                 "25",
+                "/server/plugins/ReputationBan",
                 database,
                 tables,
                 config,
                 auditExport,
                 config == DiagnosticStatus.WARN ? 1 : 0,
                 config == DiagnosticStatus.ERROR ? 1 : 0,
+                true,
                 false,
                 false,
                 auditExport == DiagnosticStatus.OK,
+                true,
                 "audit=180 rejected=90 cancelled=90 score=0 bans=0",
                 0,
                 0,

@@ -38,6 +38,7 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
 public final class RepCommand implements CommandExecutor {
+    private static final String TARGET_RUNTIME = "PaperMC 26.1.2 / Java 25";
     private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")
             .withZone(ZoneId.systemDefault());
     private static final DateTimeFormatter FULL_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")
@@ -74,6 +75,10 @@ public final class RepCommand implements CommandExecutor {
         }
         if ("help".equalsIgnoreCase(args[0])) {
             sendHelp(sender);
+            return true;
+        }
+        if ("version".equalsIgnoreCase(args[0])) {
+            version(sender);
             return true;
         }
         if ("check".equalsIgnoreCase(args[0])) {
@@ -126,6 +131,7 @@ public final class RepCommand implements CommandExecutor {
     }
 
     private void sendHelp(CommandSender sender) {
+        sender.sendMessage(ReputationBanPlugin.PREFIX + "/rep version - プラグインバージョンを表示");
         if (sender instanceof Player && sender.hasPermission("reputationban.score.self")) {
             sender.sendMessage(ReputationBanPlugin.PREFIX + "/rep - 自分のスコアを表示");
         }
@@ -729,6 +735,11 @@ public final class RepCommand implements CommandExecutor {
         }
     }
 
+    private void version(CommandSender sender) {
+        sender.sendMessage(ReputationBanPlugin.PREFIX + "version: " + plugin.getPluginMeta().getVersion());
+        sender.sendMessage(ReputationBanPlugin.PREFIX + "target: " + TARGET_RUNTIME);
+    }
+
     private void doctor(CommandSender sender) {
         if (!sender.hasPermission("reputationban.admin.diagnostics")) {
             sender.sendMessage(ReputationBanPlugin.PREFIX + "権限がありません。");
@@ -835,6 +846,8 @@ public final class RepCommand implements CommandExecutor {
         sender.sendMessage(ReputationBanPlugin.PREFIX + "version: " + report.version());
         sender.sendMessage(ReputationBanPlugin.PREFIX + "server: " + report.server());
         sender.sendMessage(ReputationBanPlugin.PREFIX + "java: " + report.javaVersion());
+        sender.sendMessage(ReputationBanPlugin.PREFIX + "pluginDataFolder: " + report.pluginDataFolder());
+        sender.sendMessage(ReputationBanPlugin.PREFIX + "databaseFileExists: " + report.databaseFileExists());
         sender.sendMessage(ReputationBanPlugin.PREFIX + "database: " + report.databaseStatus());
         sender.sendMessage(ReputationBanPlugin.PREFIX + "tables: " + report.tablesStatus());
         if (!report.missingTables().isEmpty()) {
@@ -844,8 +857,12 @@ public final class RepCommand implements CommandExecutor {
                 + report.configWarnings() + " errors=" + report.configErrors());
         sender.sendMessage(ReputationBanPlugin.PREFIX + "discord: enabled="
                 + report.discordEnabled() + " urlConfigured=" + report.discordUrlConfigured());
+        sender.sendMessage(ReputationBanPlugin.PREFIX + "discordWebhookEnabled: " + report.discordEnabled());
+        sender.sendMessage(ReputationBanPlugin.PREFIX + "discordWebhookUrlConfigured: " + report.discordUrlConfigured());
         sender.sendMessage(ReputationBanPlugin.PREFIX + "auditExportDirectory: "
                 + (report.auditExportDirectorySafe() ? "safe" : "unsafe"));
+        sender.sendMessage(ReputationBanPlugin.PREFIX + "auditExportDirectorySafe: " + report.auditExportDirectorySafe());
+        sender.sendMessage(ReputationBanPlugin.PREFIX + "backupDirectoryWritable: " + report.backupDirectoryWritable());
         sender.sendMessage(ReputationBanPlugin.PREFIX + "retention: " + report.retentionSummary());
         sender.sendMessage(ReputationBanPlugin.PREFIX + "pendingReports: " + report.pendingReports());
         sender.sendMessage(ReputationBanPlugin.PREFIX + "thresholdPendingReports: " + report.thresholdPendingReports());
