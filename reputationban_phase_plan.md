@@ -394,13 +394,37 @@
 - WorldGuard context は審査補助であり、自動 BAN の唯一根拠にしない。
 - CoreProtect rollback、restore、purge と LuckPerms 書き込み操作は引き続き行わない。
 
-## Phase 18以降: 外部連携・高度な悪用対策
+## Phase 19 / v0.19.0: GriefPrevention 任意連携
+
+目的: GriefPrevention を任意依存として扱い、通報時の claim context を審査補助として保存する。
+
+実装範囲:
+
+- version 0.19.0
+- `GriefPrevention` の `softdepend`
+- `GriefPreventionReflectionAdapter`
+- `/rep integrations` と `/rep integrations test` の GriefPrevention 表示
+- `/rep doctor` の GriefPrevention 簡易状態表示
+- `/reportbad` 後の `report_context` provider `griefprevention`
+- `/reports view <id>` と `/reports evidence <id>` の GriefPrevention 表示
+- `GRIEFPREVENTION_CONTEXT_CAPTURED` audit event
+- `docs/INTEGRATIONS.md` と `docs/phase-19.md`
+- review/release archive scripts の v0.19.0 対応
+
+注意:
+
+- `src/main/java` に GriefPrevention API の直接 import を追加しない。
+- GriefPrevention 未導入でも ReputationBan 本体は起動できる設計にする。
+- GriefPrevention claim/trust の作成、変更、削除は行わない。
+- GriefPrevention context は審査補助であり、自動 BAN の唯一根拠にしない。
+- CoreProtect rollback、restore、purge、LuckPerms 書き込み、WorldGuard region/flag 変更は引き続き行わない。
+
+## Phase 20以降: 外部連携・高度な悪用対策
 
 実装候補:
 
 - 管理GUI
 - 接触判定
 - 集団通報検知
-- GriefPrevention連携
 - DiscordSRV連携
 - 設定可能なメッセージファイル

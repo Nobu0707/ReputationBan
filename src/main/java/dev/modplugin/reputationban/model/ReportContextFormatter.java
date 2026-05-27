@@ -23,10 +23,12 @@ public final class ReportContextFormatter {
         appendProvider(lines, byProvider, "luckperms");
         appendProvider(lines, byProvider, "coreprotect");
         appendProvider(lines, byProvider, "worldguard");
+        appendProvider(lines, byProvider, "griefprevention");
         for (Map.Entry<String, List<ReportContext>> entry : byProvider.entrySet()) {
             if (!"luckperms".equals(entry.getKey())
                     && !"coreprotect".equals(entry.getKey())
-                    && !"worldguard".equals(entry.getKey())) {
+                    && !"worldguard".equals(entry.getKey())
+                    && !"griefprevention".equals(entry.getKey())) {
                 appendUnknown(lines, entry.getKey(), entry.getValue());
             }
         }
@@ -47,6 +49,10 @@ public final class ReportContextFormatter {
         }
         if ("worldguard".equals(provider)) {
             appendWorldGuard(lines, contexts);
+            return;
+        }
+        if ("griefprevention".equals(provider)) {
+            appendGriefPrevention(lines, contexts);
             return;
         }
         appendCoreProtect(lines, contexts);
@@ -73,6 +79,15 @@ public final class ReportContextFormatter {
 
     private static void appendWorldGuard(List<String> lines, List<ReportContext> contexts) {
         lines.add("WorldGuard:");
+        for (ReportContext context : contexts) {
+            for (String line : splitSummary(context.summary())) {
+                lines.add("  " + line);
+            }
+        }
+    }
+
+    private static void appendGriefPrevention(List<String> lines, List<ReportContext> contexts) {
+        lines.add("GriefPrevention:");
         for (ReportContext context : contexts) {
             for (String line : splitSummary(context.summary())) {
                 lines.add("  " + line);
@@ -179,6 +194,9 @@ public final class ReportContextFormatter {
         }
         if ("worldguard".equalsIgnoreCase(provider)) {
             return "WorldGuard";
+        }
+        if ("griefprevention".equalsIgnoreCase(provider)) {
+            return "GriefPrevention";
         }
         return provider.toLowerCase(Locale.ROOT);
     }

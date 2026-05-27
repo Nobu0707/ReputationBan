@@ -59,6 +59,7 @@ public final class PluginConfig {
     private final LuckPermsIntegrationConfig luckPermsIntegration;
     private final CoreProtectIntegrationConfig coreProtectIntegration;
     private final WorldGuardIntegrationConfig worldGuardIntegration;
+    private final GriefPreventionIntegrationConfig griefPreventionIntegration;
 
     private PluginConfig(FileConfiguration config) {
         initialScore = config.getInt("initial-score", 100);
@@ -107,6 +108,7 @@ public final class PluginConfig {
         luckPermsIntegration = loadLuckPermsIntegration(config);
         coreProtectIntegration = loadCoreProtectIntegration(config);
         worldGuardIntegration = loadWorldGuardIntegration(config);
+        griefPreventionIntegration = loadGriefPreventionIntegration(config);
     }
 
     public static PluginConfig load(FileConfiguration config) {
@@ -198,6 +200,20 @@ public final class PluginConfig {
                         .filter(value -> value != null && !value.isBlank())
                         .map(value -> value.toLowerCase(Locale.ROOT))
                         .toList())
+        );
+    }
+
+    private static GriefPreventionIntegrationConfig loadGriefPreventionIntegration(FileConfiguration config) {
+        return new GriefPreventionIntegrationConfig(
+                config.getBoolean("integrations.griefprevention.enabled", true),
+                config.getBoolean("integrations.griefprevention.report-context.enabled", true),
+                List.copyOf(config.getStringList("integrations.griefprevention.report-context.categories").stream()
+                        .filter(value -> value != null && !value.isBlank())
+                        .map(value -> value.toLowerCase(Locale.ROOT))
+                        .toList()),
+                config.getBoolean("integrations.griefprevention.report-context.include-claim-owner", false),
+                config.getBoolean("integrations.griefprevention.report-context.include-trust-counts", false),
+                config.getBoolean("integrations.griefprevention.report-context.include-boundaries", true)
         );
     }
 
@@ -389,6 +405,10 @@ public final class PluginConfig {
         return worldGuardIntegration;
     }
 
+    public GriefPreventionIntegrationConfig griefPreventionIntegration() {
+        return griefPreventionIntegration;
+    }
+
     public record LuckPermsIntegrationConfig(
             boolean enabled,
             boolean useGroupWeight,
@@ -419,6 +439,16 @@ public final class PluginConfig {
             boolean includeRegionOwners,
             boolean includeRegionMembers,
             List<String> includeFlags
+    ) {
+    }
+
+    public record GriefPreventionIntegrationConfig(
+            boolean enabled,
+            boolean reportContextEnabled,
+            List<String> reportContextCategories,
+            boolean includeClaimOwner,
+            boolean includeTrustCounts,
+            boolean includeBoundaries
     ) {
     }
 }

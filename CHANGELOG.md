@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.19.0
+
+- GriefPrevention を `softdepend` の任意連携として追加しました。
+- GriefPrevention 連携は reflection adapter に閉じ込め、外部 API 型の直接 import を避けました。
+- `/rep integrations`、`/rep integrations test`、`/rep doctor` に GriefPrevention 状態を追加しました。
+- `/reportbad` 後に対象カテゴリの GriefPrevention claim context を `report_context` provider `griefprevention` として保存するようにしました。
+- `/reports view <id>` と `/reports evidence <id>` で GriefPrevention 文脈を表示できるようにしました。
+- `GRIEFPREVENTION_CONTEXT_CAPTURED` audit event を追加しました。
+- GriefPrevention claim/trust の作成、変更、削除、自動処罰の根拠化は行いません。
+
 ## 0.18.0
 
 - WorldGuard / WorldEdit を `softdepend` と `compileOnly` の任意連携として追加しました。

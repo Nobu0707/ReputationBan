@@ -1,6 +1,6 @@
 # Configuration
 
-このドキュメントでは ReputationBan 0.18.0 の主な `config.yml` セクションを説明します。YAML key は変更しないでください。
+このドキュメントでは ReputationBan 0.19.0 の主な `config.yml` セクションを説明します。YAML key は変更しないでください。
 
 ## Score
 
@@ -79,6 +79,8 @@
 `integrations.coreprotect` は CoreProtect が導入され、API version が `minimum-api-version` 以上の場合だけ有効になります。`report-context` は対象 category、lookup 秒数、半径、最大件数、block-break / block-place の action を制御します。保存するのは審査補助の短い証拠サマリーで、rollback、restore、purge は実行しません。
 
 `integrations.worldguard` は WorldGuard と WorldEdit が導入されている場合だけ有効になります。`report-context.categories` に含まれる category の `/reportbad` で、通報者の現在地に適用される region id、priority、必要に応じた flag を `report_context` に保存します。`max-regions` は保存・表示する最大件数です。`include-region-owners` と `include-region-members` は privacy のためデフォルト `false` で、`true` の場合も件数程度に留めます。ReputationBan は WorldGuard region や flag を変更しません。
+
+`integrations.griefprevention` は GriefPrevention が導入されている場合だけ有効になります。`report-context.categories` に含まれる category の `/reportbad` で、通報者の現在地にある claim context を `report_context` provider `griefprevention` に保存します。`include-claim-owner` と `include-trust-counts` は privacy のためデフォルト `false`、`include-boundaries` はデフォルト `true` です。ReputationBan は GriefPrevention claim や trust を変更しません。
 
 ## Database
 

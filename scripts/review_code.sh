@@ -2,7 +2,7 @@
 set -euo pipefail
 
 PROJECT_NAME="ReputationBan"
-EXPECTED_VERSION="0.18.0"
+EXPECTED_VERSION="0.19.0"
 EXPECTED_MAIN="dev.modplugin.reputationban.ReputationBanPlugin"
 EXPECTED_API_VERSION="26.1.2"
 EXPECTED_PACKAGE_DIR="src/main/java/dev/modplugin/reputationban"
@@ -52,7 +52,7 @@ require_file docs/phase-13.md
 require_file docs/phase-14.md
 require_file docs/phase-15.md
 require_file docs/phase-17.md
-require_file docs/phase-18.md
+require_file docs/phase-19.md
 require_file docs/INTEGRATIONS.md
 require_file docs/INTEGRATION_RUNTIME_SMOKE_CHECKLIST.md
 require_file docs/RELEASE_CANDIDATE_CHECKLIST.md
@@ -76,7 +76,7 @@ YML=src/main/resources/plugin.yml
 grep -q "io.papermc.paper:paper-api:26.1.2.build" build.gradle.kts || fail "Paper API 26.1.2 dependency not found"
 grep -q "org.xerial:sqlite-jdbc" "$YML" || fail "Missing sqlite-jdbc library"
 grep -q "JavaLanguageVersion.of(25)" build.gradle.kts || fail "Java 25 toolchain not found"
-grep -q 'version = "0.18.0"' build.gradle.kts || fail "build.gradle.kts version is not 0.18.0"
+grep -q 'version = "0.19.0"' build.gradle.kts || fail "build.gradle.kts version is not 0.19.0"
 grep -q "options.release.set(25)" build.gradle.kts || fail "Java release 25 not found"
 grep -q 'net.luckperms:api:5.5' build.gradle.kts || fail "LuckPerms compileOnly dependency not found"
 grep -q 'net.coreprotect:coreprotect:23.2' build.gradle.kts || fail "CoreProtect compileOnly dependency not found"
@@ -99,6 +99,7 @@ grep -A8 "^softdepend:" "$YML" | grep -q "LuckPerms" || fail "plugin.yml softdep
 grep -A8 "^softdepend:" "$YML" | grep -q "CoreProtect" || fail "plugin.yml softdepend missing CoreProtect"
 grep -A8 "^softdepend:" "$YML" | grep -q "WorldEdit" || fail "plugin.yml softdepend missing WorldEdit"
 grep -A8 "^softdepend:" "$YML" | grep -q "WorldGuard" || fail "plugin.yml softdepend missing WorldGuard"
+grep -A8 "^softdepend:" "$YML" | grep -q "GriefPrevention" || fail "plugin.yml softdepend missing GriefPrevention"
 grep -q "reputationban.admin.integrations:" "$YML" || fail "Missing reputationban.admin.integrations permission"
 grep -A14 "reputationban.admin:" "$YML" | grep -q "reputationban.admin.integrations: true" || fail "admin integrations child permission missing"
 
@@ -128,6 +129,10 @@ grep -q "luckperms:" "$CFG" || fail "Missing LuckPerms config section"
 grep -q "coreprotect:" "$CFG" || fail "Missing CoreProtect config section"
 grep -q "worldguard:" "$CFG" || fail "Missing WorldGuard config section"
 grep -q "max-regions:" "$CFG" || fail "Missing WorldGuard max-regions config"
+grep -q "griefprevention:" "$CFG" || fail "Missing GriefPrevention config section"
+grep -q "include-claim-owner:" "$CFG" || fail "Missing GriefPrevention include-claim-owner config"
+grep -q "include-trust-counts:" "$CFG" || fail "Missing GriefPrevention include-trust-counts config"
+grep -q "include-boundaries:" "$CFG" || fail "Missing GriefPrevention include-boundaries config"
 grep -q "url:[[:space:]]*\"\"" "$CFG" || fail "Default discord webhook URL must be empty"
 for event_key in report-created report-approved report-rejected score-threshold-crossed auto-ban unban pardon reporter-penalty recovery-summary; do
   grep -q "$event_key:" "$CFG" || fail "Missing discord webhook event key: $event_key"
@@ -247,6 +252,8 @@ grep -R "class LuckPermsIntegration" src/main/java/dev/modplugin/reputationban/i
 grep -R "class CoreProtectIntegration" src/main/java/dev/modplugin/reputationban/integration >/dev/null || fail "CoreProtectIntegration not found"
 grep -R "class WorldGuardIntegration" src/main/java/dev/modplugin/reputationban/integration >/dev/null || fail "WorldGuardIntegration not found"
 grep -R "class WorldGuardReflectionAdapter" src/main/java/dev/modplugin/reputationban/integration >/dev/null || fail "WorldGuardReflectionAdapter not found"
+grep -R "class GriefPreventionIntegration" src/main/java/dev/modplugin/reputationban/integration >/dev/null || fail "GriefPreventionIntegration not found"
+grep -R "class GriefPreventionReflectionAdapter" src/main/java/dev/modplugin/reputationban/integration >/dev/null || fail "GriefPreventionReflectionAdapter not found"
 if grep -R "import net\.luckperms\." src/main/java >/dev/null; then
   fail "LuckPerms API direct import detected in Java sources"
 fi
@@ -255,6 +262,9 @@ if grep -R "import net\.coreprotect\." src/main/java >/dev/null; then
 fi
 if grep -R "import com\.sk89q\.worldguard\.\|import com\.sk89q\.worldedit\." src/main/java >/dev/null; then
   fail "WorldGuard/WorldEdit API direct import detected in Java sources"
+fi
+if grep -R "import me\.ryanhamshire\.GriefPrevention\.\|import me\.ryanhamshire\.griefprevention\.\|import com\.griefprevention\." src/main/java >/dev/null; then
+  fail "GriefPrevention API direct import detected in Java sources"
 fi
 if grep -R "CoreProtectAPI\|net\.coreprotect\.CoreProtect\|net\.luckperms\.api\.model\.user\.User" src/main/java >/dev/null; then
   fail "Optional dependency API type direct reference detected in Java sources"
@@ -265,12 +275,16 @@ fi
 grep -R "class LuckPermsReflectionAdapter" src/main/java/dev/modplugin/reputationban/integration >/dev/null || fail "LuckPermsReflectionAdapter not found"
 grep -R "class CoreProtectReflectionAdapter" src/main/java/dev/modplugin/reputationban/integration >/dev/null || fail "CoreProtectReflectionAdapter not found"
 grep -R "class WorldGuardReflectionAdapter" src/main/java/dev/modplugin/reputationban/integration >/dev/null || fail "WorldGuardReflectionAdapter not found"
+grep -R "class GriefPreventionReflectionAdapter" src/main/java/dev/modplugin/reputationban/integration >/dev/null || fail "GriefPreventionReflectionAdapter not found"
 grep -R "Class\.forName(\"net\.luckperms\.api\.LuckPerms\"" src/main/java/dev/modplugin/reputationban/integration/luckperms >/dev/null || fail "LuckPerms reflection class lookup not found"
 grep -R "getRegistration" src/main/java/dev/modplugin/reputationban/integration/luckperms >/dev/null || fail "LuckPerms service reflection lookup not found"
 grep -R "getPlugin(\"CoreProtect\")" src/main/java/dev/modplugin/reputationban/integration/coreprotect >/dev/null || fail "CoreProtect plugin reflection lookup not found"
+grep -R "plugin(\"GriefPrevention\")" src/main/java/dev/modplugin/reputationban/integration/griefprevention >/dev/null || fail "GriefPrevention plugin lookup not found"
+grep -R "getClaimAt" src/main/java/dev/modplugin/reputationban/integration/griefprevention >/dev/null || fail "GriefPrevention claim lookup not found"
 grep -R "CREATE TABLE IF NOT EXISTS report_context" src/main/java/dev/modplugin/reputationban/database/DatabaseManager.java >/dev/null || fail "report_context table not found"
 grep -R "COREPROTECT_CONTEXT_CAPTURED" src/main/java/dev/modplugin/reputationban src/test/java/dev/modplugin/reputationban >/dev/null || fail "COREPROTECT_CONTEXT_CAPTURED audit event not found"
 grep -R "WORLDGUARD_CONTEXT_CAPTURED" src/main/java/dev/modplugin/reputationban src/test/java/dev/modplugin/reputationban >/dev/null || fail "WORLDGUARD_CONTEXT_CAPTURED audit event not found"
+grep -R "GRIEFPREVENTION_CONTEXT_CAPTURED" src/main/java/dev/modplugin/reputationban src/test/java/dev/modplugin/reputationban >/dev/null || fail "GRIEFPREVENTION_CONTEXT_CAPTURED audit event not found"
 grep -R "INTEGRATION_STATUS_CHECKED" src/main/java/dev/modplugin/reputationban src/test/java/dev/modplugin/reputationban >/dev/null || fail "INTEGRATION_STATUS_CHECKED audit event not found"
 grep -R "ReportContextFormatter\\|formatEvidence" src/main/java/dev/modplugin/reputationban src/test/java/dev/modplugin/reputationban >/dev/null || fail "report_context evidence display formatter not found"
 grep -R "availabilityLabel\\|startupLine" src/main/java/dev/modplugin/reputationban >/dev/null || fail "doctor/startup integration status not found"
@@ -281,6 +295,8 @@ grep -R "bypassGroup\\|isLuckPermsBypassGroup" src/main/java/dev/modplugin/reput
 grep -R "performLookup" src/main/java/dev/modplugin/reputationban/integration >/dev/null || fail "CoreProtect performLookup use not found"
 grep -R "provider, summary, metadata.*worldguard\\|saveReportContext(reportId, \"worldguard\"" src/main/java/dev/modplugin/reputationban >/dev/null || fail "WorldGuard report_context provider save not found"
 grep -R "WorldGuard:" src/main/java/dev/modplugin/reputationban/command/RepCommand.java src/main/java/dev/modplugin/reputationban/model/ReportContextFormatter.java >/dev/null || fail "WorldGuard command/evidence display not found"
+grep -R "saveReportContext(reportId, \"griefprevention\"" src/main/java/dev/modplugin/reputationban >/dev/null || fail "GriefPrevention report_context provider save not found"
+grep -R "GriefPrevention:" src/main/java/dev/modplugin/reputationban/command/RepCommand.java src/main/java/dev/modplugin/reputationban/model/ReportContextFormatter.java >/dev/null || fail "GriefPrevention command/evidence display not found"
 grep -R "連携情報" src/main/java/dev/modplugin/reputationban/command/ReportsCommand.java >/dev/null || fail "/reports view integration context display not found"
 grep -R "class DiagnosticService" src/main/java/dev/modplugin/reputationban/service >/dev/null || fail "DiagnosticService not found"
 grep -R "record DiagnosticReport" src/main/java/dev/modplugin/reputationban/model >/dev/null || fail "DiagnosticReport not found"
@@ -322,6 +338,9 @@ fi
 if grep -R "addRegion\|removeRegion\|saveChanges\|setFlag\|setPriority\|setOwners\|setMembers" src/main/java >/dev/null; then
   fail "WorldGuard region/flag mutation usage detected"
 fi
+if grep -R "createClaim\|deleteClaim\|resizeClaim\|changeClaimOwner\|setOwner\|setManagers\|setBuilders\|setContainers\|setAccessors" src/main/java >/dev/null; then
+  fail "GriefPrevention claim/trust mutation usage detected"
+fi
 if grep -R "profileBanList\.pardon[[:space:]]*(.*targetName\|profileBanList\.pardon[[:space:]]*(.*Name\|profileBanList\.pardon[[:space:]]*(.*String" src/main/java >/dev/null; then
   fail "Deprecated name pardon API usage detected"
 fi
@@ -351,7 +370,7 @@ for japanese_doc in \
   docs/phase-14.md \
   docs/phase-15.md \
   docs/phase-17.md \
-  docs/phase-18.md \
+  docs/phase-19.md \
   docs/INTEGRATIONS.md; do
   grep -Pq '[\p{Hiragana}\p{Katakana}\p{Han}]' "$japanese_doc" || fail "$japanese_doc does not appear to contain Japanese text"
 done
@@ -361,7 +380,7 @@ bash -n scripts/check-docs-localization.sh || fail "check-docs-localization.sh s
 bash -n scripts/check-optional-dependency-safety.sh || fail "check-optional-dependency-safety.sh syntax check failed"
 ./scripts/check-optional-dependency-safety.sh
 
-grep -q "0.18.0" README.md || fail "README.md does not mention 0.18.0"
+grep -q "0.19.0" README.md || fail "README.md does not mention 0.19.0"
 grep -q "RELEASE_CANDIDATE_CHECKLIST" README.md || fail "README.md does not link RELEASE_CANDIDATE_CHECKLIST"
 grep -q "RELEASE_CANDIDATE_CHECKLIST" docs/phase-15.md docs/RELEASE_CANDIDATE_CHECKLIST.md README.md || fail "Release candidate checklist references missing"
 
@@ -373,14 +392,14 @@ require_command jar
 jar tf "$JAR" | grep -q "plugin.yml" || fail "plugin.yml missing from jar"
 jar tf "$JAR" | grep -q "dev/modplugin/reputationban/ReputationBanPlugin.class" || fail "Main class missing from jar"
 
-grep -q "EXPECTED_VERSION=\"0.18.0\"" scripts/run-local-smoke-check.sh || fail "run-local-smoke-check.sh does not check v0.18.0"
+grep -q "EXPECTED_VERSION=\"0.19.0\"" scripts/run-local-smoke-check.sh || fail "run-local-smoke-check.sh does not check v0.19.0"
 grep -q "REPUTATIONBAN_SKIP_BUILD" scripts/run-local-smoke-check.sh || fail "run-local-smoke-check.sh does not support REPUTATIONBAN_SKIP_BUILD"
-grep -q "VERSION=\"0.18.0\"" scripts/create-release-artifact.sh || fail "create-release-artifact.sh does not target v0.18.0"
+grep -q "VERSION=\"0.19.0\"" scripts/create-release-artifact.sh || fail "create-release-artifact.sh does not target v0.19.0"
 grep -q "build/release" scripts/create-release-artifact.sh || fail "create-release-artifact.sh does not write build/release"
 grep -q "sha256sum" scripts/create-release-artifact.sh || fail "create-release-artifact.sh does not create sha256"
 grep -q "release.zip" scripts/create-release-artifact.sh || fail "create-release-artifact.sh does not create release zip"
 grep -q "RELEASE_ZIP_SHA" scripts/create-release-artifact.sh || fail "create-release-artifact.sh does not create release zip sha256"
-grep -q "VERSION=\"0.18.0\"" scripts/verify-release-artifact.sh || fail "verify-release-artifact.sh does not target v0.18.0"
+grep -q "VERSION=\"0.19.0\"" scripts/verify-release-artifact.sh || fail "verify-release-artifact.sh does not target v0.19.0"
 grep -q "docs/INTEGRATIONS.md" scripts/verify-release-artifact.sh || fail "verify-release-artifact.sh does not verify integrations docs"
 grep -q "sha256sum -c" scripts/verify-release-artifact.sh || fail "verify-release-artifact.sh does not verify sha256"
 grep -q "docs/INSTALLATION.md" scripts/verify-release-artifact.sh || fail "verify-release-artifact.sh does not verify localized docs"
@@ -411,14 +430,14 @@ bash -n scripts/verify-release-artifact.sh || fail "verify-release-artifact.sh s
 bash -n scripts/record-paper-runtime-smoke-result.sh || fail "record-paper-runtime-smoke-result.sh syntax check failed"
 bash -n scripts/record-integration-runtime-smoke-result.sh || fail "record-integration-runtime-smoke-result.sh syntax check failed"
 ./scripts/create-release-artifact.sh
-[[ -f "build/release/ReputationBan-0.18.0.jar" ]] || fail "release jar not found"
-[[ -f "build/release/ReputationBan-0.18.0.jar.sha256" ]] || fail "release jar sha256 not found"
-[[ -f "build/release/ReputationBan-0.18.0-release.zip" ]] || fail "release zip not found"
-[[ -f "build/release/ReputationBan-0.18.0-release.zip.sha256" ]] || fail "release zip sha256 not found"
+[[ -f "build/release/ReputationBan-0.19.0.jar" ]] || fail "release jar not found"
+[[ -f "build/release/ReputationBan-0.19.0.jar.sha256" ]] || fail "release jar sha256 not found"
+[[ -f "build/release/ReputationBan-0.19.0-release.zip" ]] || fail "release zip not found"
+[[ -f "build/release/ReputationBan-0.19.0-release.zip.sha256" ]] || fail "release zip sha256 not found"
 ./scripts/verify-release-artifact.sh
-jar tf "build/release/ReputationBan-0.18.0-release.zip" | grep -q "README.md" || fail "release zip missing README.md"
-jar tf "build/release/ReputationBan-0.18.0-release.zip" | grep -q "docs/INTEGRATIONS.md" || fail "release zip missing docs/INTEGRATIONS.md"
-if jar tf "build/release/ReputationBan-0.18.0-release.zip" | grep -E '(^|/)(config\.yml|reputationban\.db|latest\.log|debug\.log)$|(^|/)logs/' >/dev/null; then
+jar tf "build/release/ReputationBan-0.19.0-release.zip" | grep -q "README.md" || fail "release zip missing README.md"
+jar tf "build/release/ReputationBan-0.19.0-release.zip" | grep -q "docs/INTEGRATIONS.md" || fail "release zip missing docs/INTEGRATIONS.md"
+if jar tf "build/release/ReputationBan-0.19.0-release.zip" | grep -E '(^|/)(config\.yml|reputationban\.db|latest\.log|debug\.log)$|(^|/)logs/' >/dev/null; then
   fail "release zip contains forbidden config, DB, or logs"
 fi
 

@@ -82,6 +82,23 @@ class ReportContextTest {
     }
 
     @Test
+    void formatsGriefPreventionEvidenceSummaryLines() {
+        ReportContext context = new ReportContext(
+                1L,
+                2L,
+                "griefprevention",
+                "GriefPrevention: claimPresent=true world=world x=100 y=64 z=-20 claimId=123 adminClaim=false owner=hidden",
+                "{\"claimPresent\":\"true\"}",
+                3L
+        );
+
+        List<String> lines = ReportContextFormatter.formatEvidence(List.of(context));
+
+        assertEquals("GriefPrevention:", lines.get(0));
+        assertTrue(lines.contains("  GriefPrevention: claimPresent=true world=world x=100 y=64 z=-20 claimId=123 adminClaim=false owner=hidden"));
+    }
+
+    @Test
     void formatsNoEvidenceMessage() {
         assertEquals(
                 List.of("この通報に保存された連携情報はありません。"),

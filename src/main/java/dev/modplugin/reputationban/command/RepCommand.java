@@ -877,6 +877,7 @@ public final class RepCommand implements CommandExecutor {
                         .put("luckPermsActive", result.luckPermsActive())
                         .put("coreProtectActive", result.coreProtectActive())
                         .put("worldGuardActive", result.worldGuardActive())
+                        .put("griefPreventionActive", result.griefPreventionActive())
                         .put("senderType", result.senderType())
                         .toJson(),
                 System.currentTimeMillis()

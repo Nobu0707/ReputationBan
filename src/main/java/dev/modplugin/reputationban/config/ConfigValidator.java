@@ -64,6 +64,10 @@ public final class ConfigValidator {
             issues.add(new ConfigValidationIssue(Severity.WARNING, "integrations.worldguard.report-context.categories",
                     "integrations.worldguard.report-context.categories is empty; WorldGuard report context will not be captured"));
         }
+        if (config.griefPreventionReportContextCategories().isEmpty()) {
+            issues.add(new ConfigValidationIssue(Severity.WARNING, "integrations.griefprevention.report-context.categories",
+                    "integrations.griefprevention.report-context.categories is empty; GriefPrevention report context will not be captured"));
+        }
         if (config.discordWebhookTimeoutSeconds() < 1 || config.discordWebhookTimeoutSeconds() > 30) {
             issues.add(new ConfigValidationIssue(Severity.WARNING, "notify.discord-webhook.timeout-seconds",
                     "notify.discord-webhook.timeout-seconds should be between 1 and 30"));

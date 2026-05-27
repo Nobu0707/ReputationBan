@@ -1,8 +1,8 @@
 # 外部連携
 
-ReputationBan 0.18.0 では LuckPerms、CoreProtect、WorldGuard を任意連携として扱います。いずれも `softdepend` であり、未導入、未ロード、API unavailable の場合でも ReputationBan 単体の通報、監査、BAN、backup、support bundle は継続します。
+ReputationBan 0.19.0 では LuckPerms、CoreProtect、WorldGuard、GriefPrevention を任意連携として扱います。いずれも `softdepend` であり、未導入、未ロード、API unavailable の場合でも ReputationBan 単体の通報、監査、BAN、backup、support bundle は継続します。
 
-Phase 16a 以降、optional dependency class loading を安全化するため、LuckPerms / CoreProtect / WorldGuard API 型を起動時に無条件ロードされるクラスから外し、reflection adapter 経由で必要な時だけ参照します。外部プラグインが一部またはすべて未導入の構成でも、外部 API 欠落による `NoClassDefFoundError` で ReputationBan 本体が起動不能にならない設計です。
+Phase 16a 以降、optional dependency class loading を安全化するため、LuckPerms / CoreProtect / WorldGuard / GriefPrevention API 型を起動時に無条件ロードされるクラスから外し、reflection adapter 経由で必要な時だけ参照します。外部プラグインが一部またはすべて未導入の構成でも、外部 API 欠落による `NoClassDefFoundError` で ReputationBan 本体が起動不能にならない設計です。
 
 ## LuckPerms
 
@@ -32,12 +32,22 @@ WorldGuard / WorldEdit が未導入でも ReputationBan 本体は起動します
 
 WorldGuard の region context は自動処罰の唯一根拠にしないでください。ReputationBan は WorldGuard region の作成、変更、削除、flag 変更を行いません。Phase 18 では protection 設定を読み取り、審査者が `/reports view <id>` と `/reports evidence <id>` で確認できる補助情報として扱います。
 
+## GriefPrevention
+
+GriefPrevention 連携は、荒らし、嫌がらせ、詐欺などの通報で、通報者の現在地が claim 内かどうかを審査補助として保存します。GriefPrevention が未導入でも ReputationBan 本体は起動し、通報、監査、BAN 処理は継続します。
+
+Java ソースでは GriefPrevention API 型を直接 import せず、`GriefPreventionReflectionAdapter` が `Class.forName` と reflection で `getClaimAt` を呼びます。外へ出す値は ReputationBan 独自の claim summary だけです。
+
+保存される provider は `griefprevention` です。summary には claim 有無、world、block 座標、claim id、admin claim かどうか、設定に応じた owner、trust count、境界座標が入ります。privacy のため `include-claim-owner` と `include-trust-counts` はデフォルト `false` です。
+
+GriefPrevention の claim context は自動処罰の唯一根拠にしないでください。ReputationBan は claim の作成、変更、削除、owner 変更、trust/permission 変更を行いません。`/rep integrations test` でも現在地の claim 取得だけを行います。
+
 ## Commands
 
-- `/rep integrations`: LuckPerms / CoreProtect / WorldGuard の設定値、plugin presence、API availability、active、lookup 設定を表示します。
-- `/rep integrations test`: LuckPerms / CoreProtect / WorldGuard だけに絞った詳細診断です。破壊的操作、CoreProtect 実 lookup、WorldGuard region/flag 変更は行いません。
+- `/rep integrations`: LuckPerms / CoreProtect / WorldGuard / GriefPrevention の設定値、plugin presence、API availability、active、lookup 設定を表示します。
+- `/rep integrations test`: LuckPerms / CoreProtect / WorldGuard / GriefPrevention だけに絞った詳細診断です。破壊的操作、CoreProtect 実 lookup、WorldGuard region/flag 変更、GriefPrevention claim/trust 変更は行いません。
 - `/rep doctor`: ReputationBan 全体診断です。database、tables、config、Discord、backup、連携の簡易状態をまとめて確認します。
-- `/reports view <id>`: LuckPerms reporter weight、CoreProtect 証拠サマリー、WorldGuard region context がある場合に概要を表示します。
+- `/reports view <id>`: LuckPerms reporter weight、CoreProtect 証拠サマリー、WorldGuard region context、GriefPrevention claim context がある場合に概要を表示します。
 - `/reports evidence <id>`: `report_context` の詳細を provider ごとに表示します。
 
 ## 設定例
@@ -85,6 +95,18 @@ integrations:
         - build
         - block-break
         - block-place
+
+  griefprevention:
+    enabled: true
+    report-context:
+      enabled: true
+      categories:
+        - griefing
+        - harassment
+        - scam
+      include-claim-owner: false
+      include-trust-counts: false
+      include-boundaries: true
 ```
 
 ## 採用依存
@@ -96,3 +118,4 @@ integrations:
 - WorldGuard API: `com.sk89q.worldguard:worldguard-bukkit:7.0.13` (`compileOnly`, transitive dependencies disabled)
 - WorldEdit API: `com.sk89q.worldedit:worldedit-bukkit:7.3.0` (`compileOnly`, transitive dependencies disabled)
 - EngineHub repository: `https://maven.enginehub.org/repo/`
+- GriefPrevention API: compile dependency は追加せず、reflection only で扱います。

@@ -167,6 +167,18 @@ integrations:
         - block-break
         - block-place
 
+  griefprevention:
+    enabled: true
+    report-context:
+      enabled: true
+      categories:
+        - griefing
+        - harassment
+        - scam
+      include-claim-owner: false
+      include-trust-counts: false
+      include-boundaries: true
+
 database:
   type: "sqlite"
   file: "reputationban.db"

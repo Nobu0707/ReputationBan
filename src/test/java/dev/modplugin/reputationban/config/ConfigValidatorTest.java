@@ -43,7 +43,7 @@ class ConfigValidatorTest {
         ConfigValidationInput config = new ConfigValidationInput(
                 100, 100, 5, 1, 7, 300, 14, 5, 15, 60, 1, 0, 2, 100, 7, 50, 1000,
                 180, 90, 90, 0, 0, 5, "exports", 0.0D, Map.of("trusted", -1.0D), 0, 0, -1, -1,
-                -1, List.of()
+                -1, List.of(), List.of()
         );
 
         List<ConfigValidationIssue> issues = ConfigValidator.validate(config, DATA_FOLDER);
@@ -57,6 +57,8 @@ class ConfigValidatorTest {
         assertTrue(issues.stream().anyMatch(issue -> issue.path().equals("integrations.worldguard.report-context.max-regions")));
         assertTrue(issues.stream().anyMatch(issue -> issue.severity() == Severity.WARNING
                 && issue.path().equals("integrations.worldguard.report-context.categories")));
+        assertTrue(issues.stream().anyMatch(issue -> issue.severity() == Severity.WARNING
+                && issue.path().equals("integrations.griefprevention.report-context.categories")));
     }
 
     private static ConfigValidationInput valid() {
@@ -96,7 +98,8 @@ class ConfigValidatorTest {
                 20,
                 10,
                 10,
-                List.of("griefing", "harassment")
+                List.of("griefing", "harassment"),
+                List.of("griefing", "harassment", "scam")
         );
     }
 }

@@ -3,6 +3,10 @@ package dev.modplugin.reputationban.integration;
 import dev.modplugin.reputationban.config.PluginConfig;
 import dev.modplugin.reputationban.integration.coreprotect.CoreProtectEvidenceService;
 import dev.modplugin.reputationban.integration.coreprotect.CoreProtectIntegration;
+import dev.modplugin.reputationban.integration.griefprevention.GriefPreventionClaimContextService;
+import dev.modplugin.reputationban.integration.griefprevention.GriefPreventionClaimSummary;
+import dev.modplugin.reputationban.integration.griefprevention.GriefPreventionIntegration;
+import dev.modplugin.reputationban.integration.griefprevention.GriefPreventionStatus;
 import dev.modplugin.reputationban.integration.luckperms.LuckPermsIntegration;
 import dev.modplugin.reputationban.integration.luckperms.LuckPermsTrustService;
 import dev.modplugin.reputationban.integration.worldguard.WorldGuardIntegration;
@@ -26,8 +30,10 @@ public final class IntegrationService {
     private final LuckPermsIntegration luckPermsIntegration;
     private final CoreProtectIntegration coreProtectIntegration;
     private final WorldGuardIntegration worldGuardIntegration;
+    private final GriefPreventionIntegration griefPreventionIntegration;
     private final CoreProtectEvidenceService coreProtectEvidenceService;
     private final WorldGuardRegionContextService worldGuardRegionContextService;
+    private final GriefPreventionClaimContextService griefPreventionClaimContextService;
 
     public IntegrationService(
             JavaPlugin plugin,
@@ -40,10 +46,17 @@ public final class IntegrationService {
         this.luckPermsIntegration = new LuckPermsIntegration(plugin);
         this.coreProtectIntegration = new CoreProtectIntegration(plugin);
         this.worldGuardIntegration = new WorldGuardIntegration(plugin);
+        this.griefPreventionIntegration = new GriefPreventionIntegration(plugin);
         this.coreProtectEvidenceService = new CoreProtectEvidenceService(plugin, coreProtectIntegration, reportService, auditService);
         this.worldGuardRegionContextService = new WorldGuardRegionContextService(
                 plugin,
                 worldGuardIntegration,
+                reportService,
+                auditService
+        );
+        this.griefPreventionClaimContextService = new GriefPreventionClaimContextService(
+                plugin,
+                griefPreventionIntegration,
                 reportService,
                 auditService
         );
@@ -54,7 +67,8 @@ public final class IntegrationService {
         return List.of(
                 luckPermsIntegration.status(config),
                 coreProtectIntegration.status(config),
-                worldGuardIntegration.status(config)
+                worldGuardIntegration.status(config),
+                griefPreventionIntegration.status(config)
         );
     }
 
@@ -63,9 +77,11 @@ public final class IntegrationService {
         PluginConfig.LuckPermsIntegrationConfig luckPermsConfig = config.luckPermsIntegration();
         PluginConfig.CoreProtectIntegrationConfig coreProtectConfig = config.coreProtectIntegration();
         PluginConfig.WorldGuardIntegrationConfig worldGuardConfig = config.worldGuardIntegration();
+        PluginConfig.GriefPreventionIntegrationConfig griefConfig = config.griefPreventionIntegration();
         IntegrationStatus luckPerms = luckPermsIntegration.status(config);
         IntegrationStatus coreProtect = coreProtectIntegration.status(config);
         WorldGuardStatus worldGuard = worldGuardIntegration.detail(config);
+        GriefPreventionStatus griefPrevention = griefPreventionIntegration.detail(config);
 
         return List.of(
                 "LuckPerms:",
@@ -98,7 +114,17 @@ public final class IntegrationService {
                 "  apiAvailable=" + worldGuard.apiAvailable(),
                 "  active=" + worldGuard.active(),
                 "  reportContextEnabled=" + worldGuard.reportContextEnabled(),
-                "  maxRegions=" + worldGuardConfig.maxRegions()
+                "  maxRegions=" + worldGuardConfig.maxRegions(),
+                "",
+                "GriefPrevention:",
+                "  configuredEnabled=" + griefPrevention.configuredEnabled(),
+                "  pluginPresent=" + griefPrevention.pluginPresent(),
+                "  apiAvailable=" + griefPrevention.apiAvailable(),
+                "  active=" + griefPrevention.active(),
+                "  reportContextEnabled=" + griefPrevention.reportContextEnabled(),
+                "  includeClaimOwner=" + griefConfig.includeClaimOwner(),
+                "  includeTrustCounts=" + griefConfig.includeTrustCounts(),
+                "  includeBoundaries=" + griefConfig.includeBoundaries()
         );
     }
 
@@ -107,9 +133,11 @@ public final class IntegrationService {
         PluginConfig.LuckPermsIntegrationConfig luckPermsConfig = config.luckPermsIntegration();
         PluginConfig.CoreProtectIntegrationConfig coreProtectConfig = config.coreProtectIntegration();
         PluginConfig.WorldGuardIntegrationConfig worldGuardConfig = config.worldGuardIntegration();
+        PluginConfig.GriefPreventionIntegrationConfig griefConfig = config.griefPreventionIntegration();
         IntegrationStatus luckPerms = luckPermsIntegration.status(config);
         IntegrationStatus coreProtect = coreProtectIntegration.status(config);
         WorldGuardStatus worldGuard = worldGuardIntegration.detail(config);
+        GriefPreventionStatus griefPrevention = griefPreventionIntegration.detail(config);
         List<String> lines = new java.util.ArrayList<>();
 
         lines.add("LuckPerms:");
@@ -169,11 +197,39 @@ public final class IntegrationService {
             lines.add("  WorldGuard region test: console sender, skipped");
         }
 
+        lines.add("");
+        lines.add("GriefPrevention:");
+        lines.add("  pluginPresent=" + griefPrevention.pluginPresent());
+        lines.add("  apiAvailable=" + griefPrevention.apiAvailable());
+        lines.add("  active=" + griefPrevention.active());
+        if (sender instanceof Player player && griefPrevention.active()) {
+            GriefPreventionClaimSummary summary = griefPreventionIntegration.claimSummary(
+                    player.getLocation(),
+                    griefConfig
+            ).orElse(null);
+            if (summary == null) {
+                lines.add("  currentClaimPresent=false");
+                lines.add("  adminClaim=false");
+                lines.add("  claimId=-");
+            } else {
+                lines.add("  currentClaimPresent=" + summary.claimPresent());
+                lines.add("  adminClaim=" + summary.adminClaim());
+                lines.add("  claimId=" + fallback(summary.claimId()));
+            }
+        } else if (sender instanceof Player) {
+            lines.add("  currentClaimPresent=false");
+            lines.add("  adminClaim=false");
+            lines.add("  claimId=-");
+        } else {
+            lines.add("  GriefPrevention claim test: console sender, skipped");
+        }
+
         return new IntegrationTestResult(
                 List.copyOf(lines),
                 luckPerms.active(),
                 coreProtect.active(),
                 worldGuard.active(),
+                griefPrevention.active(),
                 sender instanceof Player ? "player" : "console"
         );
     }
@@ -235,6 +291,26 @@ public final class IntegrationService {
         );
     }
 
+    public void captureGriefPreventionContext(
+            long reportId,
+            Player reporter,
+            UUID targetUuid,
+            String targetName,
+            ReportCategory category
+    ) {
+        Location location = reporter.getLocation().clone();
+        griefPreventionClaimContextService.captureAfterReport(
+                reportId,
+                reporter.getUniqueId(),
+                reporter.getName(),
+                targetUuid,
+                targetName,
+                category,
+                location,
+                configSupplier.get()
+        );
+    }
+
     public void logStartupStatuses() {
         for (IntegrationStatus status : statuses()) {
             plugin.getLogger().info(status.startupLine());
@@ -250,6 +326,7 @@ public final class IntegrationService {
             boolean luckPermsActive,
             boolean coreProtectActive,
             boolean worldGuardActive,
+            boolean griefPreventionActive,
             String senderType
     ) {
     }

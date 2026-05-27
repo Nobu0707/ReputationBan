@@ -35,7 +35,8 @@ public record ConfigValidationInput(
         int coreProtectRadius,
         int coreProtectMaxResults,
         int worldGuardMaxRegions,
-        List<String> worldGuardReportContextCategories
+        List<String> worldGuardReportContextCategories,
+        List<String> griefPreventionReportContextCategories
 ) {
     public static ConfigValidationInput from(PluginConfig config) {
         return new ConfigValidationInput(
@@ -70,7 +71,8 @@ public record ConfigValidationInput(
                 config.coreProtectIntegration().radius(),
                 config.coreProtectIntegration().maxResults(),
                 config.worldGuardIntegration().maxRegions(),
-                config.worldGuardIntegration().reportContextCategories()
+                config.worldGuardIntegration().reportContextCategories(),
+                config.griefPreventionIntegration().reportContextCategories()
         );
     }
 }
