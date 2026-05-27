@@ -22,8 +22,11 @@ public final class ReportContextFormatter {
         List<String> lines = new ArrayList<>();
         appendProvider(lines, byProvider, "luckperms");
         appendProvider(lines, byProvider, "coreprotect");
+        appendProvider(lines, byProvider, "worldguard");
         for (Map.Entry<String, List<ReportContext>> entry : byProvider.entrySet()) {
-            if (!"luckperms".equals(entry.getKey()) && !"coreprotect".equals(entry.getKey())) {
+            if (!"luckperms".equals(entry.getKey())
+                    && !"coreprotect".equals(entry.getKey())
+                    && !"worldguard".equals(entry.getKey())) {
                 appendUnknown(lines, entry.getKey(), entry.getValue());
             }
         }
@@ -42,6 +45,10 @@ public final class ReportContextFormatter {
             appendLuckPerms(lines, contexts.getLast());
             return;
         }
+        if ("worldguard".equals(provider)) {
+            appendWorldGuard(lines, contexts);
+            return;
+        }
         appendCoreProtect(lines, contexts);
     }
 
@@ -57,6 +64,15 @@ public final class ReportContextFormatter {
 
     private static void appendCoreProtect(List<String> lines, List<ReportContext> contexts) {
         lines.add("CoreProtect:");
+        for (ReportContext context : contexts) {
+            for (String line : splitSummary(context.summary())) {
+                lines.add("  " + line);
+            }
+        }
+    }
+
+    private static void appendWorldGuard(List<String> lines, List<ReportContext> contexts) {
+        lines.add("WorldGuard:");
         for (ReportContext context : contexts) {
             for (String line : splitSummary(context.summary())) {
                 lines.add("  " + line);
@@ -160,6 +176,9 @@ public final class ReportContextFormatter {
         }
         if ("coreprotect".equalsIgnoreCase(provider)) {
             return "CoreProtect";
+        }
+        if ("worldguard".equalsIgnoreCase(provider)) {
+            return "WorldGuard";
         }
         return provider.toLowerCase(Locale.ROOT);
     }

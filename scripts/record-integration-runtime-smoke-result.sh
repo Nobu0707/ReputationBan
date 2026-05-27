@@ -1,14 +1,15 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-VERSION="0.17.0"
+VERSION="0.18.0"
 PROJECT_NAME="ReputationBan"
 JAR="build/libs/${PROJECT_NAME}-${VERSION}.jar"
 
 usage() {
   cat <<'USAGE'
 Usage:
-  ./scripts/record-integration-runtime-smoke-result.sh --result PASS --scenario "LuckPerms+CoreProtect" --note "manual smoke passed"
+  ./scripts/record-integration-runtime-smoke-result.sh --result PASS --scenario "WorldGuard" --note "manual smoke passed"
+  ./scripts/record-integration-runtime-smoke-result.sh --result PASS --scenario "LuckPerms+CoreProtect+WorldGuard" --note "manual smoke passed"
 
 Writes:
   build/manual-smoke/integration-runtime-YYYYMMDD-HHMMSS/summary.txt

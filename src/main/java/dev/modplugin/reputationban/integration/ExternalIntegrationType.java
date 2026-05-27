@@ -2,7 +2,8 @@ package dev.modplugin.reputationban.integration;
 
 public enum ExternalIntegrationType {
     LUCKPERMS("LuckPerms"),
-    COREPROTECT("CoreProtect");
+    COREPROTECT("CoreProtect"),
+    WORLDGUARD("WorldGuard");
 
     private final String displayName;
 

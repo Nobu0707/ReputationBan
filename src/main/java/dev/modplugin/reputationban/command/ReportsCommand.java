@@ -359,6 +359,9 @@ public final class ReportsCommand implements CommandExecutor {
         if ("coreprotect".equalsIgnoreCase(provider)) {
             return "CoreProtect";
         }
+        if ("worldguard".equalsIgnoreCase(provider)) {
+            return "WorldGuard";
+        }
         return provider;
     }
 

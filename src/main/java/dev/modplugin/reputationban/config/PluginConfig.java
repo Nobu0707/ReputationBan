@@ -58,6 +58,7 @@ public final class PluginConfig {
     private final Map<String, ReportCategory> categories;
     private final LuckPermsIntegrationConfig luckPermsIntegration;
     private final CoreProtectIntegrationConfig coreProtectIntegration;
+    private final WorldGuardIntegrationConfig worldGuardIntegration;
 
     private PluginConfig(FileConfiguration config) {
         initialScore = config.getInt("initial-score", 100);
@@ -105,6 +106,7 @@ public final class PluginConfig {
         categories = loadCategories(config);
         luckPermsIntegration = loadLuckPermsIntegration(config);
         coreProtectIntegration = loadCoreProtectIntegration(config);
+        worldGuardIntegration = loadWorldGuardIntegration(config);
     }
 
     public static PluginConfig load(FileConfiguration config) {
@@ -175,6 +177,24 @@ public final class PluginConfig {
                 config.getInt("integrations.coreprotect.report-context.radius", 20),
                 config.getInt("integrations.coreprotect.report-context.max-results", 10),
                 List.copyOf(config.getStringList("integrations.coreprotect.report-context.include-actions").stream()
+                        .filter(value -> value != null && !value.isBlank())
+                        .map(value -> value.toLowerCase(Locale.ROOT))
+                        .toList())
+        );
+    }
+
+    private static WorldGuardIntegrationConfig loadWorldGuardIntegration(FileConfiguration config) {
+        return new WorldGuardIntegrationConfig(
+                config.getBoolean("integrations.worldguard.enabled", true),
+                config.getBoolean("integrations.worldguard.report-context.enabled", true),
+                List.copyOf(config.getStringList("integrations.worldguard.report-context.categories").stream()
+                        .filter(value -> value != null && !value.isBlank())
+                        .map(value -> value.toLowerCase(Locale.ROOT))
+                        .toList()),
+                config.getInt("integrations.worldguard.report-context.max-regions", 10),
+                config.getBoolean("integrations.worldguard.report-context.include-region-owners", false),
+                config.getBoolean("integrations.worldguard.report-context.include-region-members", false),
+                List.copyOf(config.getStringList("integrations.worldguard.report-context.include-flags").stream()
                         .filter(value -> value != null && !value.isBlank())
                         .map(value -> value.toLowerCase(Locale.ROOT))
                         .toList())
@@ -365,6 +385,10 @@ public final class PluginConfig {
         return coreProtectIntegration;
     }
 
+    public WorldGuardIntegrationConfig worldGuardIntegration() {
+        return worldGuardIntegration;
+    }
+
     public record LuckPermsIntegrationConfig(
             boolean enabled,
             boolean useGroupWeight,
@@ -384,6 +408,17 @@ public final class PluginConfig {
             int radius,
             int maxResults,
             List<String> includeActions
+    ) {
+    }
+
+    public record WorldGuardIntegrationConfig(
+            boolean enabled,
+            boolean reportContextEnabled,
+            List<String> reportContextCategories,
+            int maxRegions,
+            boolean includeRegionOwners,
+            boolean includeRegionMembers,
+            List<String> includeFlags
     ) {
     }
 }

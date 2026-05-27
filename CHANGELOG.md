@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.18.0
+
+- WorldGuard / WorldEdit を `softdepend` と `compileOnly` の任意連携として追加しました。
+- WorldGuard 連携は reflection adapter に閉じ込め、`com.sk89q.*` の直接 import を避けました。
+- `/rep integrations`、`/rep integrations test`、`/rep doctor` に WorldGuard 状態を追加しました。
+- `/reportbad` 後に対象カテゴリの WorldGuard region context を `report_context` provider `worldguard` として保存するようにしました。
+- `/reports view <id>` と `/reports evidence <id>` で WorldGuard 文脈を表示できるようにしました。
+- `WORLDGUARD_CONTEXT_CAPTURED` audit event を追加しました。
+- WorldGuard region/flag の作成、変更、削除、自動処罰の根拠化は行いません。
+
 ## 0.17.0
 
 - `/reports evidence <id>` を追加し、report に保存された LuckPerms / CoreProtect の `report_context` を詳細表示できるようにしました。

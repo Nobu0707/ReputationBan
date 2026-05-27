@@ -152,6 +152,21 @@ integrations:
         - block-break
         - block-place
 
+  worldguard:
+    enabled: true
+    report-context:
+      enabled: true
+      categories:
+        - griefing
+        - harassment
+      max-regions: 10
+      include-region-owners: false
+      include-region-members: false
+      include-flags:
+        - build
+        - block-break
+        - block-place
+
 database:
   type: "sqlite"
   file: "reputationban.db"

@@ -10,7 +10,7 @@
 ## Install
 
 1. `./gradlew clean test build --warning-mode all` を実行します。
-2. `build/libs/ReputationBan-0.17.0.jar` を Paper `plugins` directory へコピーします。
+2. `build/libs/ReputationBan-0.18.0.jar` を Paper `plugins` directory へコピーします。
 3. Java 25 で Paper を起動します。
 
 ## Startup
@@ -49,8 +49,11 @@
 - support ZIP に `config-redacted.yml` と `README-SHARING.txt` が含まれ、DB files、server logs、Webhook URLs、共有不要な absolute paths が含まれないことを確認します。
 - `/rep doctor` が database/table/config/Discord status と lightweight counts を表示することを確認します。
 - `/rep integrations` が LuckPerms と CoreProtect の連携状態を表示することを確認します。未導入なら unavailable で問題ありません。
+- `/rep integrations` が WorldGuard / WorldEdit の連携状態を表示することを確認します。未導入なら unavailable で問題ありません。
 - `/rep integrations test` が外部連携だけの詳細診断を表示し、CoreProtect 実 lookup をデフォルトでは実行しないことを確認します。
+- WorldGuard + WorldEdit 導入時は `/rep integrations test` の player 実行で `currentRegions` と `regionCount` が表示されることを確認します。
 - `/reports evidence <id>` が保存済み `report_context` または「この通報に保存された連携情報はありません。」を表示することを確認します。
+- WorldGuard region 内の `/reportbad griefing` 後、`/reports evidence <id>` に WorldGuard context が出ることを確認します。region/flag は変更しません。
 - Discord webhook がデフォルトで無効であることを確認します。
 - Webhook URLs が logs、`/rep doctor`、audit output、CSV output、review archive files に出ていないことを確認します。
 - BAN と pardon commands は disposable test users のみに実行します。

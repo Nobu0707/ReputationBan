@@ -3,7 +3,7 @@ plugins {
 }
 
 group = "dev.modplugin"
-version = "0.17.0"
+version = "0.18.0"
 
 java {
     toolchain {
@@ -21,6 +21,12 @@ dependencies {
     compileOnly("io.papermc.paper:paper-api:26.1.2.build.+")
     compileOnly("net.luckperms:api:5.5")
     compileOnly("net.coreprotect:coreprotect:23.2")
+    compileOnly("com.sk89q.worldguard:worldguard-bukkit:7.0.13") {
+        isTransitive = false
+    }
+    compileOnly("com.sk89q.worldedit:worldedit-bukkit:7.3.0") {
+        isTransitive = false
+    }
 
     testImplementation(platform("org.junit:junit-bom:5.14.1"))
     testImplementation("org.junit.jupiter:junit-jupiter")

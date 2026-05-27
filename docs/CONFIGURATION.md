@@ -1,6 +1,6 @@
 # Configuration
 
-このドキュメントでは ReputationBan 0.17.0 の主な `config.yml` セクションを説明します。YAML key は変更しないでください。
+このドキュメントでは ReputationBan 0.18.0 の主な `config.yml` セクションを説明します。YAML key は変更しないでください。
 
 ## Score
 
@@ -77,6 +77,8 @@
 `integrations.luckperms` は LuckPerms が導入されている場合だけ有効になります。`default-weight` と `group-weights` は `/reportbad` の通報者重みとして `report_context` と audit metadata に記録されます。Phase 16 では `apply-weight-to-deduction` が `false` の既定で、減点量へは反映しません。`bypass-groups` は既存の `reputationban.bypass` と OP 保護に加える補助保護です。
 
 `integrations.coreprotect` は CoreProtect が導入され、API version が `minimum-api-version` 以上の場合だけ有効になります。`report-context` は対象 category、lookup 秒数、半径、最大件数、block-break / block-place の action を制御します。保存するのは審査補助の短い証拠サマリーで、rollback、restore、purge は実行しません。
+
+`integrations.worldguard` は WorldGuard と WorldEdit が導入されている場合だけ有効になります。`report-context.categories` に含まれる category の `/reportbad` で、通報者の現在地に適用される region id、priority、必要に応じた flag を `report_context` に保存します。`max-regions` は保存・表示する最大件数です。`include-region-owners` と `include-region-members` は privacy のためデフォルト `false` で、`true` の場合も件数程度に留めます。ReputationBan は WorldGuard region や flag を変更しません。
 
 ## Database
 

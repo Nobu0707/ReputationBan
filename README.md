@@ -2,7 +2,7 @@
 
 ReputationBan は、通報とスタッフ操作をもとにプレイヤーの評判スコアを管理する PaperMC 向け moderation プラグインです。データは SQLite に保存し、未処理通報の審査、監査ログ、バックアップ、support bundle、設定に基づく Profile BAN を扱います。
 
-現在のバージョン: `0.17.0`
+現在のバージョン: `0.18.0`
 
 ## 対象環境
 
@@ -26,7 +26,7 @@ ReputationBan は、通報とスタッフ操作をもとにプレイヤーの評
 - [Integration runtime smoke checklist](docs/INTEGRATION_RUNTIME_SMOKE_CHECKLIST.md)
 - [Paper runtime smoke checklist](docs/runtime-smoke-checklist.md)
 - [Release candidate checklist](docs/RELEASE_CANDIDATE_CHECKLIST.md)
-- [Phase 17 notes](docs/phase-17.md)
+- [Phase 18 notes](docs/phase-18.md)
 - [Changelog](CHANGELOG.md)
 
 ## 主な機能
@@ -39,7 +39,7 @@ ReputationBan は、通報とスタッフ操作をもとにプレイヤーの評
 - audit log、CSV export、retention preview、confirm付き maintenance cleanup。
 - `/rep backup` による SQLite backup。
 - `/rep support bundle` によるシークレットを伏せた診断 ZIP 作成。
-- LuckPerms と CoreProtect の任意連携。未導入でも単体動作します。
+- LuckPerms、CoreProtect、WorldGuard の任意連携。未導入でも単体動作します。
 - 任意の Discord Webhook 通知。URL は表示、ログ、監査、CSV、support bundle、review archive に出さない方針です。
 
 ## コマンド
@@ -64,8 +64,8 @@ ReputationBan は、通報とスタッフ操作をもとにプレイヤーの評
 - `/rep maintenance run confirm`: SQLite backup を作成してから retention cleanup を実行します。
 - `/rep backup [reason...]`: 手動 SQLite backup を作成します。
 - `/rep doctor`: Discord Webhook URL を出さずに運用診断を表示します。
-- `/rep integrations`: LuckPerms / CoreProtect の連携状態を表示します。
-- `/rep integrations test`: LuckPerms / CoreProtect 連携だけに絞った詳細診断を安全に実行します。
+- `/rep integrations`: LuckPerms / CoreProtect / WorldGuard の連携状態を表示します。
+- `/rep integrations test`: LuckPerms / CoreProtect / WorldGuard 連携だけに絞った詳細診断を安全に実行します。
 - `/rep diagnostics`: `/rep doctor` の alias です。
 - `/rep support bundle`: DB files や server logs を含めない診断 ZIP を作成します。
 - `/rep add <player> <points> [reason...]`: スコアを加算します。
@@ -76,7 +76,7 @@ ReputationBan は、通報とスタッフ操作をもとにプレイヤーの評
 - `/reports help`: report review commands を表示します。
 - `/reports list [pending|threshold_pending|approved|rejected|auto_accepted|cancelled|all] [limit]`: report を一覧表示します。
 - `/reports view <id>`: report 詳細を表示します。
-- `/reports evidence <id>`: report に保存された LuckPerms / CoreProtect 証拠情報を表示します。
+- `/reports evidence <id>`: report に保存された LuckPerms / CoreProtect / WorldGuard 証拠情報を表示します。
 - `/reports approve <id> [note...]`: pending report を承認し、減点を適用します。
 - `/reports reject <id> [note...]`: pending report を却下します。
 
@@ -111,17 +111,18 @@ ReputationBan は、通報とスタッフ操作をもとにプレイヤーの評
 ./scripts/review_code.sh
 ```
 
-JAR は `build/libs/ReputationBan-0.17.0.jar` に生成されます。
+JAR は `build/libs/ReputationBan-0.18.0.jar` に生成されます。
 
 ## 現在の位置づけ
 
-v0.17.0 は LuckPerms / CoreProtect 連携を運用で確認しやすくするフェーズです。Phase 17 では `/rep integrations` の詳細表示、`/rep integrations test`、`/reports evidence <id>`、optional dependency safety check、Integration runtime smoke checklist を追加しています。
+v0.18.0 は WorldGuard を任意連携として追加するフェーズです。Phase 18 では `/rep integrations`、`/rep integrations test`、`/rep doctor`、`/reportbad` 後の `report_context`、`/reports evidence <id>` に WorldGuard の region context を追加しています。
 
 v1.0.0 へ進む前に [Release candidate checklist](docs/RELEASE_CANDIDATE_CHECKLIST.md) を確認してください。Paper 実機スモークを実行していない場合は PASS と扱わず、未実施として記録します。
 
 ## 現在の制限
 
-- GUI menus、WorldGuard/GriefPrevention/DiscordSRV 連携は未実装です。
+- GUI menus、GriefPrevention/DiscordSRV 連携は未実装です。
+- WorldGuard region/flag の作成、変更、削除は行いません。
 - LuckPerms が無い場合、offline bypass detection は OP 状態に限定されます。online players の `reputationban.bypass` は保護されます。
 - appeal と automatic unban workflow は後続フェーズに残しています。
 - Folia support は含みません。

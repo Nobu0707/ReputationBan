@@ -117,6 +117,9 @@ done < "$OUTDIR/meta/changed-files.txt"
   echo
   echo "## rg phase 17 integration diagnostics"
   rg -n "reports evidence|integrations test|check-optional-dependency-safety|record-integration-runtime-smoke-result|INTEGRATION_RUNTIME_SMOKE_CHECKLIST|CoreProtect metadata|LuckPerms metadata|applyWeightToDeduction|ReportContextFormatter|/reports evidence|/rep integrations test" src/main/java src/test/java src/main/resources README.md CHANGELOG.md docs reputationban_phase_plan.md scripts build.gradle.kts settings.gradle.kts || true
+  echo
+  echo "## rg phase 18 WorldGuard integration"
+  rg -n "WorldGuard|WorldEdit|WorldGuardIntegration|WorldGuardReflectionAdapter|WORLDGUARD_CONTEXT_CAPTURED|provider = worldguard|provider=worldguard|\"worldguard\"|BukkitAdapter|ApplicableRegionSet|ProtectedRegion|addRegion|removeRegion|setFlag|saveChanges" src/main/java src/test/java src/main/resources README.md CHANGELOG.md docs reputationban_phase_plan.md scripts build.gradle.kts settings.gradle.kts || true
 } > "$OUTDIR/checks/rg-review-signals.txt"
 
 {
@@ -194,8 +197,8 @@ fi
 
 if [[ -d "$ROOT/build/libs" ]]; then
   find "$ROOT/build/libs" -maxdepth 1 -type f -print | sort > "$OUTDIR/checks/built-jars.txt"
-  if [[ -f "$ROOT/build/libs/ReputationBan-0.17.0.jar" ]]; then
-    (cd "$ROOT" && sha256sum build/libs/ReputationBan-0.17.0.jar) > "$OUTDIR/checks/jar-sha256.txt"
+  if [[ -f "$ROOT/build/libs/ReputationBan-0.18.0.jar" ]]; then
+    (cd "$ROOT" && sha256sum build/libs/ReputationBan-0.18.0.jar) > "$OUTDIR/checks/jar-sha256.txt"
   fi
 fi
 

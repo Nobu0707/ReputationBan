@@ -1,6 +1,6 @@
 # Release Readiness
 
-0.17.0 の LuckPerms / CoreProtect 任意連携 release として、次の項目を確認してください。
+0.18.0 の LuckPerms / CoreProtect / WorldGuard 任意連携 release として、次の項目を確認してください。
 
 - `./gradlew clean test build --warning-mode all` が成功します。
 - `./scripts/review_code.sh` が成功します。
@@ -9,7 +9,7 @@
 - `./scripts/run-local-smoke-check.sh` が成功します。
 - `./scripts/create-release-artifact.sh` が成功します。
 - `./scripts/verify-release-artifact.sh` が成功します。
-- `./scripts/make-review-archive.sh "Phase 17"` が archive を作成し、`checks/docs-localization.txt`、`checks/optional-dependency-safety.txt`、`checks/latest-paper-runtime-smoke-summary.txt`、`checks/latest-integration-runtime-smoke-summary.txt` を含みます。
+- `./scripts/make-review-archive.sh "Phase 18"` が archive を作成し、`checks/docs-localization.txt`、`checks/optional-dependency-safety.txt`、`checks/latest-paper-runtime-smoke-summary.txt`、`checks/latest-integration-runtime-smoke-summary.txt` を含みます。
 - `bash -n scripts/run-paper-runtime-smoke-helper.sh` が成功します。
 - `bash -n scripts/create-release-artifact.sh` が成功します。
 - `bash -n scripts/verify-release-artifact.sh` が成功します。
@@ -18,18 +18,19 @@
 - Paper runtime smoke を PaperMC 26.1.2 server と Java 25 で実施します。
 - 可能な限り実Paperサーバーで /rep version、/rep doctor、/rep integrations、/rep integrations test、/reports evidence <id>、/rep support bundle、/rep backup、/reportbad TAB補完を確認してください。
 - `config.yml` が生成され、内容を確認済みです。
-- `/rep version` が 0.17.0 を表示します。
+- `/rep version` が 0.18.0 を表示します。
 - `/rep doctor` が database、tables、config、audit export、Discord、backup status を期待通りに表示します。
-- `/rep integrations` が LuckPerms / CoreProtect の configuredEnabled、pluginPresent、apiAvailable、active、設定値を表示します。
+- `/rep integrations` が LuckPerms / CoreProtect / WorldGuard の configuredEnabled、pluginPresent、apiAvailable、active、設定値を表示します。
 - `/rep integrations test` が外部連携だけの詳細診断を表示し、CoreProtect 実 lookup をデフォルトでは実行しません。
 - `/reports evidence <id>` が report_context を provider ごとに表示します。
+- WorldGuard 導入時、`/reports evidence <id>` が provider `worldguard` の region context を表示します。
 - `/rep backup before-release` が `backups/reputationban-manual-backup-*.db` を作成します。
 - `/rep support bundle` が `support/reputationban-support-*.zip` を作成します。
 - support bundle に `meta.txt`、`doctor.txt`、`counts.txt`、`config-redacted.yml`、`README-SHARING.txt` が含まれます。
 - support bundle に SQLite DB files、server logs、Webhook URLs、共有不要な absolute paths が含まれません。
 - `/rep maintenance preview` は data を削除しません。
 - `/rep audit export recent 10` は安全な export directory 配下に CSV を作成します。
-- `build/release/ReputationBan-0.17.0.jar`、`.jar.sha256`、`ReputationBan-0.17.0-release.zip`、`ReputationBan-0.17.0-release.zip.sha256` が存在します。
+- `build/release/ReputationBan-0.18.0.jar`、`.jar.sha256`、`ReputationBan-0.18.0-release.zip`、`ReputationBan-0.18.0-release.zip.sha256` が存在します。
 - release ZIP には JAR、checksum、README、CHANGELOG、docs が含まれます。
 - release ZIP には `docs/INTEGRATIONS.md` が含まれます。
 - release ZIP には `docs/INTEGRATION_RUNTIME_SMOKE_CHECKLIST.md` が含まれます。
@@ -37,6 +38,7 @@
 - release ZIP に live `config.yml`、SQLite DB files、logs は含まれません。
 - Paper runtime smoke を手動実施した場合は `scripts/record-paper-runtime-smoke-result.sh` で結果を記録します。未実施の場合は PASS 扱いにせず、review archive に `status=NOT_RUN` として残します。
 - Integration runtime smoke を手動実施した場合は `scripts/record-integration-runtime-smoke-result.sh` で結果を記録します。未実施の場合は PASS 扱いにせず、review archive に `status=NOT_RUN` として残します。
+- WorldGuard runtime smoke では未導入、WorldEdit のみ、WorldEdit + WorldGuard の各構成を確認し、region/flag が変更されていないことを確認します。
 - Discord Webhook はデフォルトで無効です。
 - Webhook URL values は logs、command output、audit metadata、CSV files、review archives に出ません。
 - BAN 関連確認は test users のみに行います。

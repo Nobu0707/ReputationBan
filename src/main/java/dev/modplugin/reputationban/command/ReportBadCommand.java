@@ -210,6 +210,13 @@ public final class ReportBadCommand implements CommandExecutor {
                             value.name(),
                             category
                     ));
+                    plugin.runSync(() -> plugin.integrationService().captureWorldGuardContext(
+                            result.reportId(),
+                            reporter,
+                            value.uuid(),
+                            value.name(),
+                            category
+                    ));
                     if (result.staffReviewRequired()) {
                         plugin.runSync(() -> {
                             reporter.sendMessage(ReputationBanPlugin.PREFIX + "通報を受け付けました。スタッフ審査待ちです。");

@@ -1,8 +1,8 @@
 # 外部連携
 
-ReputationBan 0.17.0 では LuckPerms と CoreProtect を任意連携として扱います。どちらも `softdepend` であり、未導入、未ロード、API unavailable の場合でも ReputationBan 単体の通報、監査、BAN、backup、support bundle は継続します。
+ReputationBan 0.18.0 では LuckPerms、CoreProtect、WorldGuard を任意連携として扱います。いずれも `softdepend` であり、未導入、未ロード、API unavailable の場合でも ReputationBan 単体の通報、監査、BAN、backup、support bundle は継続します。
 
-Phase 16a 以降、optional dependency class loading を安全化するため、LuckPerms / CoreProtect API 型を起動時に無条件ロードされるクラスから外し、reflection adapter 経由で必要な時だけ参照します。LuckPerms だけ、CoreProtect だけ、またはどちらも未導入の構成でも、外部 API 欠落による `NoClassDefFoundError` で ReputationBan 本体が起動不能にならない設計です。
+Phase 16a 以降、optional dependency class loading を安全化するため、LuckPerms / CoreProtect / WorldGuard API 型を起動時に無条件ロードされるクラスから外し、reflection adapter 経由で必要な時だけ参照します。外部プラグインが一部またはすべて未導入の構成でも、外部 API 欠落による `NoClassDefFoundError` で ReputationBan 本体が起動不能にならない設計です。
 
 ## LuckPerms
 
@@ -22,12 +22,22 @@ CoreProtect の証拠サマリーは自動 BAN の唯一根拠にしないでく
 
 `max-results: 0` の場合は個別行を保存せず、`resultCount`、lookup 条件、座標、API version だけを metadata に保存します。
 
+## WorldGuard
+
+WorldGuard 連携は、荒らしや嫌がらせ通報の審査補助として、通報者の現在地に適用される region context を保存します。WorldGuard は WorldEdit を必要とするため、`plugin.yml` では `WorldEdit` と `WorldGuard` の両方を `softdepend` にしています。
+
+WorldGuard / WorldEdit が未導入でも ReputationBan 本体は起動します。Java ソースでは `com.sk89q.*` を直接 import せず、`WorldGuardReflectionAdapter` の reflection lookup に閉じ込めています。
+
+保存される provider は `worldguard` です。summary には region 件数、world、block 座標、region id、priority、owner/member の hidden または count、取得できる範囲の flag が入ります。owner/member は privacy のためデフォルトでは `hidden` です。
+
+WorldGuard の region context は自動処罰の唯一根拠にしないでください。ReputationBan は WorldGuard region の作成、変更、削除、flag 変更を行いません。Phase 18 では protection 設定を読み取り、審査者が `/reports view <id>` と `/reports evidence <id>` で確認できる補助情報として扱います。
+
 ## Commands
 
-- `/rep integrations`: LuckPerms / CoreProtect の設定値、plugin presence、API availability、active、lookup 設定を表示します。
-- `/rep integrations test`: LuckPerms / CoreProtect だけに絞った詳細診断です。破壊的操作や CoreProtect 実 lookup は行いません。
+- `/rep integrations`: LuckPerms / CoreProtect / WorldGuard の設定値、plugin presence、API availability、active、lookup 設定を表示します。
+- `/rep integrations test`: LuckPerms / CoreProtect / WorldGuard だけに絞った詳細診断です。破壊的操作、CoreProtect 実 lookup、WorldGuard region/flag 変更は行いません。
 - `/rep doctor`: ReputationBan 全体診断です。database、tables、config、Discord、backup、連携の簡易状態をまとめて確認します。
-- `/reports view <id>`: LuckPerms reporter weight と CoreProtect 証拠サマリーがある場合に概要を表示します。
+- `/reports view <id>`: LuckPerms reporter weight、CoreProtect 証拠サマリー、WorldGuard region context がある場合に概要を表示します。
 - `/reports evidence <id>`: `report_context` の詳細を provider ごとに表示します。
 
 ## 設定例
@@ -60,6 +70,21 @@ integrations:
       include-actions:
         - block-break
         - block-place
+
+  worldguard:
+    enabled: true
+    report-context:
+      enabled: true
+      categories:
+        - griefing
+        - harassment
+      max-regions: 10
+      include-region-owners: false
+      include-region-members: false
+      include-flags:
+        - build
+        - block-break
+        - block-place
 ```
 
 ## 採用依存
@@ -68,3 +93,6 @@ integrations:
 - CoreProtect API: `net.coreprotect:coreprotect:23.2`
 - CoreProtect repository: `https://maven.playpro.com/`
 - CoreProtect minimum API version: `11`
+- WorldGuard API: `com.sk89q.worldguard:worldguard-bukkit:7.0.13` (`compileOnly`, transitive dependencies disabled)
+- WorldEdit API: `com.sk89q.worldedit:worldedit-bukkit:7.3.0` (`compileOnly`, transitive dependencies disabled)
+- EngineHub repository: `https://maven.enginehub.org/repo/`

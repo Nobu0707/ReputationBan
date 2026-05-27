@@ -1,5 +1,5 @@
 name: ReputationBan
-version: 0.17.0
+version: 0.18.0
 main: dev.modplugin.reputationban.ReputationBanPlugin
 api-version: '26.1.2'
 description: Reputation score based moderation and temporary ban plugin.
@@ -11,6 +11,8 @@ libraries:
 softdepend:
   - LuckPerms
   - CoreProtect
+  - WorldEdit
+  - WorldGuard
 
 commands:
   reportbad:

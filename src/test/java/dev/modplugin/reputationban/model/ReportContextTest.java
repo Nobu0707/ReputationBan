@@ -63,6 +63,25 @@ class ReportContextTest {
     }
 
     @Test
+    void formatsWorldGuardEvidenceSummaryLines() {
+        ReportContext context = new ReportContext(
+                1L,
+                2L,
+                "worldguard",
+                "WorldGuard: regions 2 world=world x=100 y=64 z=-20\n"
+                        + "#1 id=spawn priority=10 owners=hidden members=hidden",
+                "{\"regionCount\":\"2\"}",
+                3L
+        );
+
+        List<String> lines = ReportContextFormatter.formatEvidence(List.of(context));
+
+        assertEquals("WorldGuard:", lines.get(0));
+        assertTrue(lines.contains("  WorldGuard: regions 2 world=world x=100 y=64 z=-20"));
+        assertTrue(lines.contains("  #1 id=spawn priority=10 owners=hidden members=hidden"));
+    }
+
+    @Test
     void formatsNoEvidenceMessage() {
         assertEquals(
                 List.of("この通報に保存された連携情報はありません。"),

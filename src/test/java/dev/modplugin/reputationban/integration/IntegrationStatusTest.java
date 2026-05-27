@@ -15,6 +15,9 @@ class IntegrationStatusTest {
         assertEquals("unavailable", new IntegrationStatus(
                 ExternalIntegrationType.COREPROTECT, true, false, false, "", false, "plugin not found"
         ).availabilityLabel());
+        assertEquals("unavailable", new IntegrationStatus(
+                ExternalIntegrationType.WORLDGUARD, true, false, false, "", false, "WorldGuard not found"
+        ).availabilityLabel());
     }
 
     @Test

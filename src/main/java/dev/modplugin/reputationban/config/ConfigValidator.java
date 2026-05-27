@@ -58,6 +58,12 @@ public final class ConfigValidator {
                 "integrations.coreprotect.report-context.radius must be 0 or greater");
         require(config.coreProtectMaxResults() >= 0, issues, "integrations.coreprotect.report-context.max-results",
                 "integrations.coreprotect.report-context.max-results must be 0 or greater");
+        require(config.worldGuardMaxRegions() >= 0, issues, "integrations.worldguard.report-context.max-regions",
+                "integrations.worldguard.report-context.max-regions must be 0 or greater");
+        if (config.worldGuardReportContextCategories().isEmpty()) {
+            issues.add(new ConfigValidationIssue(Severity.WARNING, "integrations.worldguard.report-context.categories",
+                    "integrations.worldguard.report-context.categories is empty; WorldGuard report context will not be captured"));
+        }
         if (config.discordWebhookTimeoutSeconds() < 1 || config.discordWebhookTimeoutSeconds() > 30) {
             issues.add(new ConfigValidationIssue(Severity.WARNING, "notify.discord-webhook.timeout-seconds",
                     "notify.discord-webhook.timeout-seconds should be between 1 and 30"));

@@ -5,6 +5,10 @@ import dev.modplugin.reputationban.integration.coreprotect.CoreProtectEvidenceSe
 import dev.modplugin.reputationban.integration.coreprotect.CoreProtectIntegration;
 import dev.modplugin.reputationban.integration.luckperms.LuckPermsIntegration;
 import dev.modplugin.reputationban.integration.luckperms.LuckPermsTrustService;
+import dev.modplugin.reputationban.integration.worldguard.WorldGuardIntegration;
+import dev.modplugin.reputationban.integration.worldguard.WorldGuardRegionContextService;
+import dev.modplugin.reputationban.integration.worldguard.WorldGuardRegionSummary;
+import dev.modplugin.reputationban.integration.worldguard.WorldGuardStatus;
 import dev.modplugin.reputationban.model.ReportCategory;
 import dev.modplugin.reputationban.service.AuditService;
 import dev.modplugin.reputationban.service.ReportService;
@@ -21,7 +25,9 @@ public final class IntegrationService {
     private final Supplier<PluginConfig> configSupplier;
     private final LuckPermsIntegration luckPermsIntegration;
     private final CoreProtectIntegration coreProtectIntegration;
+    private final WorldGuardIntegration worldGuardIntegration;
     private final CoreProtectEvidenceService coreProtectEvidenceService;
+    private final WorldGuardRegionContextService worldGuardRegionContextService;
 
     public IntegrationService(
             JavaPlugin plugin,
@@ -33,14 +39,22 @@ public final class IntegrationService {
         this.configSupplier = configSupplier;
         this.luckPermsIntegration = new LuckPermsIntegration(plugin);
         this.coreProtectIntegration = new CoreProtectIntegration(plugin);
+        this.worldGuardIntegration = new WorldGuardIntegration(plugin);
         this.coreProtectEvidenceService = new CoreProtectEvidenceService(plugin, coreProtectIntegration, reportService, auditService);
+        this.worldGuardRegionContextService = new WorldGuardRegionContextService(
+                plugin,
+                worldGuardIntegration,
+                reportService,
+                auditService
+        );
     }
 
     public List<IntegrationStatus> statuses() {
         PluginConfig config = configSupplier.get();
         return List.of(
                 luckPermsIntegration.status(config),
-                coreProtectIntegration.status(config)
+                coreProtectIntegration.status(config),
+                worldGuardIntegration.status(config)
         );
     }
 
@@ -48,8 +62,10 @@ public final class IntegrationService {
         PluginConfig config = configSupplier.get();
         PluginConfig.LuckPermsIntegrationConfig luckPermsConfig = config.luckPermsIntegration();
         PluginConfig.CoreProtectIntegrationConfig coreProtectConfig = config.coreProtectIntegration();
+        PluginConfig.WorldGuardIntegrationConfig worldGuardConfig = config.worldGuardIntegration();
         IntegrationStatus luckPerms = luckPermsIntegration.status(config);
         IntegrationStatus coreProtect = coreProtectIntegration.status(config);
+        WorldGuardStatus worldGuard = worldGuardIntegration.detail(config);
 
         return List.of(
                 "LuckPerms:",
@@ -73,7 +89,16 @@ public final class IntegrationService {
                 "  reportContextEnabled=" + coreProtectConfig.reportContextEnabled(),
                 "  lookupSeconds=" + coreProtectConfig.lookupSeconds(),
                 "  radius=" + coreProtectConfig.radius(),
-                "  maxResults=" + coreProtectConfig.maxResults()
+                "  maxResults=" + coreProtectConfig.maxResults(),
+                "",
+                "WorldGuard:",
+                "  configuredEnabled=" + worldGuard.configuredEnabled(),
+                "  worldEditPresent=" + worldGuard.worldEditPresent(),
+                "  worldGuardPresent=" + worldGuard.worldGuardPresent(),
+                "  apiAvailable=" + worldGuard.apiAvailable(),
+                "  active=" + worldGuard.active(),
+                "  reportContextEnabled=" + worldGuard.reportContextEnabled(),
+                "  maxRegions=" + worldGuardConfig.maxRegions()
         );
     }
 
@@ -81,8 +106,10 @@ public final class IntegrationService {
         PluginConfig config = configSupplier.get();
         PluginConfig.LuckPermsIntegrationConfig luckPermsConfig = config.luckPermsIntegration();
         PluginConfig.CoreProtectIntegrationConfig coreProtectConfig = config.coreProtectIntegration();
+        PluginConfig.WorldGuardIntegrationConfig worldGuardConfig = config.worldGuardIntegration();
         IntegrationStatus luckPerms = luckPermsIntegration.status(config);
         IntegrationStatus coreProtect = coreProtectIntegration.status(config);
+        WorldGuardStatus worldGuard = worldGuardIntegration.detail(config);
         List<String> lines = new java.util.ArrayList<>();
 
         lines.add("LuckPerms:");
@@ -113,10 +140,40 @@ public final class IntegrationService {
         lines.add("  maxResults=" + coreProtectConfig.maxResults());
         lines.add("  lookup=skipped (Phase 17 default)");
 
+        lines.add("");
+        lines.add("WorldGuard:");
+        lines.add("  pluginPresent=" + worldGuard.worldGuardPresent());
+        lines.add("  worldEditPresent=" + worldGuard.worldEditPresent());
+        lines.add("  apiAvailable=" + worldGuard.apiAvailable());
+        lines.add("  active=" + worldGuard.active());
+        if (sender instanceof Player player && worldGuard.active()) {
+            WorldGuardRegionSummary summary = worldGuardIntegration.regionSummary(
+                    player.getLocation(),
+                    worldGuardConfig
+            ).orElse(null);
+            if (summary == null) {
+                lines.add("  currentRegions=-");
+                lines.add("  regionCount=0");
+            } else {
+                lines.add("  currentRegions=" + summary.regions().stream()
+                        .map(entry -> entry.id())
+                        .filter(value -> value != null && !value.isBlank())
+                        .reduce((left, right) -> left + "," + right)
+                        .orElse("-"));
+                lines.add("  regionCount=" + summary.regionCount());
+            }
+        } else if (sender instanceof Player) {
+            lines.add("  currentRegions=-");
+            lines.add("  regionCount=0");
+        } else {
+            lines.add("  WorldGuard region test: console sender, skipped");
+        }
+
         return new IntegrationTestResult(
                 List.copyOf(lines),
                 luckPerms.active(),
                 coreProtect.active(),
+                worldGuard.active(),
                 sender instanceof Player ? "player" : "console"
         );
     }
@@ -158,6 +215,26 @@ public final class IntegrationService {
         );
     }
 
+    public void captureWorldGuardContext(
+            long reportId,
+            Player reporter,
+            UUID targetUuid,
+            String targetName,
+            ReportCategory category
+    ) {
+        Location location = reporter.getLocation().clone();
+        worldGuardRegionContextService.captureAfterReport(
+                reportId,
+                reporter.getUniqueId(),
+                reporter.getName(),
+                targetUuid,
+                targetName,
+                category,
+                location,
+                configSupplier.get()
+        );
+    }
+
     public void logStartupStatuses() {
         for (IntegrationStatus status : statuses()) {
             plugin.getLogger().info(status.startupLine());
@@ -172,6 +249,7 @@ public final class IntegrationService {
             List<String> lines,
             boolean luckPermsActive,
             boolean coreProtectActive,
+            boolean worldGuardActive,
             String senderType
     ) {
     }

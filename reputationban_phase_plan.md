@@ -368,13 +368,39 @@
 - `apply-weight-to-deduction` は Phase 17 では metadata と表示用であり、減点量へは未反映。
 - WorldGuard、GriefPrevention、DiscordSRV、GUI、Folia、v1.0.0 readiness gate は後続。
 
-## Phase 17以降: 外部連携・高度な悪用対策
+## Phase 18 / v0.18.0: WorldGuard 任意連携
+
+目的: WorldGuard / WorldEdit を任意依存として扱い、通報時の region context を審査補助として保存する。
+
+実装範囲:
+
+- version 0.18.0
+- `WorldEdit` / `WorldGuard` の `softdepend`
+- EngineHub repository と WorldGuard / WorldEdit `compileOnly` dependency
+- `WorldGuardReflectionAdapter`
+- `/rep integrations` と `/rep integrations test` の WorldGuard 表示
+- `/rep doctor` の WorldGuard 簡易状態表示
+- `/reportbad` 後の `report_context` provider `worldguard`
+- `/reports view <id>` と `/reports evidence <id>` の WorldGuard 表示
+- `WORLDGUARD_CONTEXT_CAPTURED` audit event
+- `docs/INTEGRATIONS.md` と `docs/phase-18.md`
+- review/release archive scripts の v0.18.0 対応
+
+注意:
+
+- `src/main/java` に `import com.sk89q.worldguard.` と `import com.sk89q.worldedit.` を追加しない。
+- WorldGuard / WorldEdit 未導入でも ReputationBan 本体は起動できる設計にする。
+- WorldGuard region/flag の作成、変更、削除は行わない。
+- WorldGuard context は審査補助であり、自動 BAN の唯一根拠にしない。
+- CoreProtect rollback、restore、purge と LuckPerms 書き込み操作は引き続き行わない。
+
+## Phase 18以降: 外部連携・高度な悪用対策
 
 実装候補:
 
 - 管理GUI
 - 接触判定
 - 集団通報検知
-- WorldGuard/GriefPrevention連携
+- GriefPrevention連携
 - DiscordSRV連携
 - 設定可能なメッセージファイル

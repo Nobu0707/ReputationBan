@@ -1,6 +1,7 @@
 package dev.modplugin.reputationban.config;
 
 import java.util.Map;
+import java.util.List;
 
 public record ConfigValidationInput(
         int initialScore,
@@ -32,7 +33,9 @@ public record ConfigValidationInput(
         int coreProtectMinimumApiVersion,
         int coreProtectLookupSeconds,
         int coreProtectRadius,
-        int coreProtectMaxResults
+        int coreProtectMaxResults,
+        int worldGuardMaxRegions,
+        List<String> worldGuardReportContextCategories
 ) {
     public static ConfigValidationInput from(PluginConfig config) {
         return new ConfigValidationInput(
@@ -65,7 +68,9 @@ public record ConfigValidationInput(
                 config.coreProtectIntegration().minimumApiVersion(),
                 config.coreProtectIntegration().lookupSeconds(),
                 config.coreProtectIntegration().radius(),
-                config.coreProtectIntegration().maxResults()
+                config.coreProtectIntegration().maxResults(),
+                config.worldGuardIntegration().maxRegions(),
+                config.worldGuardIntegration().reportContextCategories()
         );
     }
 }
