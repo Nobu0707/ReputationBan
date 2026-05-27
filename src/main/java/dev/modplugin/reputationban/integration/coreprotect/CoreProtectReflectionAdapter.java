@@ -84,7 +84,7 @@ public final class CoreProtectReflectionAdapter {
                 entries.add(toEntry(parsed));
             }
         }
-        return new CoreProtectLookupResult(apiHandle.apiVersion(), List.copyOf(entries));
+        return new CoreProtectLookupResult(apiHandle.apiVersion(), results.size(), List.copyOf(entries));
     }
 
     private static CoreProtectLookupEntry toEntry(Object parsed) {

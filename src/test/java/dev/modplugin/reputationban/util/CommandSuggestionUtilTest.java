@@ -45,6 +45,8 @@ class CommandSuggestionUtilTest {
 
         Predicate<String> integrations = Set.of("reputationban.admin.integrations")::contains;
         assertEquals(List.of("integrations", "integration"), CommandSuggestionUtil.repSubcommands(integrations, "integ"));
+        assertEquals(List.of("test"), CommandSuggestionUtil.repSecondArgumentSuggestions("integrations", List.of(), "te"));
+        assertEquals(List.of("test"), CommandSuggestionUtil.repSecondArgumentSuggestions("integration", List.of(), "te"));
     }
 
     @Test
@@ -52,6 +54,8 @@ class CommandSuggestionUtilTest {
         assertEquals(List.of("pending"), CommandSuggestionUtil.reportsSecondArgumentSuggestions("list", List.of(), "pen"));
         assertEquals(List.of("threshold_pending"), CommandSuggestionUtil.reportsSecondArgumentSuggestions("list", List.of(), "threshold"));
         assertTrue(CommandSuggestionUtil.reportsSecondArgumentSuggestions("list", List.of(), "").contains("all"));
+        assertTrue(CommandSuggestionUtil.reportsSubcommands(true, "evi").contains("evidence"));
+        assertEquals(List.of("123"), CommandSuggestionUtil.reportsSecondArgumentSuggestions("evidence", List.of("123"), "1"));
     }
 
     @Test

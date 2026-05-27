@@ -1,15 +1,16 @@
 # Changelog
 
-## 0.16.0
+## 0.17.0
 
-- LuckPerms / CoreProtect を任意依存として追加しました。
-- Phase 16a follow-up: LuckPerms / CoreProtect API 型の直接 import を排除し、reflection adapter により未導入環境の optional dependency class loading を安全化しました。
-- `/rep integrations` と `/rep doctor` の連携状態表示を追加しました。
-- LuckPerms primary group による reporter weight 記録と bypass-groups 補助保護を追加しました。
-- LuckPerms のオフラインユーザー情報が未ロードの場合、Phase 16 では `default-weight` 扱いになる場合があります。
-- CoreProtect の周辺ブロックログ簡易サマリーを `report_context` と audit event に保存できるようにしました。
-- CoreProtect lookup は審査補助のみで、rollback、restore、purge は行いません。
-- `docs/INTEGRATIONS.md` と `docs/phase-16.md` を追加しました。
+- `/reports evidence <id>` を追加し、report に保存された LuckPerms / CoreProtect の `report_context` を詳細表示できるようにしました。
+- `/rep integrations test` を追加し、外部連携だけに絞った安全な診断を実行できるようにしました。
+- `/rep integrations` の表示を、configuredEnabled、pluginPresent、apiAvailable、active、LuckPerms weight 設定、CoreProtect lookup 設定まで確認できる内容に拡張しました。
+- LuckPerms metadata に `primaryGroup`、`reporterWeight`、`bypassGroup`、`applyWeightToDeduction` を保存し、説明責任を強化しました。
+- CoreProtect metadata に `resultCount`、`lookupSeconds`、`radius`、`category`、`world`、`x`、`y`、`z`、`apiVersion` を保存するようにしました。
+- CoreProtect summary を日本語運用向けに改善し、`max-results: 0` では個別行を保存せず resultCount のみ保存する方針を明確化しました。
+- `scripts/check-optional-dependency-safety.sh` を追加し、review archive と `review_code.sh` に統合しました。
+- `docs/INTEGRATION_RUNTIME_SMOKE_CHECKLIST.md` と `scripts/record-integration-runtime-smoke-result.sh` を追加しました。
+- CoreProtect rollback、restore、purge と LuckPerms 書き込み操作は引き続き行いません。
 
 ## 0.15.0
 

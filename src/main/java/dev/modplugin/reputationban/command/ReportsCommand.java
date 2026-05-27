@@ -3,6 +3,7 @@ package dev.modplugin.reputationban.command;
 import dev.modplugin.reputationban.ReputationBanPlugin;
 import dev.modplugin.reputationban.model.ReportStatus;
 import dev.modplugin.reputationban.model.ReportContext;
+import dev.modplugin.reputationban.model.ReportContextFormatter;
 import dev.modplugin.reputationban.notification.DiscordWebhookConfig;
 import dev.modplugin.reputationban.notification.NotificationEventType;
 import dev.modplugin.reputationban.service.PunishmentService;
@@ -55,6 +56,10 @@ public final class ReportsCommand implements CommandExecutor {
             viewReport(sender, args);
             return true;
         }
+        if ("evidence".equalsIgnoreCase(args[0])) {
+            viewEvidence(sender, args);
+            return true;
+        }
         if ("approve".equalsIgnoreCase(args[0])) {
             reviewReport(sender, args, true);
             return true;
@@ -71,6 +76,7 @@ public final class ReportsCommand implements CommandExecutor {
     private static void sendHelp(CommandSender sender) {
         sender.sendMessage(ReputationBanPlugin.PREFIX + "/reports list [status] [limit] - 通報一覧");
         sender.sendMessage(ReputationBanPlugin.PREFIX + "/reports view <id> - 通報詳細");
+        sender.sendMessage(ReputationBanPlugin.PREFIX + "/reports evidence <id> - 通報に紐づく連携証拠を表示");
         sender.sendMessage(ReputationBanPlugin.PREFIX + "/reports approve <id> [note] - 通報承認");
         sender.sendMessage(ReputationBanPlugin.PREFIX + "/reports reject <id> [note] - 通報却下");
     }
@@ -130,6 +136,34 @@ public final class ReportsCommand implements CommandExecutor {
                 .exceptionally(throwable -> {
                     plugin.getLogger().severe("Failed to view report: " + throwable.getMessage());
                     plugin.runSync(() -> sender.sendMessage(ReputationBanPlugin.PREFIX + "通報詳細の取得に失敗しました。"));
+                    return null;
+                });
+    }
+
+    private void viewEvidence(CommandSender sender, String[] args) {
+        if (args.length < 2) {
+            sender.sendMessage(ReputationBanPlugin.PREFIX + "使い方: /reports evidence <id>");
+            return;
+        }
+        Long id = parseId(sender, args[1]);
+        if (id == null) {
+            return;
+        }
+
+        reportService.getReport(id)
+                .thenAccept(report -> plugin.runSync(() -> {
+                    if (report.isEmpty()) {
+                        sender.sendMessage(ReputationBanPlugin.PREFIX + "通報が見つかりません。");
+                        return;
+                    }
+                    sender.sendMessage(ReputationBanPlugin.PREFIX + "Report #" + report.get().id() + " evidence");
+                    for (String line : ReportContextFormatter.formatEvidence(report.get().contexts())) {
+                        sender.sendMessage(ReputationBanPlugin.PREFIX + line);
+                    }
+                }))
+                .exceptionally(throwable -> {
+                    plugin.getLogger().severe("Failed to view report evidence: " + throwable.getMessage());
+                    plugin.runSync(() -> sender.sendMessage(ReputationBanPlugin.PREFIX + "連携証拠の取得に失敗しました。"));
                     return null;
                 });
     }

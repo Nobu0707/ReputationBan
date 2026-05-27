@@ -2,23 +2,31 @@
 set -euo pipefail
 
 VERSION="0.17.0"
-JAR="build/libs/ReputationBan-${VERSION}.jar"
+PROJECT_NAME="ReputationBan"
+JAR="build/libs/${PROJECT_NAME}-${VERSION}.jar"
 
 usage() {
   cat <<'USAGE'
 Usage:
-  ./scripts/record-paper-runtime-smoke-result.sh --result PASS --note "local Paper smoke passed"
-  ./scripts/record-paper-runtime-smoke-result.sh --result FAIL --note "doctor failed"
+  ./scripts/record-integration-runtime-smoke-result.sh --result PASS --scenario "LuckPerms+CoreProtect" --note "manual smoke passed"
+
+Writes:
+  build/manual-smoke/integration-runtime-YYYYMMDD-HHMMSS/summary.txt
 USAGE
 }
 
 RESULT=""
+SCENARIO=""
 NOTE=""
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --result)
       RESULT="${2:-}"
+      shift 2
+      ;;
+    --scenario)
+      SCENARIO="${2:-}"
       shift 2
       ;;
     --note)
@@ -30,35 +38,32 @@ while [[ $# -gt 0 ]]; do
       exit 0
       ;;
     *)
+      echo "Unknown argument: $1" >&2
       usage
-      exit 0
+      exit 1
       ;;
   esac
 done
 
-if [[ -z "$RESULT" || -z "$NOTE" ]]; then
+if [[ -z "$RESULT" || -z "$SCENARIO" ]]; then
   usage
   exit 0
 fi
 
-if [[ "$RESULT" != "PASS" && "$RESULT" != "FAIL" ]]; then
-  echo "[FAIL] --result must be PASS or FAIL" >&2
-  exit 1
-fi
-
 STAMP="$(date +%Y%m%d-%H%M%S)"
-OUTDIR="build/manual-smoke/paper-runtime-${STAMP}"
+OUTDIR="build/manual-smoke/integration-runtime-${STAMP}"
 SUMMARY="${OUTDIR}/summary.txt"
 mkdir -p "$OUTDIR"
 
 if [[ -f "$JAR" ]]; then
   JAR_SHA="$(sha256sum "$JAR" | awk '{print $1}')"
 else
-  JAR_SHA="missing"
+  JAR_SHA="MISSING"
 fi
 
 {
   echo "result=$RESULT"
+  echo "scenario=$SCENARIO"
   echo "note=$NOTE"
   echo "version=$VERSION"
   echo "jar=$JAR"
@@ -66,4 +71,5 @@ fi
   echo "createdAt=$(date -Iseconds)"
 } > "$SUMMARY"
 
-echo "Created $SUMMARY"
+echo "Recorded integration runtime smoke result:"
+echo "  $SUMMARY"

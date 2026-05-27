@@ -21,12 +21,22 @@ public final class CoreProtectIntegration {
 
     public IntegrationStatus status(PluginConfig config) {
         PluginConfig.CoreProtectIntegrationConfig coreProtectConfig = config.coreProtectIntegration();
-        if (!coreProtectConfig.enabled()) {
-            return IntegrationStatus.disabled(ExternalIntegrationType.COREPROTECT);
-        }
         boolean pluginPresent = adapter.pluginPresent();
-        Optional<Integer> apiVersionLookup = apiVersion(coreProtectConfig.minimumApiVersion());
+        Optional<Integer> apiVersionLookup = pluginPresent
+                ? apiVersion(coreProtectConfig.minimumApiVersion())
+                : Optional.empty();
         String apiVersion = apiVersionLookup.map(Object::toString).orElse("");
+        if (!coreProtectConfig.enabled()) {
+            return new IntegrationStatus(
+                    ExternalIntegrationType.COREPROTECT,
+                    false,
+                    pluginPresent,
+                    apiVersionLookup.isPresent(),
+                    apiVersion,
+                    false,
+                    "disabled"
+            );
+        }
         return new IntegrationStatus(
                 ExternalIntegrationType.COREPROTECT,
                 true,

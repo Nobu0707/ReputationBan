@@ -114,6 +114,9 @@ done < "$OUTDIR/meta/changed-files.txt"
   echo
   echo "## rg phase 16a optional dependency class loading"
   rg -n "LuckPermsReflectionAdapter|CoreProtectReflectionAdapter|Class\\.forName|getRegistration|getPlugin\\(\"CoreProtect\"\\)|NoClassDefFoundError|import net\\.luckperms|import net\\.coreprotect" src/main/java src/test/java src/main/resources README.md CHANGELOG.md docs reputationban_phase_plan.md scripts build.gradle.kts settings.gradle.kts || true
+  echo
+  echo "## rg phase 17 integration diagnostics"
+  rg -n "reports evidence|integrations test|check-optional-dependency-safety|record-integration-runtime-smoke-result|INTEGRATION_RUNTIME_SMOKE_CHECKLIST|CoreProtect metadata|LuckPerms metadata|applyWeightToDeduction|ReportContextFormatter|/reports evidence|/rep integrations test" src/main/java src/test/java src/main/resources README.md CHANGELOG.md docs reputationban_phase_plan.md scripts build.gradle.kts settings.gradle.kts || true
 } > "$OUTDIR/checks/rg-review-signals.txt"
 
 {
@@ -154,6 +157,12 @@ else
   echo "./scripts/check-docs-localization.sh=missing" >> "$COMMAND_STATUS"
 fi
 
+if [[ -x "$ROOT/scripts/check-optional-dependency-safety.sh" ]]; then
+  run_logged "./scripts/check-optional-dependency-safety.sh" "$OUTDIR/checks/optional-dependency-safety.txt" "$ROOT/scripts/check-optional-dependency-safety.sh"
+else
+  echo "./scripts/check-optional-dependency-safety.sh=missing" >> "$COMMAND_STATUS"
+fi
+
 if [[ -x "$ROOT/scripts/run-local-smoke-check.sh" ]]; then
   run_logged "local-smoke-check" "$OUTDIR/checks/local-smoke-check.txt" env REPUTATIONBAN_SKIP_REVIEW_CODE=1 REPUTATIONBAN_SKIP_BUILD=1 "$ROOT/scripts/run-local-smoke-check.sh"
 else
@@ -185,8 +194,8 @@ fi
 
 if [[ -d "$ROOT/build/libs" ]]; then
   find "$ROOT/build/libs" -maxdepth 1 -type f -print | sort > "$OUTDIR/checks/built-jars.txt"
-  if [[ -f "$ROOT/build/libs/ReputationBan-0.16.0.jar" ]]; then
-    (cd "$ROOT" && sha256sum build/libs/ReputationBan-0.16.0.jar) > "$OUTDIR/checks/jar-sha256.txt"
+  if [[ -f "$ROOT/build/libs/ReputationBan-0.17.0.jar" ]]; then
+    (cd "$ROOT" && sha256sum build/libs/ReputationBan-0.17.0.jar) > "$OUTDIR/checks/jar-sha256.txt"
   fi
 fi
 
@@ -205,6 +214,17 @@ else
     echo "message=No paper runtime smoke summary found."
     echo "nextStep=Run scripts/run-paper-runtime-smoke-helper.sh and record results with scripts/record-paper-runtime-smoke-result.sh"
   } > "$OUTDIR/checks/latest-paper-runtime-smoke-summary.txt"
+fi
+
+LATEST_INTEGRATION_SMOKE="$(find "$ROOT/build/manual-smoke" -maxdepth 2 -path '*/integration-runtime-*/summary.txt' -type f 2>/dev/null | sort | tail -n 1 || true)"
+if [[ -n "$LATEST_INTEGRATION_SMOKE" && -f "$LATEST_INTEGRATION_SMOKE" ]]; then
+  cp "$LATEST_INTEGRATION_SMOKE" "$OUTDIR/checks/latest-integration-runtime-smoke-summary.txt"
+else
+  {
+    echo "status=NOT_RUN"
+    echo "message=No integration runtime smoke summary found."
+    echo "nextStep=Run docs/INTEGRATION_RUNTIME_SMOKE_CHECKLIST.md and record results with scripts/record-integration-runtime-smoke-result.sh"
+  } > "$OUTDIR/checks/latest-integration-runtime-smoke-summary.txt"
 fi
 
 tar -czf "$ARCHIVE" -C "$(dirname "$OUTDIR")" "$(basename "$OUTDIR")"

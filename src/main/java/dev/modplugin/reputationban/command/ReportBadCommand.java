@@ -191,7 +191,12 @@ public final class ReportBadCommand implements CommandExecutor {
                         value.name(),
                         category,
                         reason,
-                        new ReportService.ReportIntegrationMetadata(trust.primaryGroup(), trust.reporterWeight())
+                        new ReportService.ReportIntegrationMetadata(
+                                trust.primaryGroup(),
+                                trust.reporterWeight(),
+                                trust.bypassGroup(),
+                                plugin.pluginConfig().luckPermsIntegration().applyWeightToDeduction()
+                        )
                 ))
                 .thenCompose(result -> {
                     if (!result.accepted()) {

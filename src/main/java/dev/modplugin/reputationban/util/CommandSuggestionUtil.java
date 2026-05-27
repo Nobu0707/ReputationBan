@@ -82,6 +82,7 @@ public final class CommandSuggestionUtil {
             }
             case "maintenance" -> filterByPrefix(List.of("preview", "run"), prefix);
             case "support" -> filterByPrefix(List.of("bundle"), prefix);
+            case "integrations", "integration" -> filterByPrefix(List.of("test"), prefix);
             default -> repSubcommandNeedsPlayer(subcommand) ? filterByPrefix(playerNames, prefix) : List.of();
         };
     }
@@ -128,13 +129,13 @@ public final class CommandSuggestionUtil {
         if (!hasPermission) {
             return List.of();
         }
-        return filterByPrefix(List.of("help", "list", "view", "approve", "reject"), prefix);
+        return filterByPrefix(List.of("help", "list", "view", "evidence", "approve", "reject"), prefix);
     }
 
     public static List<String> reportsSecondArgumentSuggestions(String subcommand, Collection<String> pendingIds, String prefix) {
         return switch (normalize(subcommand)) {
             case "list" -> reportStatuses(prefix);
-            case "view", "approve", "reject" -> filterByPrefix(pendingIds, prefix);
+            case "view", "evidence", "approve", "reject" -> filterByPrefix(pendingIds, prefix);
             default -> List.of();
         };
     }

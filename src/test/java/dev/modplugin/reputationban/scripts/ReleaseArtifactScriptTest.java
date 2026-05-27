@@ -11,6 +11,8 @@ class ReleaseArtifactScriptTest {
         assertBashSyntax("scripts/create-release-artifact.sh");
         assertBashSyntax("scripts/verify-release-artifact.sh");
         assertBashSyntax("scripts/record-paper-runtime-smoke-result.sh");
+        assertBashSyntax("scripts/check-optional-dependency-safety.sh");
+        assertBashSyntax("scripts/record-integration-runtime-smoke-result.sh");
     }
 
     private static void assertBashSyntax(String script) throws IOException, InterruptedException {

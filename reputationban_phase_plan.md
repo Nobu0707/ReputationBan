@@ -338,33 +338,34 @@
 - Webhook URLは表示、ログ、監査metadata、CSV、support bundle、release artifact、レビューアーカイブへ出さない。
 - v1.0.0前に、可能な限り実Paperサーバーで `/rep version`、`/rep doctor`、`/rep support bundle`、`/rep backup`、`/reportbad` TAB補完を確認する。
 
-## Phase 16 / v0.16.0: LuckPerms / CoreProtect 任意連携
+## Phase 17 / v0.17.0: LuckPerms / CoreProtect 運用診断強化
 
-目的: 外部プラグインが無い環境での単体動作を維持しながら、LuckPerms と CoreProtect の安全な最小連携を追加する。
+目的: Phase 16 で追加した LuckPerms / CoreProtect 連携を、運用で確認、説明、レビューしやすい状態にする。
 
 実装範囲:
 
-- version 0.16.0
-- `plugin.yml` softdepend: LuckPerms / CoreProtect
-- LuckPerms compileOnly dependency: `net.luckperms:api:5.5`
-- CoreProtect compileOnly dependency: `net.coreprotect:coreprotect:23.2`
-- `/rep integrations` と `/rep doctor` の連携状態表示
-- LuckPerms primary group reporter weight の記録
-- LuckPerms bypass-groups 補助保護
-- `report_context` table
-- CoreProtect griefing report context lookup の簡易サマリー保存
+- version 0.17.0
+- `/reports evidence <id>` の追加
+- `/rep integrations test` の追加
+- `/rep integrations` の詳細表示
+- LuckPerms metadata に `primaryGroup`、`reporterWeight`、`bypassGroup`、`applyWeightToDeduction` を保存
+- CoreProtect metadata に `resultCount`、`lookupSeconds`、`radius`、`category`、`world`、`x`、`y`、`z`、`apiVersion` を保存
+- CoreProtect summary の日本語運用向け改善
+- `scripts/check-optional-dependency-safety.sh`
+- `docs/INTEGRATION_RUNTIME_SMOKE_CHECKLIST.md`
+- `scripts/record-integration-runtime-smoke-result.sh`
 - `COREPROTECT_CONTEXT_CAPTURED` と `INTEGRATION_STATUS_CHECKED` audit events
-- `docs/INTEGRATIONS.md` と `docs/phase-16.md`
-- review/release archive scripts の v0.16.0 対応
-- Phase 16a: LuckPerms / CoreProtect API 型の直接 import を排除し、reflection adapter で optional dependency class loading を安全化
+- `docs/INTEGRATIONS.md` と `docs/phase-17.md`
+- review/release archive scripts の v0.17.0 対応
 
 注意:
 
 - CoreProtect rollback、restore、purge は実行しない。
 - LuckPerms の group/permission 書き込みは実行しない。
 - LuckPerms / CoreProtect は任意依存であり、未導入や片方だけ導入の環境でも ReputationBan 本体は起動できる設計にする。
-- LuckPerms のオフラインユーザー情報が未ロードの場合、Phase 16 では `default-weight` 扱いになる場合がある。
+- LuckPerms のオフラインユーザー情報が未ロードの場合、Phase 17 では `default-weight` 扱いになる場合がある。
 - CoreProtect lookup は審査補助であり、rollback、restore、purge は行わない。
+- `apply-weight-to-deduction` は Phase 17 では metadata と表示用であり、減点量へは未反映。
 - WorldGuard、GriefPrevention、DiscordSRV、GUI、Folia、v1.0.0 readiness gate は後続。
 
 ## Phase 17以降: 外部連携・高度な悪用対策

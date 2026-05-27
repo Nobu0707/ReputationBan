@@ -130,6 +130,11 @@ public final class CoreProtectEvidenceService {
                                     .put("category", category.key())
                                     .put("radius", config.radius())
                                     .put("lookupSeconds", config.lookupSeconds())
+                                    .put("world", worldName)
+                                    .put("x", x)
+                                    .put("y", y)
+                                    .put("z", z)
+                                    .put("apiVersion", api.apiVersion())
                                     .toJson(),
                             System.currentTimeMillis()
                     )));
@@ -149,18 +154,28 @@ public final class CoreProtectEvidenceService {
     ) {
         List<CoreProtectLookupEntry> entries = lookupResult.entries();
         int count = CoreProtectEvidencePolicy.clampMaxResults(config.maxResults(), entries.size());
-        String header = count + " result(s) near " + world + " " + x + " "
-                + y + " " + z
-                + " within " + config.radius() + " blocks";
+        int resultCount = Math.max(lookupResult.totalResults(), entries.size());
+        String header = "CoreProtect: 周辺ログ " + resultCount + "件 world=" + world
+                + " x=" + x
+                + " y=" + y
+                + " z=" + z
+                + " radius=" + config.radius();
         if (count == 0) {
-            return CoreProtectEvidenceSummary.empty(
-                    world,
-                    x,
-                    y,
-                    z,
-                    config.radius(),
-                    config.lookupSeconds(),
-                    category
+            return new CoreProtectEvidenceSummary(
+                    resultCount,
+                    header,
+                    List.of(),
+                    CoreProtectEvidenceSummary.metadata(
+                            resultCount,
+                            config.lookupSeconds(),
+                            config.radius(),
+                            category,
+                            world,
+                            x,
+                            y,
+                            z,
+                            lookupResult.apiVersion()
+                    )
             );
         }
 
@@ -177,10 +192,20 @@ public final class CoreProtectEvidenceService {
         }
         String summary = CoreProtectEvidencePolicy.truncateSummary(header + "\n" + String.join("\n", lines), SUMMARY_MAX_LENGTH);
         return new CoreProtectEvidenceSummary(
-                count,
+                resultCount,
                 summary,
                 List.copyOf(lines),
-                CoreProtectEvidenceSummary.metadata(count, config.lookupSeconds(), config.radius(), category)
+                CoreProtectEvidenceSummary.metadata(
+                        resultCount,
+                        config.lookupSeconds(),
+                        config.radius(),
+                        category,
+                        world,
+                        x,
+                        y,
+                        z,
+                        lookupResult.apiVersion()
+                )
         );
     }
 }

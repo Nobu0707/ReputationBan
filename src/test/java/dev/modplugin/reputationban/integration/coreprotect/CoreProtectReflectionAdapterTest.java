@@ -57,6 +57,7 @@ class CoreProtectReflectionAdapterTest {
         );
 
         assertEquals(1, result.entries().size());
+        assertEquals(2, result.totalResults());
         assertEquals("block-break", result.entries().getFirst().action());
     }
 

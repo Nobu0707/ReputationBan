@@ -334,6 +334,8 @@ public final class ReportService {
                             .put("actualDeduction", deduction)
                             .put("reporterPrimaryGroup", integrationMetadata.reporterPrimaryGroup())
                             .put("reporterWeight", integrationMetadata.reporterWeight())
+                            .put("reporterBypassGroup", integrationMetadata.bypassGroup())
+                            .put("applyWeightToDeduction", integrationMetadata.applyWeightToDeduction())
                             .toJson(),
                     now
             ));
@@ -404,6 +406,8 @@ public final class ReportService {
         String json = AuditMetadata.create()
                 .put("primaryGroup", metadata.reporterPrimaryGroup())
                 .put("reporterWeight", metadata.reporterWeight())
+                .put("bypassGroup", metadata.bypassGroup())
+                .put("applyWeightToDeduction", metadata.applyWeightToDeduction())
                 .toJson();
         insertReportContext(connection, reportId, "luckperms", summary, json, now);
     }
@@ -465,6 +469,8 @@ public final class ReportService {
                         .put("thresholdRequired", thresholdRequired)
                         .put("reporterPrimaryGroup", integrationMetadata.reporterPrimaryGroup())
                         .put("reporterWeight", integrationMetadata.reporterWeight())
+                        .put("reporterBypassGroup", integrationMetadata.bypassGroup())
+                        .put("applyWeightToDeduction", integrationMetadata.applyWeightToDeduction())
                         .toJson(),
                 now
         );
@@ -1030,10 +1036,12 @@ public final class ReportService {
 
     public record ReportIntegrationMetadata(
             String reporterPrimaryGroup,
-            double reporterWeight
+            double reporterWeight,
+            boolean bypassGroup,
+            boolean applyWeightToDeduction
     ) {
         public static ReportIntegrationMetadata empty() {
-            return new ReportIntegrationMetadata("", 1.0D);
+            return new ReportIntegrationMetadata("", 1.0D, false, false);
         }
 
         public boolean hasLuckPermsContext() {

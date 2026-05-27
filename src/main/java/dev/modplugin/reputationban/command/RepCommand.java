@@ -1,6 +1,7 @@
 package dev.modplugin.reputationban.command;
 
 import dev.modplugin.reputationban.ReputationBanPlugin;
+import dev.modplugin.reputationban.integration.IntegrationService;
 import dev.modplugin.reputationban.integration.IntegrationStatus;
 import dev.modplugin.reputationban.model.AuditEvent;
 import dev.modplugin.reputationban.model.AuditEventType;
@@ -131,7 +132,7 @@ public final class RepCommand implements CommandExecutor {
             return true;
         }
         if ("integrations".equalsIgnoreCase(args[0]) || "integration".equalsIgnoreCase(args[0])) {
-            integrations(sender);
+            integrations(sender, args);
             return true;
         }
         if ("add".equalsIgnoreCase(args[0]) || "remove".equalsIgnoreCase(args[0]) || "set".equalsIgnoreCase(args[0])) {
@@ -189,6 +190,7 @@ public final class RepCommand implements CommandExecutor {
         }
         if (sender.hasPermission("reputationban.admin.integrations")) {
             sender.sendMessage(ReputationBanPlugin.PREFIX + "/rep integrations - 外部プラグイン連携状態を表示");
+            sender.sendMessage(ReputationBanPlugin.PREFIX + "/rep integrations test - 外部連携の詳細診断を実行");
         }
     }
 
@@ -820,15 +822,18 @@ public final class RepCommand implements CommandExecutor {
                 });
     }
 
-    private void integrations(CommandSender sender) {
+    private void integrations(CommandSender sender, String[] args) {
         if (!sender.hasPermission("reputationban.admin.integrations")) {
             sender.sendMessage(ReputationBanPlugin.PREFIX + "権限がありません。");
             return;
         }
-        List<IntegrationStatus> statuses = plugin.integrationService().statuses();
+        if (args.length >= 2 && "test".equalsIgnoreCase(args[1])) {
+            integrationsTest(sender);
+            return;
+        }
         sender.sendMessage(ReputationBanPlugin.PREFIX + "外部連携状態");
-        for (IntegrationStatus status : statuses) {
-            sender.sendMessage(ReputationBanPlugin.PREFIX + status.compactLine());
+        for (String line : plugin.integrationService().statusLines()) {
+            sender.sendMessage(ReputationBanPlugin.PREFIX + line);
         }
         auditService.recordEvent(AuditEvent.create(
                 AuditEventType.INTEGRATION_STATUS_CHECKED,
@@ -844,6 +849,35 @@ public final class RepCommand implements CommandExecutor {
                 null,
                 "integration status checked",
                 AuditMetadata.create().put("command", "integrations").toJson(),
+                System.currentTimeMillis()
+        ));
+    }
+
+    private void integrationsTest(CommandSender sender) {
+        IntegrationService.IntegrationTestResult result = plugin.integrationService().test(sender);
+        sender.sendMessage(ReputationBanPlugin.PREFIX + "外部連携診断");
+        for (String line : result.lines()) {
+            sender.sendMessage(ReputationBanPlugin.PREFIX + line);
+        }
+        auditService.recordEvent(AuditEvent.create(
+                AuditEventType.INTEGRATION_STATUS_CHECKED,
+                senderUuid(sender),
+                sender.getName(),
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                "integration diagnostics checked",
+                AuditMetadata.create()
+                        .put("command", "integrations test")
+                        .put("luckPermsActive", result.luckPermsActive())
+                        .put("coreProtectActive", result.coreProtectActive())
+                        .put("senderType", result.senderType())
+                        .toJson(),
                 System.currentTimeMillis()
         ));
     }

@@ -20,11 +20,19 @@ public final class LuckPermsIntegration {
 
     public IntegrationStatus status(PluginConfig config) {
         PluginConfig.LuckPermsIntegrationConfig luckPermsConfig = config.luckPermsIntegration();
-        if (!luckPermsConfig.enabled()) {
-            return IntegrationStatus.disabled(ExternalIntegrationType.LUCKPERMS);
-        }
         boolean pluginPresent = adapter.pluginPresent();
-        boolean apiAvailable = adapter.apiAvailable();
+        boolean apiAvailable = pluginPresent && adapter.apiAvailable();
+        if (!luckPermsConfig.enabled()) {
+            return new IntegrationStatus(
+                    ExternalIntegrationType.LUCKPERMS,
+                    false,
+                    pluginPresent,
+                    apiAvailable,
+                    "",
+                    false,
+                    "disabled"
+            );
+        }
         return new IntegrationStatus(
                 ExternalIntegrationType.LUCKPERMS,
                 true,
