@@ -1,16 +1,25 @@
 # Integration Runtime Smoke Checklist
 
-Phase 21 の LuckPerms / CoreProtect / WorldGuard / GriefPrevention / PlaceholderAPI / DiscordSRV 連携を実サーバーで確認するための手順です。未実施でも v0.21.0 の local release checks は失敗扱いにしませんが、v1.0.0 前には実施してください。
+Phase 22 の LuckPerms / CoreProtect / WorldGuard / GriefPrevention / PlaceholderAPI / DiscordSRV 連携を実サーバーで確認するための手順です。未実施でも v0.22.0 の local release checks は失敗扱いにしませんが、未実施は PASS ではありません。v1.0.0 前には実施し、`record-integration-runtime-smoke-result.sh` で結果を記録してください。
+
+## Runtime Gate
+
+- summary がない場合は `NOT_RUN` です。
+- `NOT_RUN` は `HOLD_FOR_INTEGRATION_RUNTIME_SMOKE` として扱い、PASS とは扱いません。
+- `./scripts/check-integration-runtime-readiness.sh` は通常モードで HOLD を表示し exit 0 にします。
+- `./scripts/check-integration-runtime-readiness.sh --strict` は `result=PASS` 以外を non-zero にします。
+- PASS を記録できるのは、実 Paper server で optional plugin なし/ありの確認を行った場合だけです。
 
 ## 共通確認
 
 - PaperMC 26.1.2 と Java 25 で起動します。
-- `build/libs/ReputationBan-0.21.0.jar` を配置します。
+- `build/libs/ReputationBan-0.22.0.jar` を配置します。
 - CoreProtect rollback、restore、purge は使いません。
 - LuckPerms の group 変更、権限付与、権限剥奪、`saveUser` などの書き込みは行いません。
 - WorldGuard region / flag の作成、変更、削除は行いません。
 - GriefPrevention claim / trust の作成、変更、削除は行いません。
 - Discord から Minecraft コマンドを実行する機能、Discord role 変更、Discord button 承認は行いません。
+- DiscordSRV 通知はデフォルト無効です。明示的に有効化した smoke 以外では送信されないことを確認します。
 
 ## LuckPerms 未導入
 

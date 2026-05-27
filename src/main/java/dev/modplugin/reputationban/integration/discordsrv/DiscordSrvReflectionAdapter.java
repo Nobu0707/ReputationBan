@@ -15,7 +15,7 @@ public class DiscordSrvReflectionAdapter {
     private final BooleanSupplier primaryThread;
 
     public DiscordSrvReflectionAdapter(JavaPlugin plugin) {
-        this(ignored -> plugin.getServer().getPluginManager().getPlugin(ignored), Bukkit::isPrimaryThread);
+        this(ignored -> plugin.getServer().getPluginManager().getPlugin("DiscordSRV"), Bukkit::isPrimaryThread);
     }
 
     DiscordSrvReflectionAdapter(PluginLookup pluginLookup, BooleanSupplier primaryThread) {
@@ -32,8 +32,7 @@ public class DiscordSrvReflectionAdapter {
             return false;
         }
         try {
-            Object plugin = pluginInstance();
-            Object manager = invoke(plugin, "getAccountLinkManager");
+            Object manager = accountLinkManager();
             return manager != null && getDiscordIdMethod(manager) != null;
         } catch (ClassNotFoundException | RuntimeException exception) {
             return false;
@@ -50,7 +49,7 @@ public class DiscordSrvReflectionAdapter {
             return Optional.empty();
         }
         try {
-            Object manager = invoke(pluginInstance(), "getAccountLinkManager");
+            Object manager = accountLinkManager();
             Method method = getDiscordIdMethod(manager);
             Object value = method == null ? null : method.invoke(manager, playerUuid);
             if (value == null || value.toString().isBlank()) {
@@ -68,7 +67,7 @@ public class DiscordSrvReflectionAdapter {
             return false;
         }
         try {
-            Object plugin = pluginInstance();
+            Object plugin = channelResolverPlugin();
             Object channel = invoke(plugin, "getDestinationTextChannelForGameChannelName", String.class, channelName);
             if (channel == null) {
                 return false;
@@ -84,13 +83,47 @@ public class DiscordSrvReflectionAdapter {
         }
     }
 
-    private Object pluginInstance() throws ClassNotFoundException {
+    private Object accountLinkManager() throws ClassNotFoundException {
+        Object plugin = pluginLookup.plugin("DiscordSRV");
+        Object manager = null;
+        if (hasMethod(plugin, "getAccountLinkManager")) {
+            manager = invoke(plugin, "getAccountLinkManager");
+        }
+        if (manager != null) {
+            return manager;
+        }
+        Object fallbackPlugin = staticPluginInstance();
+        return invoke(fallbackPlugin, "getAccountLinkManager");
+    }
+
+    private Object channelResolverPlugin() throws ClassNotFoundException {
+        Object plugin = pluginLookup.plugin("DiscordSRV");
+        if (hasMethod(plugin, "getDestinationTextChannelForGameChannelName", String.class)) {
+            return plugin;
+        }
+        return staticPluginInstance();
+    }
+
+    private Object staticPluginInstance() throws ClassNotFoundException {
         Class<?> clazz = Class.forName(API_CLASS);
         Object plugin = invokeStatic(clazz, "getPlugin");
         if (plugin == null) {
             throw new IllegalStateException("DiscordSRV plugin instance unavailable");
         }
         return plugin;
+    }
+
+    private static boolean hasMethod(Object target, String methodName, Class<?>... parameterTypes) {
+        if (target == null) {
+            return false;
+        }
+        try {
+            Method method = target.getClass().getMethod(methodName, parameterTypes);
+            method.setAccessible(true);
+            return true;
+        } catch (NoSuchMethodException | RuntimeException exception) {
+            return false;
+        }
     }
 
     private static Method getDiscordIdMethod(Object manager) {

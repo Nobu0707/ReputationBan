@@ -2,7 +2,7 @@
 set -euo pipefail
 
 PROJECT_NAME="ReputationBan"
-EXPECTED_VERSION="0.21.0"
+EXPECTED_VERSION="0.22.0"
 EXPECTED_MAIN="dev.modplugin.reputationban.ReputationBanPlugin"
 EXPECTED_API_VERSION="26.1.2"
 EXPECTED_PACKAGE_DIR="src/main/java/dev/modplugin/reputationban"
@@ -23,6 +23,7 @@ require_command sed
 require_command find
 require_command sort
 require_command tail
+require_command awk
 
 [[ -d .git ]] || fail "Not a Git repository"
 git rev-parse --is-inside-work-tree >/dev/null || fail "Not inside a Git work tree"
@@ -35,6 +36,8 @@ require_file scripts/run-local-smoke-check.sh
 require_file scripts/run-paper-runtime-smoke-helper.sh
 require_file scripts/check-docs-localization.sh
 require_file scripts/check-optional-dependency-safety.sh
+require_file scripts/check-integration-runtime-readiness.sh
+require_file scripts/run-integration-runtime-smoke-helper.sh
 require_file scripts/create-release-artifact.sh
 require_file scripts/verify-release-artifact.sh
 require_file scripts/record-paper-runtime-smoke-result.sh
@@ -54,6 +57,7 @@ require_file docs/phase-15.md
 require_file docs/phase-17.md
 require_file docs/phase-19.md
 require_file docs/phase-21.md
+require_file docs/phase-22.md
 require_file docs/INTEGRATIONS.md
 require_file docs/INTEGRATION_RUNTIME_SMOKE_CHECKLIST.md
 require_file docs/RELEASE_CANDIDATE_CHECKLIST.md
@@ -68,6 +72,8 @@ require_dir "$EXPECTED_PACKAGE_DIR"
 [[ -x ./scripts/run-paper-runtime-smoke-helper.sh ]] || fail "run-paper-runtime-smoke-helper.sh is not executable"
 [[ -x ./scripts/check-docs-localization.sh ]] || fail "check-docs-localization.sh is not executable"
 [[ -x ./scripts/check-optional-dependency-safety.sh ]] || fail "check-optional-dependency-safety.sh is not executable"
+[[ -x ./scripts/check-integration-runtime-readiness.sh ]] || fail "check-integration-runtime-readiness.sh is not executable"
+[[ -x ./scripts/run-integration-runtime-smoke-helper.sh ]] || fail "run-integration-runtime-smoke-helper.sh is not executable"
 [[ -x ./scripts/create-release-artifact.sh ]] || fail "create-release-artifact.sh is not executable"
 [[ -x ./scripts/verify-release-artifact.sh ]] || fail "verify-release-artifact.sh is not executable"
 [[ -x ./scripts/record-paper-runtime-smoke-result.sh ]] || fail "record-paper-runtime-smoke-result.sh is not executable"
@@ -77,7 +83,7 @@ YML=src/main/resources/plugin.yml
 grep -q "io.papermc.paper:paper-api:26.1.2.build" build.gradle.kts || fail "Paper API 26.1.2 dependency not found"
 grep -q "org.xerial:sqlite-jdbc" "$YML" || fail "Missing sqlite-jdbc library"
 grep -q "JavaLanguageVersion.of(25)" build.gradle.kts || fail "Java 25 toolchain not found"
-grep -q 'version = "0.21.0"' build.gradle.kts || fail "build.gradle.kts version is not 0.21.0"
+grep -q 'version = "0.22.0"' build.gradle.kts || fail "build.gradle.kts version is not 0.22.0"
 grep -q "options.release.set(25)" build.gradle.kts || fail "Java release 25 not found"
 grep -q 'net.luckperms:api:5.5' build.gradle.kts || fail "LuckPerms compileOnly dependency not found"
 grep -q 'net.coreprotect:coreprotect:23.2' build.gradle.kts || fail "CoreProtect compileOnly dependency not found"
@@ -283,13 +289,24 @@ grep -R "saveReportContext(reportId, \"discordsrv\"" src/main/java/dev/modplugin
 grep -R "DiscordSRV:" src/main/java/dev/modplugin/reputationban/integration/IntegrationService.java src/main/java/dev/modplugin/reputationban/model/ReportContextFormatter.java >/dev/null || fail "DiscordSRV command/evidence display not found"
 grep -R "accountLinkAvailable\\|senderLinked\\|notificationsEnabled" src/main/java/dev/modplugin/reputationban/integration/IntegrationService.java >/dev/null || fail "/rep integrations test DiscordSRV diagnostics not found"
 grep -R "DISCORDSRV" src/main/java/dev/modplugin/reputationban/integration/ExternalIntegrationType.java >/dev/null || fail "/rep doctor DiscordSRV integration display not found"
+grep -q "getPlugin(\"DiscordSRV\")" src/main/java/dev/modplugin/reputationban/integration/discordsrv/DiscordSrvReflectionAdapter.java || fail "DiscordSrvReflectionAdapter does not use plugin instance route"
+grep -q "getDestinationTextChannelForGameChannelName" src/main/java/dev/modplugin/reputationban/integration/discordsrv/DiscordSrvReflectionAdapter.java || fail "DiscordSrvReflectionAdapter does not resolve DiscordSRV destination channel"
+grep -q "github.scarsz.discordsrv.DiscordSRV" src/main/java/dev/modplugin/reputationban/integration/discordsrv/DiscordSrvReflectionAdapter.java || fail "DiscordSrvReflectionAdapter fallback API class name missing"
+grep -q "Class\\.forName(API_CLASS)" src/main/java/dev/modplugin/reputationban/integration/discordsrv/DiscordSrvReflectionAdapter.java || fail "DiscordSrvReflectionAdapter fallback Class.forName route missing"
+grep -q "runTask(plugin" src/main/java/dev/modplugin/reputationban/integration/discordsrv/DiscordSrvNotificationService.java || fail "DiscordSrvNotificationService does not schedule main thread task"
+awk '/runTask\(plugin, \(\) -> \{/{in_task=1} in_task && /integration\.detail\(config\)/{found=1} END{exit found ? 0 : 1}' \
+  src/main/java/dev/modplugin/reputationban/integration/discordsrv/DiscordSrvNotificationService.java \
+  || fail "DiscordSrvNotificationService does not call integration.detail(config) inside runTask"
+awk '/runTask\(plugin, \(\) -> \{/{in_task=1} in_task && /sanitizeMessage/{found=1} END{exit found ? 0 : 1}' \
+  src/main/java/dev/modplugin/reputationban/integration/discordsrv/DiscordSrvNotificationService.java \
+  || fail "DiscordSrvNotificationService does not sanitize DiscordSRV notification inside runTask"
 grep -q "DiscordSRV" docs/INTEGRATIONS.md || fail "docs/INTEGRATIONS.md missing DiscordSRV explanation"
-grep -q "DiscordSRV" docs/phase-21.md || fail "docs/phase-21.md missing DiscordSRV explanation"
+grep -q "DiscordSRV" docs/phase-22.md || fail "docs/phase-22.md missing DiscordSRV explanation"
 if grep -R "DatabaseManager\\|getConnection\\|executeQuery\\|PreparedStatement" src/main/java/dev/modplugin/reputationban/integration/placeholderapi/ReputationBanPlaceholderExpansion.java >/dev/null; then
   fail "Placeholder expansion contains direct DB access markers"
 fi
 grep -q "PlaceholderAPI" docs/INTEGRATIONS.md || fail "docs/INTEGRATIONS.md missing PlaceholderAPI explanation"
-grep -q "DiscordSRV" docs/phase-21.md || fail "docs/phase-21.md missing DiscordSRV explanation"
+grep -q "DiscordSRV" docs/phase-21.md || fail "docs/phase-21.md missing Phase 21 DiscordSRV explanation"
 if grep -R "import net\.luckperms\." src/main/java >/dev/null; then
   fail "LuckPerms API direct import detected in Java sources"
 fi
@@ -414,6 +431,7 @@ for japanese_doc in \
   docs/phase-17.md \
   docs/phase-19.md \
   docs/phase-21.md \
+  docs/phase-22.md \
   docs/INTEGRATIONS.md; do
   grep -Pq '[\p{Hiragana}\p{Katakana}\p{Han}]' "$japanese_doc" || fail "$japanese_doc does not appear to contain Japanese text"
 done
@@ -422,8 +440,13 @@ bash -n scripts/check-docs-localization.sh || fail "check-docs-localization.sh s
 ./scripts/check-docs-localization.sh
 bash -n scripts/check-optional-dependency-safety.sh || fail "check-optional-dependency-safety.sh syntax check failed"
 ./scripts/check-optional-dependency-safety.sh
+bash -n scripts/check-integration-runtime-readiness.sh || fail "check-integration-runtime-readiness.sh syntax check failed"
+./scripts/check-integration-runtime-readiness.sh
+bash -n scripts/run-integration-runtime-smoke-helper.sh || fail "run-integration-runtime-smoke-helper.sh syntax check failed"
+grep -q "HOLD_FOR_INTEGRATION_RUNTIME_SMOKE" docs/INTEGRATION_RUNTIME_SMOKE_CHECKLIST.md scripts/check-integration-runtime-readiness.sh || fail "Integration runtime HOLD/NOT_RUN explanation missing"
+grep -q "NOT_RUN" docs/INTEGRATION_RUNTIME_SMOKE_CHECKLIST.md scripts/check-integration-runtime-readiness.sh || fail "Integration runtime NOT_RUN explanation missing"
 
-grep -q "0.21.0" README.md || fail "README.md does not mention 0.21.0"
+grep -q "0.22.0" README.md || fail "README.md does not mention 0.22.0"
 grep -q "RELEASE_CANDIDATE_CHECKLIST" README.md || fail "README.md does not link RELEASE_CANDIDATE_CHECKLIST"
 grep -q "RELEASE_CANDIDATE_CHECKLIST" docs/phase-15.md docs/RELEASE_CANDIDATE_CHECKLIST.md README.md || fail "Release candidate checklist references missing"
 
@@ -435,14 +458,14 @@ require_command jar
 jar tf "$JAR" | grep -q "plugin.yml" || fail "plugin.yml missing from jar"
 jar tf "$JAR" | grep -q "dev/modplugin/reputationban/ReputationBanPlugin.class" || fail "Main class missing from jar"
 
-grep -q "EXPECTED_VERSION=\"0.21.0\"" scripts/run-local-smoke-check.sh || fail "run-local-smoke-check.sh does not check v0.21.0"
+grep -q "EXPECTED_VERSION=\"0.22.0\"" scripts/run-local-smoke-check.sh || fail "run-local-smoke-check.sh does not check v0.22.0"
 grep -q "REPUTATIONBAN_SKIP_BUILD" scripts/run-local-smoke-check.sh || fail "run-local-smoke-check.sh does not support REPUTATIONBAN_SKIP_BUILD"
-grep -q "VERSION=\"0.21.0\"" scripts/create-release-artifact.sh || fail "create-release-artifact.sh does not target v0.21.0"
+grep -q "VERSION=\"0.22.0\"" scripts/create-release-artifact.sh || fail "create-release-artifact.sh does not target v0.22.0"
 grep -q "build/release" scripts/create-release-artifact.sh || fail "create-release-artifact.sh does not write build/release"
 grep -q "sha256sum" scripts/create-release-artifact.sh || fail "create-release-artifact.sh does not create sha256"
 grep -q "release.zip" scripts/create-release-artifact.sh || fail "create-release-artifact.sh does not create release zip"
 grep -q "RELEASE_ZIP_SHA" scripts/create-release-artifact.sh || fail "create-release-artifact.sh does not create release zip sha256"
-grep -q "VERSION=\"0.21.0\"" scripts/verify-release-artifact.sh || fail "verify-release-artifact.sh does not target v0.21.0"
+grep -q "VERSION=\"0.22.0\"" scripts/verify-release-artifact.sh || fail "verify-release-artifact.sh does not target v0.22.0"
 grep -q "docs/INTEGRATIONS.md" scripts/verify-release-artifact.sh || fail "verify-release-artifact.sh does not verify integrations docs"
 grep -q "sha256sum -c" scripts/verify-release-artifact.sh || fail "verify-release-artifact.sh does not verify sha256"
 grep -q "docs/INSTALLATION.md" scripts/verify-release-artifact.sh || fail "verify-release-artifact.sh does not verify localized docs"
@@ -453,6 +476,9 @@ grep -q "docs-localization.txt" scripts/make-review-archive.sh || fail "make-rev
 grep -q "check-docs-localization.sh" scripts/make-review-archive.sh || fail "make-review-archive.sh does not record docs localization status"
 grep -q "optional-dependency-safety.txt" scripts/make-review-archive.sh || fail "make-review-archive.sh does not create optional-dependency-safety.txt"
 grep -q "check-optional-dependency-safety.sh" scripts/make-review-archive.sh || fail "make-review-archive.sh does not record optional dependency safety status"
+grep -q "integration-runtime-readiness.txt" scripts/make-review-archive.sh || fail "make-review-archive.sh does not create integration-runtime-readiness.txt"
+grep -q "check-integration-runtime-readiness.sh" scripts/make-review-archive.sh || fail "make-review-archive.sh does not record integration runtime readiness status"
+grep -q "integration-runtime-smoke-helper-syntax.txt" scripts/make-review-archive.sh || fail "make-review-archive.sh does not create integration runtime smoke helper syntax output"
 grep -q "latest-integration-runtime-smoke-summary.txt" scripts/make-review-archive.sh || fail "make-review-archive.sh does not create latest integration runtime smoke summary"
 grep -q "record-integration-runtime-smoke-result" scripts/make-review-archive.sh || fail "make-review-archive.sh review signals do not mention integration smoke recorder"
 grep -q "local-smoke-check.txt" scripts/make-review-archive.sh || fail "make-review-archive.sh does not create local-smoke-check.txt"
@@ -468,19 +494,21 @@ grep -Eq "CHANGELOG|INSTALLATION|CONFIGURATION|MIGRATION|RELEASE_READINESS" scri
 bash -n scripts/run-paper-runtime-smoke-helper.sh || fail "run-paper-runtime-smoke-helper.sh syntax check failed"
 bash -n scripts/check-docs-localization.sh || fail "check-docs-localization.sh syntax check failed"
 bash -n scripts/check-optional-dependency-safety.sh || fail "check-optional-dependency-safety.sh syntax check failed"
+bash -n scripts/check-integration-runtime-readiness.sh || fail "check-integration-runtime-readiness.sh syntax check failed"
+bash -n scripts/run-integration-runtime-smoke-helper.sh || fail "run-integration-runtime-smoke-helper.sh syntax check failed"
 bash -n scripts/create-release-artifact.sh || fail "create-release-artifact.sh syntax check failed"
 bash -n scripts/verify-release-artifact.sh || fail "verify-release-artifact.sh syntax check failed"
 bash -n scripts/record-paper-runtime-smoke-result.sh || fail "record-paper-runtime-smoke-result.sh syntax check failed"
 bash -n scripts/record-integration-runtime-smoke-result.sh || fail "record-integration-runtime-smoke-result.sh syntax check failed"
 ./scripts/create-release-artifact.sh
-[[ -f "build/release/ReputationBan-0.21.0.jar" ]] || fail "release jar not found"
-[[ -f "build/release/ReputationBan-0.21.0.jar.sha256" ]] || fail "release jar sha256 not found"
-[[ -f "build/release/ReputationBan-0.21.0-release.zip" ]] || fail "release zip not found"
-[[ -f "build/release/ReputationBan-0.21.0-release.zip.sha256" ]] || fail "release zip sha256 not found"
+[[ -f "build/release/ReputationBan-0.22.0.jar" ]] || fail "release jar not found"
+[[ -f "build/release/ReputationBan-0.22.0.jar.sha256" ]] || fail "release jar sha256 not found"
+[[ -f "build/release/ReputationBan-0.22.0-release.zip" ]] || fail "release zip not found"
+[[ -f "build/release/ReputationBan-0.22.0-release.zip.sha256" ]] || fail "release zip sha256 not found"
 ./scripts/verify-release-artifact.sh
-jar tf "build/release/ReputationBan-0.21.0-release.zip" | grep -q "README.md" || fail "release zip missing README.md"
-jar tf "build/release/ReputationBan-0.21.0-release.zip" | grep -q "docs/INTEGRATIONS.md" || fail "release zip missing docs/INTEGRATIONS.md"
-if jar tf "build/release/ReputationBan-0.21.0-release.zip" | grep -E '(^|/)(config\.yml|reputationban\.db|latest\.log|debug\.log)$|(^|/)logs/' >/dev/null; then
+jar tf "build/release/ReputationBan-0.22.0-release.zip" | grep -q "README.md" || fail "release zip missing README.md"
+jar tf "build/release/ReputationBan-0.22.0-release.zip" | grep -q "docs/INTEGRATIONS.md" || fail "release zip missing docs/INTEGRATIONS.md"
+if jar tf "build/release/ReputationBan-0.22.0-release.zip" | grep -E '(^|/)(config\.yml|reputationban\.db|latest\.log|debug\.log)$|(^|/)logs/' >/dev/null; then
   fail "release zip contains forbidden config, DB, or logs"
 fi
 

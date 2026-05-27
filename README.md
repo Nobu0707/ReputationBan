@@ -2,7 +2,7 @@
 
 ReputationBan は、通報とスタッフ操作をもとにプレイヤーの評判スコアを管理する PaperMC 向け moderation プラグインです。データは SQLite に保存し、未処理通報の審査、監査ログ、バックアップ、support bundle、設定に基づく Profile BAN を扱います。
 
-現在のバージョン: `0.21.0`
+現在のバージョン: `0.22.0`
 
 ## 対象環境
 
@@ -26,6 +26,7 @@ ReputationBan は、通報とスタッフ操作をもとにプレイヤーの評
 - [Integration runtime smoke checklist](docs/INTEGRATION_RUNTIME_SMOKE_CHECKLIST.md)
 - [Paper runtime smoke checklist](docs/runtime-smoke-checklist.md)
 - [Release candidate checklist](docs/RELEASE_CANDIDATE_CHECKLIST.md)
+- [Phase 22 notes](docs/phase-22.md)
 - [Phase 21 notes](docs/phase-21.md)
 - [Phase 20 notes](docs/phase-20.md)
 - [Phase 19 notes](docs/phase-19.md)
@@ -115,13 +116,13 @@ ReputationBan は、通報とスタッフ操作をもとにプレイヤーの評
 ./scripts/review_code.sh
 ```
 
-JAR は `build/libs/ReputationBan-0.21.0.jar` に生成されます。
+JAR は `build/libs/ReputationBan-0.22.0.jar` に生成されます。
 
 ## 現在の位置づけ
 
-v0.21.0 は DiscordSRV を任意連携として追加するフェーズです。Phase 21 では DiscordSRV account link context を `/reportbad` 後に `report_context` へ保存し、`/rep integrations`、`/rep integrations test`、`/rep doctor`、`/reports evidence` で確認できるようにしています。Discord ID はデフォルトで保存・表示せず、DiscordSRV 通知もデフォルト無効です。
+v0.22.0 は DiscordSRV と外部連携 runtime smoke の堅牢化フェーズです。DiscordSRV reflection adapter は Bukkit PluginManager から得た plugin instance route を先に試し、DiscordSRV 通知の状態確認と送信は main thread task 内で行います。Integration runtime smoke は未実施を PASS とせず、`HOLD_FOR_INTEGRATION_RUNTIME_SMOKE` として明示します。
 
-v1.0.0 へ進む前に [Release candidate checklist](docs/RELEASE_CANDIDATE_CHECKLIST.md) を確認してください。Paper 実機スモークを実行していない場合は PASS と扱わず、未実施として記録します。
+v1.0.0 へ進む前に [Release candidate checklist](docs/RELEASE_CANDIDATE_CHECKLIST.md) と [Integration runtime smoke checklist](docs/INTEGRATION_RUNTIME_SMOKE_CHECKLIST.md) を確認してください。Paper / integration 実機スモークを実行していない場合は PASS と扱わず、未実施として記録します。
 
 ## 現在の制限
 

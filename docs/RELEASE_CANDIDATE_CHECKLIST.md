@@ -1,14 +1,15 @@
-# v0.21.0 リリース候補チェックリスト
+# v0.22.0 リリース候補チェックリスト
 
-v0.21.0 の LuckPerms / CoreProtect / WorldGuard / GriefPrevention / PlaceholderAPI / DiscordSRV 任意連携 release candidate として次を確認します。
+v0.22.0 の LuckPerms / CoreProtect / WorldGuard / GriefPrevention / PlaceholderAPI / DiscordSRV 任意連携 release candidate として次を確認します。
 
 ## Build / Test / Review
 
 - `./gradlew clean test build --warning-mode all` が成功します。
 - `./scripts/review_code.sh` が成功します。
 - `./scripts/check-optional-dependency-safety.sh` が成功します。
+- `./scripts/check-integration-runtime-readiness.sh` が成功し、未実施なら HOLD/NOT_RUN を表示します。
 - `./scripts/run-local-smoke-check.sh` が成功します。
-- JAR 名が `ReputationBan-0.21.0.jar` です。
+- JAR 名が `ReputationBan-0.22.0.jar` です。
 
 ## Docs Localization
 
@@ -63,7 +64,8 @@ v0.21.0 の LuckPerms / CoreProtect / WorldGuard / GriefPrevention / Placeholder
 - CoreProtect rollback、restore、purge、LuckPerms 書き込み操作、WorldGuard region/flag 変更、GriefPrevention claim/trust 変更は実行しません。
 - Integration runtime smoke を実施した場合は `./scripts/record-integration-runtime-smoke-result.sh --result PASS --scenario "All integrations" --note "manual smoke passed"` で記録します。
 - 実施後は `./scripts/record-paper-runtime-smoke-result.sh --result PASS --note "Paper runtime smoke passed"` で記録します。
-- 未実施を PASS 扱いにしません。未実施の場合は review archive の summary が `status=NOT_RUN` になります。
+- 未実施を PASS 扱いにしません。未実施の場合は readiness check が `HOLD_FOR_INTEGRATION_RUNTIME_SMOKE` を表示し、review archive の summary が `status=NOT_RUN` になります。
+- v1.0.0 直前 gate では `./scripts/check-integration-runtime-readiness.sh --strict` が成功する状態にしてください。
 
 ## Backup / Restore 注意
 

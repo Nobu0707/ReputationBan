@@ -10,7 +10,7 @@
 ## Install
 
 1. `./gradlew clean test build --warning-mode all` を実行します。
-2. `build/libs/ReputationBan-0.21.0.jar` を Paper `plugins` directory へコピーします。
+2. `build/libs/ReputationBan-0.22.0.jar` を Paper `plugins` directory へコピーします。
 3. Java 25 で Paper を起動します。
 
 ## Startup
@@ -53,6 +53,7 @@
 - `/rep integrations` が WorldGuard / WorldEdit の連携状態を表示することを確認します。未導入なら unavailable で問題ありません。
 - `/rep integrations` が GriefPrevention の連携状態を表示することを確認します。未導入なら unavailable で問題ありません。
 - `/rep integrations` が PlaceholderAPI の連携状態を表示することを確認します。未導入なら unavailable で問題ありません。
+- `/rep integrations` が DiscordSRV の連携状態を表示することを確認します。未導入なら unavailable で問題ありません。
 - `/rep integrations test` が外部連携だけの詳細診断を表示し、CoreProtect 実 lookup をデフォルトでは実行しないことを確認します。
 - WorldGuard + WorldEdit 導入時は `/rep integrations test` の player 実行で `currentRegions` と `regionCount` が表示されることを確認します。
 - GriefPrevention 導入時は `/rep integrations test` の player 実行で `currentClaimPresent`、`adminClaim`、`claimId` が表示されることを確認します。
@@ -60,6 +61,8 @@
 - WorldGuard region 内の `/reportbad griefing` 後、`/reports evidence <id>` に WorldGuard context が出ることを確認します。region/flag は変更しません。
 - GriefPrevention claim 内と claim 外の `/reportbad griefing` 後、`/reports evidence <id>` に GriefPrevention context が出ることを確認します。claim/trust は変更しません。
 - PlaceholderAPI 導入時は `/rep placeholders` と `/papi parse <player> %reputationban_score%` を確認し、score 変更後に `cache-refresh-seconds` 以内で反映されることを確認します。
+- DiscordSRV 導入時は account link 済み/未リンクの player で `/reports evidence <id>` に context が表示されることを確認します。DiscordSRV 通知はデフォルト無効で、Discord から Minecraft コマンドを実行しません。
+- optional plugin 組み合わせの integration smoke は `./scripts/run-integration-runtime-smoke-helper.sh` と `docs/INTEGRATION_RUNTIME_SMOKE_CHECKLIST.md` に沿って確認します。
 - Discord webhook がデフォルトで無効であることを確認します。
 - Webhook URLs が logs、`/rep doctor`、audit output、CSV output、review archive files に出ていないことを確認します。
 - BAN と pardon commands は disposable test users のみに実行します。
@@ -67,10 +70,11 @@
 
 ```bash
 ./scripts/record-paper-runtime-smoke-result.sh --result PASS --note "Paper runtime smoke passed"
+./scripts/record-integration-runtime-smoke-result.sh --result PASS --scenario "All integrations" --note "manual smoke passed"
 ```
 
 - 失敗した場合は `--result FAIL` と原因の note を記録します。
-- 未実施を PASS 扱いにしないでください。未実施の場合、review archive では `status=NOT_RUN` として扱います。
+- 未実施を PASS 扱いにしないでください。Integration runtime smoke 未実施の場合、`./scripts/check-integration-runtime-readiness.sh` は `HOLD_FOR_INTEGRATION_RUNTIME_SMOKE` を表示し、review archive では `status=NOT_RUN` として扱います。
 
 ## Rollback
 

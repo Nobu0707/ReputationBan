@@ -20,17 +20,25 @@ public final class DiscordSrvNotificationService {
 
     public void send(NotificationEventType type, PluginConfig config, String message) {
         PluginConfig.DiscordSrvIntegrationConfig discordConfig = config.discordSrvIntegration();
-        DiscordSrvStatus status = integration.detail(config);
         if (!DiscordSrvPolicy.shouldNotify(
                 discordConfig.notificationsEnabled(),
-                status.active(),
+                true,
                 discordConfig.notificationEvents(),
                 type
         )) {
             return;
         }
-        String sanitized = DiscordSrvPolicy.sanitizeMessage(message, discordConfig.notificationIncludeReasons());
         plugin.getServer().getScheduler().runTask(plugin, () -> {
+            DiscordSrvStatus status = integration.detail(config);
+            if (!DiscordSrvPolicy.shouldNotify(
+                    discordConfig.notificationsEnabled(),
+                    status.active(),
+                    discordConfig.notificationEvents(),
+                    type
+            )) {
+                return;
+            }
+            String sanitized = DiscordSrvPolicy.sanitizeMessage(message, discordConfig.notificationIncludeReasons());
             boolean sent = integration.sendMessage(discordConfig.notificationChannel(), sanitized);
             if (!sent) {
                 plugin.getLogger().log(Level.WARNING, "DiscordSRV notification was skipped or failed for event " + type.configKey());

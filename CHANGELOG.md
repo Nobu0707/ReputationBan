@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.22.0
+
+- DiscordSRV reflection adapter を Bukkit PluginManager 由来の plugin instance route 優先にし、`Class.forName` route は fallback として残しました。
+- DiscordSRV 通知の `integration.detail(config)`、message sanitize、sendMessage を main thread task 内で実行するようにしました。
+- `scripts/check-integration-runtime-readiness.sh` を追加し、未実施の integration runtime smoke を `HOLD_FOR_INTEGRATION_RUNTIME_SMOKE` として明示します。
+- `scripts/run-integration-runtime-smoke-helper.sh` を追加し、optional plugin 構成ごとの実機確認手順を出せるようにしました。
+- Phase 22 docs、runtime smoke checklist、review archive、release artifact checks を v0.22.0 向けに更新しました。
+- 新しい外部連携、Discord からの Minecraft コマンド実行、Discord role 変更、LuckPerms/CoreProtect/WorldGuard/GriefPrevention の書き込み操作は追加していません。
+
 ## 0.21.0
 
 - DiscordSRV を `softdepend` の任意連携として追加しました。

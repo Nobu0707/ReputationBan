@@ -472,7 +472,32 @@
 - DiscordSRV context は審査補助であり、自動 BAN の唯一根拠にしない。
 - Discord から Minecraft コマンドを実行する機能、Discord role 変更、Discord button 承認は行わない。
 
-## Phase 22以降: 外部連携・高度な悪用対策
+## Phase 22 / v0.22.0: DiscordSRV runtime hardening / integration smoke readiness
+
+目的: Phase 16 から Phase 21 で追加した任意連携群について、runtime 安全性と実機 smoke readiness を強化する。
+
+実装範囲:
+
+- version 0.22.0
+- `DiscordSrvReflectionAdapter` の plugin instance route 優先化
+- `Class.forName("github.scarsz.discordsrv.DiscordSRV")` は fallback として維持
+- DiscordSRV 通知の状態確認、sanitize、送信を main thread task 内へ移動
+- `scripts/check-integration-runtime-readiness.sh`
+- `scripts/run-integration-runtime-smoke-helper.sh`
+- integration runtime smoke 未実施時の `NOT_RUN` / `HOLD_FOR_INTEGRATION_RUNTIME_SMOKE`
+- `docs/phase-22.md`
+- `docs/INTEGRATION_RUNTIME_SMOKE_CHECKLIST.md` の v1.0.0 前確認条件明文化
+- review/release archive scripts の v0.22.0 対応
+
+注意:
+
+- `src/main/java` に DiscordSRV/JDA API の直接 import を追加しない。
+- DiscordSRV 通知で Bukkit / DiscordSRV API に触る処理は main thread へ寄せる。
+- integration runtime smoke を実施していない場合は PASS summary を作らない。
+- CoreProtect rollback、restore、purge、LuckPerms 書き込み、WorldGuard region/flag 変更、GriefPrevention claim/trust 変更は引き続き行わない。
+- Discord から Minecraft コマンドを実行する機能、Discord role 変更、Discord button 承認は行わない。
+
+## Phase 23以降: 外部連携・高度な悪用対策
 
 実装候補:
 

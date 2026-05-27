@@ -1,24 +1,27 @@
 # Release Readiness
 
-0.21.0 の LuckPerms / CoreProtect / WorldGuard / GriefPrevention / PlaceholderAPI / DiscordSRV 任意連携 release として、次の項目を確認してください。
+0.22.0 の LuckPerms / CoreProtect / WorldGuard / GriefPrevention / PlaceholderAPI / DiscordSRV 任意連携 release として、次の項目を確認してください。
 
 - `./gradlew clean test build --warning-mode all` が成功します。
 - `./scripts/review_code.sh` が成功します。
 - `./scripts/check-docs-localization.sh` が成功します。
 - `./scripts/check-optional-dependency-safety.sh` が成功します。
+- `./scripts/check-integration-runtime-readiness.sh` が成功し、未実施なら HOLD/NOT_RUN を表示します。
 - `./scripts/run-local-smoke-check.sh` が成功します。
 - `./scripts/create-release-artifact.sh` が成功します。
 - `./scripts/verify-release-artifact.sh` が成功します。
-- `./scripts/make-review-archive.sh "Phase 21"` が archive を作成し、`checks/docs-localization.txt`、`checks/optional-dependency-safety.txt`、`checks/latest-paper-runtime-smoke-summary.txt`、`checks/latest-integration-runtime-smoke-summary.txt` を含みます。
+- `./scripts/make-review-archive.sh "Phase 22"` が archive を作成し、`checks/docs-localization.txt`、`checks/optional-dependency-safety.txt`、`checks/integration-runtime-readiness.txt`、`checks/integration-runtime-smoke-helper-syntax.txt`、`checks/latest-paper-runtime-smoke-summary.txt`、`checks/latest-integration-runtime-smoke-summary.txt` を含みます。
 - `bash -n scripts/run-paper-runtime-smoke-helper.sh` が成功します。
 - `bash -n scripts/create-release-artifact.sh` が成功します。
 - `bash -n scripts/verify-release-artifact.sh` が成功します。
 - `bash -n scripts/record-paper-runtime-smoke-result.sh` が成功します。
 - `bash -n scripts/record-integration-runtime-smoke-result.sh` が成功します。
+- `bash -n scripts/check-integration-runtime-readiness.sh` が成功します。
+- `bash -n scripts/run-integration-runtime-smoke-helper.sh` が成功します。
 - Paper runtime smoke を PaperMC 26.1.2 server と Java 25 で実施します。
 - 可能な限り実Paperサーバーで /rep version、/rep doctor、/rep integrations、/rep integrations test、/rep placeholders、/reports evidence <id>、/rep support bundle、/rep backup、/reportbad TAB補完、DiscordSRV 導入/未導入時の account link 表示を確認してください。
 - `config.yml` が生成され、内容を確認済みです。
-- `/rep version` が 0.21.0 を表示します。
+- `/rep version` が 0.22.0 を表示します。
 - `/rep doctor` が database、tables、config、audit export、Discord、backup status を期待通りに表示します。
 - `/rep integrations` が LuckPerms / CoreProtect / WorldGuard / GriefPrevention / PlaceholderAPI / DiscordSRV の configuredEnabled、pluginPresent、apiAvailable、active、設定値を表示します。
 - `/rep integrations test` が外部連携だけの詳細診断を表示し、CoreProtect 実 lookup をデフォルトでは実行しません。
@@ -34,14 +37,14 @@
 - support bundle に SQLite DB files、server logs、Webhook URLs、共有不要な absolute paths が含まれません。
 - `/rep maintenance preview` は data を削除しません。
 - `/rep audit export recent 10` は安全な export directory 配下に CSV を作成します。
-- `build/release/ReputationBan-0.21.0.jar`、`.jar.sha256`、`ReputationBan-0.21.0-release.zip`、`ReputationBan-0.21.0-release.zip.sha256` が存在します。
+- `build/release/ReputationBan-0.22.0.jar`、`.jar.sha256`、`ReputationBan-0.22.0-release.zip`、`ReputationBan-0.22.0-release.zip.sha256` が存在します。
 - release ZIP には JAR、checksum、README、CHANGELOG、docs が含まれます。
 - release ZIP には `docs/INTEGRATIONS.md` が含まれます。
 - release ZIP には `docs/INTEGRATION_RUNTIME_SMOKE_CHECKLIST.md` が含まれます。
 - release ZIP 内の README.md と docs/INSTALLATION.md が日本語ドキュメントとして読めることを確認します。
 - release ZIP に live `config.yml`、SQLite DB files、logs は含まれません。
 - Paper runtime smoke を手動実施した場合は `scripts/record-paper-runtime-smoke-result.sh` で結果を記録します。未実施の場合は PASS 扱いにせず、review archive に `status=NOT_RUN` として残します。
-- Integration runtime smoke を手動実施した場合は `scripts/record-integration-runtime-smoke-result.sh` で結果を記録します。未実施の場合は PASS 扱いにせず、review archive に `status=NOT_RUN` として残します。
+- Integration runtime smoke を手動実施した場合は `scripts/record-integration-runtime-smoke-result.sh` で結果を記録します。未実施の場合は PASS 扱いにせず、readiness check では `integration runtime smoke: NOT_RUN` と `judgment: HOLD_FOR_INTEGRATION_RUNTIME_SMOKE`、review archive では `status=NOT_RUN` として残します。
 - WorldGuard runtime smoke では未導入、WorldEdit のみ、WorldEdit + WorldGuard の各構成を確認し、region/flag が変更されていないことを確認します。
 - GriefPrevention runtime smoke では未導入、導入、LuckPerms + CoreProtect + WorldGuard + GriefPrevention の各構成を確認し、claim/trust が変更されていないことを確認します。
 - PlaceholderAPI runtime smoke では未導入、導入、LuckPerms + CoreProtect + WorldGuard + GriefPrevention + PlaceholderAPI の各構成を確認し、placeholder 呼び出しでDB同期問い合わせを行わない設計を維持します。
