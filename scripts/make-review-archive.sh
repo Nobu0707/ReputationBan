@@ -132,6 +132,9 @@ done < "$OUTDIR/meta/changed-files.txt"
   echo
   echo "## rg phase 22 integration runtime readiness"
   rg -n "check-integration-runtime-readiness|run-integration-runtime-smoke-helper|HOLD_FOR_INTEGRATION_RUNTIME_SMOKE|DiscordSrvReflectionAdapter|getPlugin\\(\"DiscordSRV\"\\)|getDestinationTextChannelForGameChannelName|runTask|DiscordSRV notification" src/main/java src/test/java src/main/resources README.md CHANGELOG.md docs reputationban_phase_plan.md scripts build.gradle.kts settings.gradle.kts || true
+  echo
+  echo "## rg phase 23 Paper runtime smoke automation"
+  rg -n "run-paper-runtime-smoke|check-paper-runtime-readiness|HOLD_FOR_PAPER_RUNTIME_SMOKE|paper-runtime-smoke-auto|paper-runtime-readiness|REPUTATIONBAN_PAPER_DIR|REPUTATIONBAN_PAPER_START_SCRIPT|REPUTATIONBAN_SCREEN_NAME|screen -ls|screen -S|start.sh|paper-26.1.2|0\\.23\\.0" README.md CHANGELOG.md docs reputationban_phase_plan.md scripts build.gradle.kts src/main/resources/plugin.yml || true
 } > "$OUTDIR/checks/rg-review-signals.txt"
 
 {
@@ -184,6 +187,18 @@ else
   echo "./scripts/check-integration-runtime-readiness.sh=missing" >> "$COMMAND_STATUS"
 fi
 
+if [[ -x "$ROOT/scripts/run-paper-runtime-smoke.sh" ]]; then
+  run_logged "./scripts/run-paper-runtime-smoke.sh" "$OUTDIR/checks/paper-runtime-smoke-auto.txt" "$ROOT/scripts/run-paper-runtime-smoke.sh"
+else
+  echo "./scripts/run-paper-runtime-smoke.sh=missing" >> "$COMMAND_STATUS"
+fi
+
+if [[ -x "$ROOT/scripts/check-paper-runtime-readiness.sh" ]]; then
+  run_logged "./scripts/check-paper-runtime-readiness.sh" "$OUTDIR/checks/paper-runtime-readiness.txt" "$ROOT/scripts/check-paper-runtime-readiness.sh"
+else
+  echo "./scripts/check-paper-runtime-readiness.sh=missing" >> "$COMMAND_STATUS"
+fi
+
 if [[ -f "$ROOT/scripts/run-integration-runtime-smoke-helper.sh" ]]; then
   run_logged "bash -n scripts/run-integration-runtime-smoke-helper.sh" "$OUTDIR/checks/integration-runtime-smoke-helper-syntax.txt" bash -n "$ROOT/scripts/run-integration-runtime-smoke-helper.sh"
 else
@@ -221,8 +236,8 @@ fi
 
 if [[ -d "$ROOT/build/libs" ]]; then
   find "$ROOT/build/libs" -maxdepth 1 -type f -print | sort > "$OUTDIR/checks/built-jars.txt"
-  if [[ -f "$ROOT/build/libs/ReputationBan-0.22.0.jar" ]]; then
-    (cd "$ROOT" && sha256sum build/libs/ReputationBan-0.22.0.jar) > "$OUTDIR/checks/jar-sha256.txt"
+  if [[ -f "$ROOT/build/libs/ReputationBan-0.23.0.jar" ]]; then
+    (cd "$ROOT" && sha256sum build/libs/ReputationBan-0.23.0.jar) > "$OUTDIR/checks/jar-sha256.txt"
   fi
 fi
 
@@ -239,7 +254,7 @@ else
   {
     echo "status=NOT_RUN"
     echo "message=No paper runtime smoke summary found."
-    echo "nextStep=Run scripts/run-paper-runtime-smoke-helper.sh and record results with scripts/record-paper-runtime-smoke-result.sh"
+    echo "nextStep=Run scripts/run-paper-runtime-smoke.sh or record manual results with scripts/record-paper-runtime-smoke-result.sh"
   } > "$OUTDIR/checks/latest-paper-runtime-smoke-summary.txt"
 fi
 

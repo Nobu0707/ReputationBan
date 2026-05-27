@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.23.0
+
+- `scripts/run-paper-runtime-smoke.sh` を追加し、`~/servers/paper-26.1.2/start.sh` が `screen` で起動する Paper test server に対して JAR 配置、screen session 特定、console command 投入、ログ検査、必要時の stop まで自動化しました。
+- Paper 実機環境が見つからない場合は `build/manual-smoke/paper-runtime-*` に `status=NOT_RUN` / `result=NOT_RUN` を記録し、PASS 扱いにしない方針を明確化しました。
+- `scripts/check-paper-runtime-readiness.sh` を追加し、通常モードでは HOLD、`--strict` では PASS 以外を non-zero とする Paper runtime gate を用意しました。
+- review archive に `checks/paper-runtime-smoke-auto.txt` と `checks/paper-runtime-readiness.txt` を収集し、最新 Paper runtime smoke summary を `latest-paper-runtime-smoke-summary.txt` として残します。
+- Phase 23 docs、runtime smoke checklist、release readiness、release artifact checks を v0.23.0 向けに更新しました。
+- 新しい外部連携、Discord からの Minecraft コマンド実行、Discord role 変更、GUI、Folia 対応、v1.0.0 リリース化は追加していません。
+
 ## 0.22.0
 
 - DiscordSRV reflection adapter を Bukkit PluginManager 由来の plugin instance route 優先にし、`Class.forName` route は fallback として残しました。

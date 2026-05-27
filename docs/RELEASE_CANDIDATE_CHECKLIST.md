@@ -1,15 +1,17 @@
-# v0.22.0 リリース候補チェックリスト
+# v0.23.0 リリース候補チェックリスト
 
-v0.22.0 の LuckPerms / CoreProtect / WorldGuard / GriefPrevention / PlaceholderAPI / DiscordSRV 任意連携 release candidate として次を確認します。
+v0.23.0 の Paper runtime smoke automation release candidate として次を確認します。
 
 ## Build / Test / Review
 
 - `./gradlew clean test build --warning-mode all` が成功します。
 - `./scripts/review_code.sh` が成功します。
 - `./scripts/check-optional-dependency-safety.sh` が成功します。
+- `./scripts/run-paper-runtime-smoke.sh` が成功します。環境がない場合は `NOT_RUN` で記録されます。
+- `./scripts/check-paper-runtime-readiness.sh` が成功し、未実施なら HOLD/NOT_RUN を表示します。
 - `./scripts/check-integration-runtime-readiness.sh` が成功し、未実施なら HOLD/NOT_RUN を表示します。
 - `./scripts/run-local-smoke-check.sh` が成功します。
-- JAR 名が `ReputationBan-0.22.0.jar` です。
+- JAR 名が `ReputationBan-0.23.0.jar` です。
 
 ## Docs Localization
 
@@ -40,6 +42,10 @@ v0.22.0 の LuckPerms / CoreProtect / WorldGuard / GriefPrevention / Placeholder
 ## Paper Runtime Smoke
 
 - 可能な限り実 Paper 26.1.2 サーバーと Java 25 で確認します。
+- 既定の Paper server directory は `~/servers/paper-26.1.2/`、既定の start script は `~/servers/paper-26.1.2/start.sh` です。
+- `start.sh` は `screen` で Paper server を起動する前提です。
+- `REPUTATIONBAN_PAPER_DIR`、`REPUTATIONBAN_PAPER_START_SCRIPT`、`REPUTATIONBAN_SCREEN_NAME`、`REPUTATIONBAN_SMOKE_STOP_SERVER` を必要に応じて指定します。
+- 未実施は PASS ではありません。`./scripts/check-paper-runtime-readiness.sh --strict` は PASS 以外で non-zero になります。
 - `/rep version`、`/rep doctor`、`/rep integrations`、`/rep integrations test`、`/rep placeholders`、`/rep support bundle`、`/rep backup`、`/reportbad` TAB 補完、`/reports evidence <id>` を確認します。
 
 ## Integrations
@@ -65,7 +71,7 @@ v0.22.0 の LuckPerms / CoreProtect / WorldGuard / GriefPrevention / Placeholder
 - Integration runtime smoke を実施した場合は `./scripts/record-integration-runtime-smoke-result.sh --result PASS --scenario "All integrations" --note "manual smoke passed"` で記録します。
 - 実施後は `./scripts/record-paper-runtime-smoke-result.sh --result PASS --note "Paper runtime smoke passed"` で記録します。
 - 未実施を PASS 扱いにしません。未実施の場合は readiness check が `HOLD_FOR_INTEGRATION_RUNTIME_SMOKE` を表示し、review archive の summary が `status=NOT_RUN` になります。
-- v1.0.0 直前 gate では `./scripts/check-integration-runtime-readiness.sh --strict` が成功する状態にしてください。
+- v1.0.0 直前 gate では `./scripts/check-paper-runtime-readiness.sh --strict` と `./scripts/check-integration-runtime-readiness.sh --strict` が成功する状態にしてください。
 
 ## Backup / Restore 注意
 
@@ -76,5 +82,5 @@ v0.22.0 の LuckPerms / CoreProtect / WorldGuard / GriefPrevention / Placeholder
 ## v1.0.0 へ進む前の判断
 
 - build/test/review_code/local smoke/release verification がすべて成功しています。
-- Paper runtime smoke の PASS または未実施理由が明確です。
+- Paper runtime smoke の PASS または `NOT_RUN` / `FAIL` 理由が明確です。
 - 既知の未解決事項が v1.0.0 を妨げないことを確認します。

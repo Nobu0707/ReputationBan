@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-VERSION="0.22.0"
+VERSION="0.23.0"
 JAR="build/libs/ReputationBan-${VERSION}.jar"
 
 usage() {
@@ -9,6 +9,7 @@ usage() {
 Usage:
   ./scripts/record-paper-runtime-smoke-result.sh --result PASS --note "local Paper smoke passed"
   ./scripts/record-paper-runtime-smoke-result.sh --result FAIL --note "doctor failed"
+  ./scripts/record-paper-runtime-smoke-result.sh --result NOT_RUN --note "Paper server unavailable"
 USAGE
 }
 
@@ -41,8 +42,8 @@ if [[ -z "$RESULT" || -z "$NOTE" ]]; then
   exit 0
 fi
 
-if [[ "$RESULT" != "PASS" && "$RESULT" != "FAIL" ]]; then
-  echo "[FAIL] --result must be PASS or FAIL" >&2
+if [[ "$RESULT" != "PASS" && "$RESULT" != "FAIL" && "$RESULT" != "NOT_RUN" ]]; then
+  echo "[FAIL] --result must be PASS, FAIL, or NOT_RUN" >&2
   exit 1
 fi
 
@@ -58,6 +59,7 @@ else
 fi
 
 {
+  echo "status=$RESULT"
   echo "result=$RESULT"
   echo "note=$NOTE"
   echo "version=$VERSION"

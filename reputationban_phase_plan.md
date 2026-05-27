@@ -497,7 +497,34 @@
 - CoreProtect rollback、restore、purge、LuckPerms 書き込み、WorldGuard region/flag 変更、GriefPrevention claim/trust 変更は引き続き行わない。
 - Discord から Minecraft コマンドを実行する機能、Discord role 変更、Discord button 承認は行わない。
 
-## Phase 23以降: 外部連携・高度な悪用対策
+## Phase 23 / v0.23.0: Paper runtime smoke automation
+
+目的: v1.0.0 前 gate の Paper runtime smoke を `~/servers/paper-26.1.2/start.sh` / `screen` 前提で自動化し、実行できない場合は `NOT_RUN` として正直に記録する。
+
+実装範囲:
+
+- version 0.23.0
+- `scripts/run-paper-runtime-smoke.sh`
+- `scripts/check-paper-runtime-readiness.sh`
+- `REPUTATIONBAN_PAPER_DIR` 既定値 `~/servers/paper-26.1.2`
+- `REPUTATIONBAN_PAPER_START_SCRIPT` 既定値 `~/servers/paper-26.1.2/start.sh`
+- `screen -ls` 起動前後記録、screen session 特定、`screen -S ... stuff` による console command 投入
+- 環境未整備時の `status=NOT_RUN` / `result=NOT_RUN`
+- `build/manual-smoke/paper-runtime-*` の `summary.txt`、`server.log`、`commands.txt`、`environment.txt`、`screen-before.txt`、`screen-after.txt`
+- review archive の `checks/paper-runtime-smoke-auto.txt` と `checks/paper-runtime-readiness.txt`
+- `docs/phase-23.md`
+- runtime smoke / release readiness docs の v0.23.0 対応
+- review/release archive scripts の v0.23.0 対応
+
+注意:
+
+- Paper runtime smoke を実施していない場合は PASS summary を作らない。
+- 既存 screen session はデフォルトでは stop しない。`REPUTATIONBAN_SMOKE_STOP_SERVER=1` の場合だけ既存 session を stop してよい。
+- server directory、DB、config、logs は削除しない。既存 JAR は backup へ退避する。
+- CoreProtect rollback、restore、purge、LuckPerms 書き込み、WorldGuard region/flag 変更、GriefPrevention claim/trust 変更は引き続き行わない。
+- Discord から Minecraft コマンドを実行する機能、Discord role 変更、Discord button 承認は行わない。
+
+## Phase 24以降: 外部連携・高度な悪用対策
 
 実装候補:
 

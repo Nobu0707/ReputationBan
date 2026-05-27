@@ -1,6 +1,6 @@
 # Integration Runtime Smoke Checklist
 
-Phase 22 の LuckPerms / CoreProtect / WorldGuard / GriefPrevention / PlaceholderAPI / DiscordSRV 連携を実サーバーで確認するための手順です。未実施でも v0.22.0 の local release checks は失敗扱いにしませんが、未実施は PASS ではありません。v1.0.0 前には実施し、`record-integration-runtime-smoke-result.sh` で結果を記録してください。
+Phase 22 の LuckPerms / CoreProtect / WorldGuard / GriefPrevention / PlaceholderAPI / DiscordSRV 連携を実サーバーで確認するための手順です。未実施でも v0.23.0 の local release checks は失敗扱いにしませんが、未実施は PASS ではありません。v1.0.0 前には実施し、`record-integration-runtime-smoke-result.sh` で結果を記録してください。
 
 ## Runtime Gate
 
@@ -13,7 +13,7 @@ Phase 22 の LuckPerms / CoreProtect / WorldGuard / GriefPrevention / Placeholde
 ## 共通確認
 
 - PaperMC 26.1.2 と Java 25 で起動します。
-- `build/libs/ReputationBan-0.22.0.jar` を配置します。
+- `build/libs/ReputationBan-0.23.0.jar` を配置します。
 - CoreProtect rollback、restore、purge は使いません。
 - LuckPerms の group 変更、権限付与、権限剥奪、`saveUser` などの書き込みは行いません。
 - WorldGuard region / flag の作成、変更、削除は行いません。

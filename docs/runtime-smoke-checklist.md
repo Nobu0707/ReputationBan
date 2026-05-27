@@ -6,11 +6,36 @@
 - Java 25
 - Fresh または disposable test server
 - Discord webhook がデフォルト無効の ReputationBan config
+- 既定の Paper server directory は `~/servers/paper-26.1.2/` です。
+- 既定の start script は `~/servers/paper-26.1.2/start.sh` です。
+- `start.sh` は `screen` で Paper server を起動する前提です。
+
+## Automated Paper Smoke
+
+Phase 23 では、次の自動化スクリプトを使えます。
+
+```bash
+./scripts/run-paper-runtime-smoke.sh
+./scripts/check-paper-runtime-readiness.sh
+./scripts/check-paper-runtime-readiness.sh --strict
+```
+
+`scripts/run-paper-runtime-smoke.sh` は `build/libs/ReputationBan-0.23.0.jar` を `plugins/` に配置し、起動前後の `screen -ls` を記録し、特定した screen session に console command を投入します。環境が見つからない場合は `build/manual-smoke/paper-runtime-*` に `status=NOT_RUN` / `result=NOT_RUN` を記録し、PASS にはしません。
+
+主な環境変数:
+
+- `REPUTATIONBAN_PAPER_DIR`: Paper server directory。未設定時は `~/servers/paper-26.1.2`
+- `REPUTATIONBAN_PAPER_START_SCRIPT`: start script。未設定時は `~/servers/paper-26.1.2/start.sh`
+- `REPUTATIONBAN_SCREEN_NAME`: 既存 screen session を明示する場合に指定
+- `REPUTATIONBAN_SMOKE_STOP_SERVER`: `1` の場合だけ既存 session も stop 対象にします。未設定時は既存 session を止めません。
+- `REPUTATIONBAN_SMOKE_MUTATING`: `1` の場合だけ `rep backup runtime-smoke` と `rep support bundle` も投入します。
+
+`scripts/check-paper-runtime-readiness.sh` の通常モードは `NOT_RUN` でも exit 0 とし、`judgment: HOLD_FOR_PAPER_RUNTIME_SMOKE` を表示します。`--strict` は `result=PASS` または `status=PASS` 以外を non-zero にします。
 
 ## Install
 
 1. `./gradlew clean test build --warning-mode all` を実行します。
-2. `build/libs/ReputationBan-0.22.0.jar` を Paper `plugins` directory へコピーします。
+2. `build/libs/ReputationBan-0.23.0.jar` を Paper `plugins` directory へコピーします。
 3. Java 25 で Paper を起動します。
 
 ## Startup
@@ -74,7 +99,7 @@
 ```
 
 - 失敗した場合は `--result FAIL` と原因の note を記録します。
-- 未実施を PASS 扱いにしないでください。Integration runtime smoke 未実施の場合、`./scripts/check-integration-runtime-readiness.sh` は `HOLD_FOR_INTEGRATION_RUNTIME_SMOKE` を表示し、review archive では `status=NOT_RUN` として扱います。
+- 未実施を PASS 扱いにしないでください。Paper runtime smoke 未実施の場合、`./scripts/check-paper-runtime-readiness.sh` は `HOLD_FOR_PAPER_RUNTIME_SMOKE` を表示し、review archive では `status=NOT_RUN` として扱います。Integration runtime smoke 未実施の場合、`./scripts/check-integration-runtime-readiness.sh` は `HOLD_FOR_INTEGRATION_RUNTIME_SMOKE` を表示します。
 
 ## Rollback
 
