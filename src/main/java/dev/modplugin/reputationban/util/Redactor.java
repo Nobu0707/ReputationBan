@@ -20,8 +20,15 @@ public final class Redactor {
             Pattern.CASE_INSENSITIVE
     );
     private static final Pattern URL = Pattern.compile("https?://\\S+", Pattern.CASE_INSENSITIVE);
-    private static final Pattern TOKEN_ASSIGNMENT = Pattern.compile(
-            "(?i)(webhook|url|password|token|secret|session|cookie)(\\s*[:=]\\s*)\\S+"
+    private static final String SECRET_WORD = "webhook|url|password|token|secret|session(?:id)?|cookie";
+    private static final Pattern SECRET_ASSIGNMENT = Pattern.compile(
+            "(?i)\\b(" + SECRET_WORD + ")(\\s*[:=]\\s*)\\S+"
+    );
+    private static final Pattern SECRET_IS_VALUE = Pattern.compile(
+            "(?i)\\b(" + SECRET_WORD + ")\\s+is\\s+\\S+"
+    );
+    private static final Pattern SECRET_FREE_TEXT_VALUE = Pattern.compile(
+            "(?i)\\b(" + SECRET_WORD + ")\\s+\\S+"
     );
 
     private Redactor() {
@@ -48,7 +55,9 @@ public final class Redactor {
         }
         String redacted = DISCORD_WEBHOOK.matcher(value).replaceAll(REDACTED);
         redacted = URL.matcher(redacted).replaceAll(REDACTED);
-        redacted = TOKEN_ASSIGNMENT.matcher(redacted).replaceAll("$1$2" + REDACTED);
+        redacted = SECRET_ASSIGNMENT.matcher(redacted).replaceAll("$1$2" + REDACTED);
+        redacted = SECRET_IS_VALUE.matcher(redacted).replaceAll("$1 " + REDACTED);
+        redacted = SECRET_FREE_TEXT_VALUE.matcher(redacted).replaceAll("$1 " + REDACTED);
         return redacted;
     }
 }

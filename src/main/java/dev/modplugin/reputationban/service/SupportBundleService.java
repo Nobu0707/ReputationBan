@@ -11,7 +11,9 @@ import dev.modplugin.reputationban.model.DiagnosticStatus;
 import dev.modplugin.reputationban.model.SupportBundleResult;
 import dev.modplugin.reputationban.util.AuditMetadata;
 import dev.modplugin.reputationban.util.ConfigRedactor;
+import dev.modplugin.reputationban.util.PathRedactor;
 import dev.modplugin.reputationban.util.SafePathResolver;
+import dev.modplugin.reputationban.util.SupportBundleSafetyChecker;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
@@ -48,6 +50,7 @@ public final class SupportBundleService {
     );
     static final String SHARING_README = """
             このバンドルにはDBとサーバーログは含まれていません。
+            共有不要な絶対パスや個人パスは最小化しています。
             共有前にconfig-redacted.ymlを確認してください。
             Webhook URLやトークンなどの秘密情報が含まれていないか確認してください。
             """;
@@ -168,7 +171,7 @@ public final class SupportBundleService {
                 version,
                 server,
                 javaVersion,
-                dataFolder.toString(),
+                PathRedactor.pluginDataFolderForSharing(),
                 databaseOk,
                 missingTables.isEmpty(),
                 warnings,
@@ -199,21 +202,12 @@ public final class SupportBundleService {
     }
 
     private static void addText(ZipOutputStream zip, String name, String content) throws IOException {
-        if (name.contains("..") || name.startsWith("/") || disallowedEntryName(name)) {
+        if (SupportBundleSafetyChecker.isForbiddenEntryName(name)) {
             throw new IOException("Unsafe support bundle entry: " + name);
         }
         zip.putNextEntry(new ZipEntry(name));
         zip.write(content.getBytes(StandardCharsets.UTF_8));
         zip.closeEntry();
-    }
-
-    private static boolean disallowedEntryName(String name) {
-        String lower = name.toLowerCase(java.util.Locale.ROOT);
-        return lower.contains("reputationban.db")
-                || lower.contains("latest.log")
-                || lower.contains("debug.log")
-                || lower.startsWith("logs/")
-                || lower.contains("/logs/");
     }
 
     private static boolean selectOne(Connection connection) throws SQLException {
@@ -334,6 +328,7 @@ public final class SupportBundleService {
                     version=%s
                     server=%s
                     java=%s
+                    pluginDataFolder=%s
                     database status=%s
                     tables status=%s
                     config status=%s
@@ -351,6 +346,7 @@ public final class SupportBundleService {
                     version,
                     server,
                     javaVersion,
+                    pluginDataFolder,
                     databaseStatus,
                     tablesStatus,
                     configStatus,

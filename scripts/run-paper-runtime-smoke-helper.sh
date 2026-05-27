@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-EXPECTED_VERSION="0.12.0"
+EXPECTED_VERSION="0.13.0"
 PLUGIN_JAR="build/libs/ReputationBan-${EXPECTED_VERSION}.jar"
 
 usage() {
@@ -76,4 +76,6 @@ Safety checks:
   Confirm Discord webhook remains disabled unless intentionally configured.
   Confirm no Discord webhook URL is printed in console or logs.
   Use only test users for BAN-related commands.
+  Record the result with:
+    ./scripts/record-paper-runtime-smoke-result.sh --result PASS --note "local Paper smoke passed"
 STEPS

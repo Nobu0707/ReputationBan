@@ -8,10 +8,16 @@ import org.junit.jupiter.api.Test;
 class ReleaseArtifactScriptTest {
     @Test
     void createReleaseArtifactScriptIsValidBash() throws IOException, InterruptedException {
-        Process process = new ProcessBuilder("bash", "-n", "scripts/create-release-artifact.sh")
+        assertBashSyntax("scripts/create-release-artifact.sh");
+        assertBashSyntax("scripts/verify-release-artifact.sh");
+        assertBashSyntax("scripts/record-paper-runtime-smoke-result.sh");
+    }
+
+    private static void assertBashSyntax(String script) throws IOException, InterruptedException {
+        Process process = new ProcessBuilder("bash", "-n", script)
                 .redirectErrorStream(true)
                 .start();
 
-        assertEquals(0, process.waitFor());
+        assertEquals(0, process.waitFor(), script);
     }
 }

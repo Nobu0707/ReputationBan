@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.13.0
+
+- Hardened free-text redaction for token/password/secret/session/cookie/webhook/url-like values.
+- Reduced absolute path exposure in support bundle `meta.txt` and `doctor.txt`.
+- Added release artifact verification and release ZIP SHA256 generation.
+- Added Paper runtime smoke result recording and report template.
+- Added security/redaction documentation and expanded review archive collection.
+
 ## 0.12.0
 
 - Added `/rep backup [reason]` for manual SQLite backups with `DB_BACKUP_CREATED` audit events.

@@ -10,7 +10,7 @@
 ## Install
 
 1. Run `./gradlew clean test build --warning-mode all`.
-2. Copy `build/libs/ReputationBan-0.12.0.jar` to the Paper `plugins` directory.
+2. Copy `build/libs/ReputationBan-0.13.0.jar` to the Paper `plugins` directory.
 3. Start Paper with Java 25.
 
 ## Startup
@@ -43,11 +43,12 @@
 - Confirm `/rep maintenance run confirm` creates `plugins/ReputationBan/backups/reputationban-before-maintenance-*.db`.
 - Confirm `/rep backup before-runtime-smoke` creates `plugins/ReputationBan/backups/reputationban-manual-backup-*.db`.
 - Confirm `/rep support bundle` creates `plugins/ReputationBan/support/reputationban-support-*.zip`.
-- Confirm the support ZIP contains `config-redacted.yml` and `README-SHARING.txt`, and does not contain DB files or server logs.
+- Confirm the support ZIP contains `config-redacted.yml` and `README-SHARING.txt`, and does not contain DB files, server logs, webhook URLs, or shared-unnecessary absolute paths.
 - Confirm `/rep doctor` displays database/table/config/Discord status and lightweight counts.
 - Confirm Discord webhook is disabled by default.
 - Confirm webhook URLs are not printed in logs, `/rep doctor`, audit output, CSV output, or review archive files.
 - Run BAN and pardon commands only against disposable test users.
+- Record the result with `./scripts/record-paper-runtime-smoke-result.sh --result PASS --note "local Paper smoke passed"` or the matching FAIL note.
 
 ## Rollback
 

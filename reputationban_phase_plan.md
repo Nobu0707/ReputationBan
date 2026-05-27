@@ -261,7 +261,31 @@
 - release zipに実config.yml、DB、logsを含めない。
 - Phase 12ではGUI、外部保護プラグイン連携、Folia対応は実装しない。
 
-## Phase 13以降: 外部連携・高度な悪用対策
+## Phase 13 / v0.13.0: リリース候補ハードニング
+
+目的: v1.0.0候補へ進む前に、配布物、support bundle、redaction、実機スモーク記録を最終確認しやすくする。
+
+実装範囲:
+
+- version 0.13.0
+- free-text reason の token/password/secret/session/cookie/webhook/url 風値のredaction強化
+- support bundle の `meta.txt` / `doctor.txt` で共有不要な絶対パスを丸める
+- support bundle安全性検証ロジックとテスト強化
+- `scripts/verify-release-artifact.sh`
+- release ZIP自体の `.sha256`
+- `docs/SECURITY_REDACTION.md`
+- `docs/PAPER_RUNTIME_SMOKE_REPORT_TEMPLATE.md`
+- `scripts/record-paper-runtime-smoke-result.sh`
+- review_code.sh / make-review-archive.sh Phase 13対応
+
+注意:
+
+- Webhook URLは表示、ログ、監査metadata、CSV、support bundle、release artifact、レビューアーカイブへ出さない。
+- support bundleにDBやserver logsを含めず、共有不要な絶対パスを避ける。
+- release zipに実config.yml、DB、logsを含めない。
+- Phase 13ではGUI、外部保護プラグイン連携、Folia対応は実装しない。
+
+## Phase 14以降: 外部連携・高度な悪用対策
 
 実装候補:
 

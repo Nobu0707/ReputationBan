@@ -2,7 +2,7 @@
 
 ReputationBan is a PaperMC moderation plugin that tracks player reputation scores from reports and staff actions. It stores data in SQLite, supports pending report review, and can trigger profile-based temporary or permanent bans when scores cross the configured threshold.
 
-Current version: `0.12.0`
+Current version: `0.13.0`
 
 ## Requirements
 
@@ -19,6 +19,7 @@ Current version: `0.12.0`
 - [Migration](docs/MIGRATION.md)
 - [Release readiness](docs/RELEASE_READINESS.md)
 - [Support bundle](docs/SUPPORT_BUNDLE.md)
+- [Security and redaction](docs/SECURITY_REDACTION.md)
 - [Changelog](CHANGELOG.md)
 
 ## Main Features
@@ -110,7 +111,15 @@ Current version: `0.12.0`
 - `/rep backup [reason]` creates `plugins/ReputationBan/backups/reputationban-manual-backup-*.db` and records `DB_BACKUP_CREATED` without absolute paths or webhook-like reason values.
 - `/rep support bundle` creates `plugins/ReputationBan/support/reputationban-support-*.zip` with diagnostics, counts, sharing guidance, and `config-redacted.yml`.
 - Support bundles exclude `reputationban.db`, WAL/SHM files, server logs, and webhook URLs.
-- `scripts/create-release-artifact.sh` copies the JAR, writes a checksum, and creates `build/release/ReputationBan-0.12.0-release.zip` with docs only.
+- `scripts/create-release-artifact.sh` copies the JAR, writes a checksum, and creates a release ZIP with docs only.
+
+## Phase 13 Release Candidate Hardening
+
+- Free-text redaction now covers simple `token abc`, `password is hunter2`, `sessionId abc`, webhook, and URL patterns.
+- Support bundle metadata uses shared-safe path placeholders and continues to exclude DB files, WAL/SHM files, logs, and webhook URLs.
+- `scripts/create-release-artifact.sh` now writes SHA256 files for both the JAR and release ZIP.
+- `scripts/verify-release-artifact.sh` validates release contents, checksums, and the JAR `plugin.yml` version.
+- Paper runtime smoke results can be recorded with `scripts/record-paper-runtime-smoke-result.sh`.
 
 ## Permissions
 
@@ -134,7 +143,7 @@ Current version: `0.12.0`
 ./scripts/review_code.sh
 ```
 
-The plugin jar is written to `build/libs/ReputationBan-0.12.0.jar`.
+The plugin jar is written to `build/libs/ReputationBan-0.13.0.jar`.
 
 ## Current Limitations
 

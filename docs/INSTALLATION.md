@@ -1,18 +1,18 @@
 # Installation
 
-ReputationBan 0.12.0 targets PaperMC 26.1.2 and Java 25.
+ReputationBan 0.13.0 targets PaperMC 26.1.2 and Java 25.
 
 ## Requirements
 
 - PaperMC 26.1.2 test or production server
 - Java 25 runtime
-- `build/libs/ReputationBan-0.12.0.jar`
+- `build/libs/ReputationBan-0.13.0.jar`
 - SQLite JDBC is loaded through `plugin.yml`
 
 ## First Install
 
 1. Stop the Paper server.
-2. Copy `ReputationBan-0.12.0.jar` to the server `plugins/` directory.
+2. Copy `ReputationBan-0.13.0.jar` to the server `plugins/` directory.
 3. Start the server once to generate `plugins/ReputationBan/config.yml`.
 4. Confirm `plugins/ReputationBan/reputationban.db` is created.
 5. Stop and restart the server after reviewing configuration.

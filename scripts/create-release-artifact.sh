@@ -1,12 +1,13 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-VERSION="0.12.0"
+VERSION="0.13.0"
 PROJECT_NAME="ReputationBan"
 JAR_NAME="${PROJECT_NAME}-${VERSION}.jar"
 SOURCE_JAR="build/libs/${JAR_NAME}"
 RELEASE_DIR="build/release"
 RELEASE_ZIP="${RELEASE_DIR}/${PROJECT_NAME}-${VERSION}-release.zip"
+RELEASE_ZIP_SHA="${RELEASE_ZIP}.sha256"
 
 fail() { echo "[FAIL] $*" >&2; exit 1; }
 pass() { echo "[PASS] $*"; }
@@ -20,25 +21,25 @@ fi
 
 [[ -f "$SOURCE_JAR" ]] || fail "Missing built JAR: $SOURCE_JAR"
 mkdir -p "$RELEASE_DIR"
-rm -f "${RELEASE_DIR}/${JAR_NAME}" "${RELEASE_DIR}/${JAR_NAME}.sha256" "$RELEASE_ZIP"
+rm -f "${RELEASE_DIR}/${JAR_NAME}" "${RELEASE_DIR}/${JAR_NAME}.sha256" "$RELEASE_ZIP" "$RELEASE_ZIP_SHA"
 
 cp "$SOURCE_JAR" "${RELEASE_DIR}/${JAR_NAME}"
-(cd "$RELEASE_DIR" && sha256sum "$JAR_NAME" > "${JAR_NAME}.sha256")
+sha256sum "${RELEASE_DIR}/${JAR_NAME}" > "${RELEASE_DIR}/${JAR_NAME}.sha256"
 
 jar --create --file "$RELEASE_ZIP" \
   -C "$RELEASE_DIR" "$JAR_NAME" \
   -C "$RELEASE_DIR" "${JAR_NAME}.sha256" \
   -C . README.md \
   -C . CHANGELOG.md \
-  -C . docs/INSTALLATION.md \
-  -C . docs/CONFIGURATION.md \
-  -C . docs/MIGRATION.md \
-  -C . docs/RELEASE_READINESS.md
+  -C . docs
 
 if jar tf "$RELEASE_ZIP" | grep -E '(^|/)(config\.yml|reputationban\.db|latest\.log|debug\.log)$|(^|/)logs/' >/dev/null; then
   fail "Release zip contains a forbidden config, DB, or log file"
 fi
 
+sha256sum "$RELEASE_ZIP" > "$RELEASE_ZIP_SHA"
+
 pass "Created ${RELEASE_DIR}/${JAR_NAME}"
 pass "Created ${RELEASE_DIR}/${JAR_NAME}.sha256"
 pass "Created $RELEASE_ZIP"
+pass "Created $RELEASE_ZIP_SHA"

@@ -1,6 +1,6 @@
 # Configuration
 
-This document summarizes the main `config.yml` sections for ReputationBan 0.12.0.
+This document summarizes the main `config.yml` sections for ReputationBan 0.13.0.
 
 ## Score
 

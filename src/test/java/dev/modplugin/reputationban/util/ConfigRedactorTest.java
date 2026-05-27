@@ -30,21 +30,25 @@ class ConfigRedactorTest {
     @Test
     void redactsSensitiveKeyValues() {
         String yaml = """
+                initial-score: 100
                 password: hunter2
                 token: abc
                 secret: xyz
                 session: live
                 cookie: baked
+                sessionId: abc
                 name: visible
                 """;
 
         String redacted = ConfigRedactor.redactYaml(yaml);
 
+        assertTrue(redacted.contains("initial-score: 100"));
         assertTrue(redacted.contains("password: \"<redacted>\""));
         assertTrue(redacted.contains("token: \"<redacted>\""));
         assertTrue(redacted.contains("secret: \"<redacted>\""));
         assertTrue(redacted.contains("session: \"<redacted>\""));
         assertTrue(redacted.contains("cookie: \"<redacted>\""));
+        assertTrue(redacted.contains("sessionId: \"<redacted>\""));
         assertTrue(redacted.contains("name: visible"));
     }
 

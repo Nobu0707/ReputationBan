@@ -10,7 +10,7 @@
 
 ## Included Files
 
-- `meta.txt`: generation time, plugin version, server version, Java version, and plugin data folder.
+- `meta.txt`: generation time, plugin version, server version, Java version, and a shared-safe plugin data folder placeholder.
 - `doctor.txt`: `/rep doctor`-style health details without webhook URLs.
 - `counts.txt`: table row counts only.
 - `config-redacted.yml`: `config.yml` with sensitive keys redacted.
@@ -25,7 +25,8 @@ The bundle must not include:
 - server logs such as `latest.log` or `debug.log`
 - live `config.yml`
 - Discord Webhook URLs, passwords, tokens, sessions, cookies, or other secrets
+- shared-unnecessary absolute paths such as user home directories or server filesystem layouts
 
 ## Before Sharing
 
-Open `config-redacted.yml` and confirm that webhook URLs and tokens are not present. The bundle is designed to be safe by default, but operators should still inspect it before posting it to tickets or review threads.
+Open `config-redacted.yml` and confirm that webhook URLs and tokens are not present. `meta.txt` and `doctor.txt` intentionally use a placeholder such as `<plugin-data-folder>` instead of exposing the local absolute path. The bundle is designed to be safe by default, but operators should still inspect it before posting it to tickets or review threads.

@@ -4,7 +4,7 @@ set -euo pipefail
 # ReputationBan review archive generator.
 # Usage:
 #   bash scripts/make-review-archive.sh
-#   bash scripts/make-review-archive.sh "Phase 12"
+#   bash scripts/make-review-archive.sh "Phase 13"
 #
 # The optional argument is an expected substring of HEAD's commit subject.
 # If it does not match, the script exits before producing an archive, which
@@ -99,6 +99,9 @@ done < "$OUTDIR/meta/changed-files.txt"
   echo
   echo "## rg phase 12 support and release artifacts"
   rg -n "SupportBundleService|SupportBundleResult|SUPPORT_BUNDLE_CREATED|DB_BACKUP_CREATED|Redactor|ConfigRedactor|ZipOutputStream|create-release-artifact|support bundle|/rep backup" src/main/java src/test/java src/main/resources README.md CHANGELOG.md docs reputationban_phase_plan.md scripts || true
+  echo
+  echo "## rg phase 13 release candidate hardening"
+  rg -n "verify-release-artifact|record-paper-runtime-smoke-result|PAPER_RUNTIME_SMOKE_REPORT_TEMPLATE|SECURITY_REDACTION|SupportBundleSafety|PathRedactor|redactSecretLikeValue|release.zip.sha256" src/main/java src/test/java src/main/resources README.md CHANGELOG.md docs reputationban_phase_plan.md scripts || true
 } > "$OUTDIR/checks/rg-review-signals.txt"
 
 {
@@ -121,28 +124,34 @@ run_logged() {
   echo "$name=$code" >> "$COMMAND_STATUS"
 }
 
-run_logged "git diff --check" "$OUTDIR/checks/git-diff-check.txt" git diff --check
+run_logged "git-diff-check" "$OUTDIR/checks/git-diff-check.txt" git diff --check
 
-run_logged "./gradlew clean test build --warning-mode all" \
+run_logged "gradle-clean-test-build" \
   "$OUTDIR/checks/gradle-clean-test-build.txt" \
   ./gradlew clean test build --warning-mode all
 
 if [[ -x "$ROOT/scripts/review_code.sh" ]]; then
-  run_logged "./scripts/review_code.sh" "$OUTDIR/checks/review-code.txt" "$ROOT/scripts/review_code.sh"
+  run_logged "review-code" "$OUTDIR/checks/review-code.txt" "$ROOT/scripts/review_code.sh"
 else
-  echo "./scripts/review_code.sh=missing" >> "$COMMAND_STATUS"
+  echo "review-code=missing" >> "$COMMAND_STATUS"
 fi
 
 if [[ -x "$ROOT/scripts/run-local-smoke-check.sh" ]]; then
-  run_logged "./scripts/run-local-smoke-check.sh" "$OUTDIR/checks/local-smoke-check.txt" env REPUTATIONBAN_SKIP_REVIEW_CODE=1 REPUTATIONBAN_SKIP_BUILD=1 "$ROOT/scripts/run-local-smoke-check.sh"
+  run_logged "local-smoke-check" "$OUTDIR/checks/local-smoke-check.txt" env REPUTATIONBAN_SKIP_REVIEW_CODE=1 REPUTATIONBAN_SKIP_BUILD=1 "$ROOT/scripts/run-local-smoke-check.sh"
 else
-  echo "./scripts/run-local-smoke-check.sh=missing" >> "$COMMAND_STATUS"
+  echo "local-smoke-check=missing" >> "$COMMAND_STATUS"
 fi
 
 if [[ -x "$ROOT/scripts/create-release-artifact.sh" ]]; then
-  run_logged "./scripts/create-release-artifact.sh" "$OUTDIR/checks/create-release-artifact.txt" "$ROOT/scripts/create-release-artifact.sh"
+  run_logged "create-release-artifact" "$OUTDIR/checks/create-release-artifact.txt" "$ROOT/scripts/create-release-artifact.sh"
 else
-  echo "./scripts/create-release-artifact.sh=missing" >> "$COMMAND_STATUS"
+  echo "create-release-artifact=missing" >> "$COMMAND_STATUS"
+fi
+
+if [[ -x "$ROOT/scripts/verify-release-artifact.sh" ]]; then
+  run_logged "verify-release-artifact" "$OUTDIR/checks/verify-release-artifact.txt" "$ROOT/scripts/verify-release-artifact.sh"
+else
+  echo "verify-release-artifact=missing" >> "$COMMAND_STATUS"
 fi
 
 if compgen -G "$ROOT/build/test-results/test/*.xml" >/dev/null; then
@@ -158,9 +167,22 @@ fi
 
 if [[ -d "$ROOT/build/libs" ]]; then
   find "$ROOT/build/libs" -maxdepth 1 -type f -print | sort > "$OUTDIR/checks/built-jars.txt"
-  if [[ -f "$ROOT/build/libs/ReputationBan-0.12.0.jar" ]]; then
-    (cd "$ROOT" && sha256sum build/libs/ReputationBan-0.12.0.jar) > "$OUTDIR/checks/jar-sha256.txt"
+  if [[ -f "$ROOT/build/libs/ReputationBan-0.13.0.jar" ]]; then
+    (cd "$ROOT" && sha256sum build/libs/ReputationBan-0.13.0.jar) > "$OUTDIR/checks/jar-sha256.txt"
   fi
+fi
+
+if [[ -d "$ROOT/build/release" ]]; then
+  find "$ROOT/build/release" -maxdepth 1 -type f -print | sort > "$OUTDIR/checks/release-artifacts.txt"
+else
+  echo "No build/release directory found." > "$OUTDIR/checks/release-artifacts.txt"
+fi
+
+LATEST_SMOKE="$(find "$ROOT/build/manual-smoke" -maxdepth 2 -path '*/paper-runtime-*/summary.txt' -type f 2>/dev/null | sort | tail -n 1 || true)"
+if [[ -n "$LATEST_SMOKE" && -f "$LATEST_SMOKE" ]]; then
+  cp "$LATEST_SMOKE" "$OUTDIR/checks/latest-paper-runtime-smoke-summary.txt"
+else
+  echo "No paper runtime smoke summary found." > "$OUTDIR/checks/latest-paper-runtime-smoke-summary.txt"
 fi
 
 tar -czf "$ARCHIVE" -C "$(dirname "$OUTDIR")" "$(basename "$OUTDIR")"
