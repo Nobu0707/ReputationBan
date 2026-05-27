@@ -524,7 +524,36 @@
 - CoreProtect rollback、restore、purge、LuckPerms 書き込み、WorldGuard region/flag 変更、GriefPrevention claim/trust 変更は引き続き行わない。
 - Discord から Minecraft コマンドを実行する機能、Discord role 変更、Discord button 承認は行わない。
 
-## Phase 24以降: 外部連携・高度な悪用対策
+## Phase 24 / v0.24.0: Integration runtime smoke automation
+
+目的: `~/servers/PaperPlugins/` の外部連携プラグイン JAR を Paper test server に staging し、ReputationBan が連携込みで起動・診断できるかを自動化・記録する。
+
+実装範囲:
+
+- version 0.24.0
+- `scripts/run-integration-runtime-smoke.sh`
+- `REPUTATIONBAN_INTEGRATION_PLUGIN_DIR` 既定値 `~/servers/PaperPlugins`
+- `REPUTATIONBAN_INTEGRATION_RESTORE_PLUGINS` 既定値 `1`
+- `build/libs/ReputationBan-0.24.0.jar` と `~/servers/PaperPlugins/*.jar` の staging
+- 既存 ReputationBan / LuckPerms / CoreProtect / WorldEdit / WorldGuard / GriefPrevention / PlaceholderAPI / DiscordSRV JAR の backup/restore
+- `screen -ls` 起動前後記録、screen session 特定、`screen -S ... stuff` による `/rep doctor`、`/rep integrations`、`/rep integrations test`、`/rep placeholders` 投入
+- 環境未整備時の `status=NOT_RUN` / `result=NOT_RUN`
+- `build/manual-smoke/integration-runtime-*` の `summary.txt`、`server.log`、`commands.txt`、`environment.txt`、`screen-before.txt`、`screen-after.txt`、`staged-plugins.txt`、`plugin-restore.txt`
+- review archive の `checks/integration-runtime-smoke-auto.txt`
+- review archive の `runtime-smoke/paper-runtime-latest/` と `runtime-smoke/integration-runtime-latest/`
+- `docs/phase-24.md`
+- runtime smoke / release readiness docs の v0.24.0 対応
+- review/release archive scripts の v0.24.0 対応
+
+注意:
+
+- 外部連携プラグインを実際に staging して Paper を起動していない場合は PASS summary を作らない。
+- `/reportbad` と `/reports evidence` による report_context 実生成確認は実プレイヤー2名以上で手動確認する。
+- server directory、DB、config、logs、plugins directory 全体は削除しない。
+- CoreProtect rollback、restore、purge、LuckPerms 書き込み、WorldGuard region/flag 変更、GriefPrevention claim/trust 変更は引き続き行わない。
+- Discord から Minecraft コマンドを実行する機能、Discord role 変更、Discord button 承認は行わない。
+
+## Phase 25以降: 外部連携・高度な悪用対策
 
 実装候補:
 

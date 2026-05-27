@@ -43,10 +43,20 @@ latest_summary() {
 
 SUMMARY="$(latest_summary || true)"
 RESULT="NOT_RUN"
+STATUS="NOT_RUN"
 
 if [[ -n "$SUMMARY" && -f "$SUMMARY" ]]; then
   RESULT="$(grep -E '^result=' "$SUMMARY" | tail -n 1 | cut -d= -f2- || true)"
+  STATUS="$(grep -E '^status=' "$SUMMARY" | tail -n 1 | cut -d= -f2- || true)"
   RESULT="${RESULT:-UNKNOWN}"
+  STATUS="${STATUS:-UNKNOWN}"
+fi
+
+if [[ "$RESULT" == "PASS" || "$STATUS" == "PASS" ]]; then
+  echo "integration runtime smoke: PASS"
+  echo "summary: $SUMMARY"
+  echo "judgment: READY_FOR_INTEGRATION_RUNTIME_RELEASE_REVIEW"
+  exit 0
 fi
 
 case "$RESULT" in

@@ -1,6 +1,6 @@
 # Release Readiness
 
-0.23.0 の Paper runtime smoke automation release として、次の項目を確認してください。
+0.24.0 の integration runtime smoke automation release として、次の項目を確認してください。
 
 - `./gradlew clean test build --warning-mode all` が成功します。
 - `./scripts/review_code.sh` が成功します。
@@ -8,14 +8,16 @@
 - `./scripts/check-optional-dependency-safety.sh` が成功します。
 - `./scripts/run-paper-runtime-smoke.sh` が成功します。実機環境がない場合は `NOT_RUN` を記録し、PASS 扱いにしません。
 - `./scripts/check-paper-runtime-readiness.sh` が成功し、未実施なら HOLD/NOT_RUN を表示します。
+- `./scripts/run-integration-runtime-smoke.sh` が成功します。`~/servers/PaperPlugins/`、Paper server、start script、または `screen` がない場合は `NOT_RUN` を記録し、PASS 扱いにしません。
 - `./scripts/check-integration-runtime-readiness.sh` が成功し、未実施なら HOLD/NOT_RUN を表示します。
 - `./scripts/run-local-smoke-check.sh` が成功します。
 - `./scripts/create-release-artifact.sh` が成功します。
 - `./scripts/verify-release-artifact.sh` が成功します。
-- `./scripts/make-review-archive.sh "Phase 23"` が archive を作成し、`checks/docs-localization.txt`、`checks/optional-dependency-safety.txt`、`checks/paper-runtime-smoke-auto.txt`、`checks/paper-runtime-readiness.txt`、`checks/integration-runtime-readiness.txt`、`checks/integration-runtime-smoke-helper-syntax.txt`、`checks/latest-paper-runtime-smoke-summary.txt`、`checks/latest-integration-runtime-smoke-summary.txt` を含みます。
+- `./scripts/make-review-archive.sh "Phase 24"` が archive を作成し、`checks/docs-localization.txt`、`checks/optional-dependency-safety.txt`、`checks/paper-runtime-smoke-auto.txt`、`checks/paper-runtime-readiness.txt`、`checks/integration-runtime-smoke-auto.txt`、`checks/integration-runtime-readiness.txt`、`checks/integration-runtime-smoke-helper-syntax.txt`、`checks/latest-paper-runtime-smoke-summary.txt`、`checks/latest-integration-runtime-smoke-summary.txt`、`runtime-smoke/paper-runtime-latest/`、`runtime-smoke/integration-runtime-latest/` を含みます。
 - `bash -n scripts/run-paper-runtime-smoke.sh` が成功します。
 - `bash -n scripts/check-paper-runtime-readiness.sh` が成功します。
 - `bash -n scripts/run-paper-runtime-smoke-helper.sh` が成功します。
+- `bash -n scripts/run-integration-runtime-smoke.sh` が成功します。
 - `bash -n scripts/create-release-artifact.sh` が成功します。
 - `bash -n scripts/verify-release-artifact.sh` が成功します。
 - `bash -n scripts/record-paper-runtime-smoke-result.sh` が成功します。
@@ -25,9 +27,11 @@
 - Paper runtime smoke を PaperMC 26.1.2 server と Java 25 で実施します。
 - 既定の Paper server directory は `~/servers/paper-26.1.2/`、既定の start script は `~/servers/paper-26.1.2/start.sh` です。`start.sh` は `screen` で Paper を起動する前提です。
 - `REPUTATIONBAN_PAPER_DIR`、`REPUTATIONBAN_PAPER_START_SCRIPT`、`REPUTATIONBAN_SCREEN_NAME`、`REPUTATIONBAN_SMOKE_STOP_SERVER` で実機環境を調整できます。
-- 可能な限り実Paperサーバーで /rep version、/rep doctor、/rep integrations、/rep integrations test、/rep placeholders、/reports evidence <id>、/rep support bundle、/rep backup、/reportbad TAB補完、DiscordSRV 導入/未導入時の account link 表示を確認してください。
+- Integration runtime smoke は `~/servers/PaperPlugins/*.jar` を既定の連携プラグイン置き場として使います。`REPUTATIONBAN_INTEGRATION_PLUGIN_DIR` で変更できます。
+- `REPUTATIONBAN_INTEGRATION_RESTORE_PLUGINS=1` が既定で、既存対象 JAR を backup し、smoke 後に外部連携 JAR を削除して既存 JAR を復元します。
+- 可能な限り実Paperサーバーで /rep version、/rep doctor、/rep integrations、/rep integrations test、/rep placeholders、/reports evidence <id>、/rep support bundle、/rep backup、/reportbad TAB補完、DiscordSRV 導入/未導入時の account link 表示を確認してください。`/reportbad` と `/reports evidence` による report_context 実生成確認は実プレイヤー2名以上で行います。
 - `config.yml` が生成され、内容を確認済みです。
-- `/rep version` が 0.23.0 を表示します。
+- `/rep version` が 0.24.0 を表示します。
 - `/rep doctor` が database、tables、config、audit export、Discord、backup status を期待通りに表示します。
 - `/rep integrations` が LuckPerms / CoreProtect / WorldGuard / GriefPrevention / PlaceholderAPI / DiscordSRV の configuredEnabled、pluginPresent、apiAvailable、active、設定値を表示します。
 - `/rep integrations test` が外部連携だけの詳細診断を表示し、CoreProtect 実 lookup をデフォルトでは実行しません。
@@ -43,14 +47,14 @@
 - support bundle に SQLite DB files、server logs、Webhook URLs、共有不要な absolute paths が含まれません。
 - `/rep maintenance preview` は data を削除しません。
 - `/rep audit export recent 10` は安全な export directory 配下に CSV を作成します。
-- `build/release/ReputationBan-0.23.0.jar`、`.jar.sha256`、`ReputationBan-0.23.0-release.zip`、`ReputationBan-0.23.0-release.zip.sha256` が存在します。
+- `build/release/ReputationBan-0.24.0.jar`、`.jar.sha256`、`ReputationBan-0.24.0-release.zip`、`ReputationBan-0.24.0-release.zip.sha256` が存在します。
 - release ZIP には JAR、checksum、README、CHANGELOG、docs が含まれます。
 - release ZIP には `docs/INTEGRATIONS.md` が含まれます。
 - release ZIP には `docs/INTEGRATION_RUNTIME_SMOKE_CHECKLIST.md` が含まれます。
 - release ZIP 内の README.md と docs/INSTALLATION.md が日本語ドキュメントとして読めることを確認します。
 - release ZIP に live `config.yml`、SQLite DB files、logs は含まれません。
 - Paper runtime smoke を自動または手動実施した場合は `scripts/run-paper-runtime-smoke.sh` または `scripts/record-paper-runtime-smoke-result.sh` で結果を記録します。未実施の場合は PASS 扱いにせず、readiness check では `paper runtime smoke: NOT_RUN` と `judgment: HOLD_FOR_PAPER_RUNTIME_SMOKE`、review archive に `status=NOT_RUN` として残します。
-- Integration runtime smoke を手動実施した場合は `scripts/record-integration-runtime-smoke-result.sh` で結果を記録します。未実施の場合は PASS 扱いにせず、readiness check では `integration runtime smoke: NOT_RUN` と `judgment: HOLD_FOR_INTEGRATION_RUNTIME_SMOKE`、review archive では `status=NOT_RUN` として残します。
+- Integration runtime smoke を自動または手動実施した場合は `scripts/run-integration-runtime-smoke.sh` または `scripts/record-integration-runtime-smoke-result.sh` で結果を記録します。未実施の場合は PASS 扱いにせず、readiness check では `integration runtime smoke: NOT_RUN` と `judgment: HOLD_FOR_INTEGRATION_RUNTIME_SMOKE`、review archive では `status=NOT_RUN` として残します。
 - WorldGuard runtime smoke では未導入、WorldEdit のみ、WorldEdit + WorldGuard の各構成を確認し、region/flag が変更されていないことを確認します。
 - GriefPrevention runtime smoke では未導入、導入、LuckPerms + CoreProtect + WorldGuard + GriefPrevention の各構成を確認し、claim/trust が変更されていないことを確認します。
 - PlaceholderAPI runtime smoke では未導入、導入、LuckPerms + CoreProtect + WorldGuard + GriefPrevention + PlaceholderAPI の各構成を確認し、placeholder 呼び出しでDB同期問い合わせを行わない設計を維持します。

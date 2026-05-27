@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.24.0
+
+- `scripts/run-integration-runtime-smoke.sh` を追加し、`~/servers/PaperPlugins/*.jar` と `build/libs/ReputationBan-0.24.0.jar` を Paper test server に staging して、`/rep integrations`、`/rep integrations test`、`/rep doctor` を自動実行できるようにしました。
+- 既存の ReputationBan / LuckPerms / CoreProtect / WorldEdit / WorldGuard / GriefPrevention / PlaceholderAPI / DiscordSRV JAR を `plugins/backups/reputationban-integration-smoke-*` に退避し、既定では外部連携 JAR を削除して既存 JAR を復元する方針を追加しました。
+- Integration smoke 環境が見つからない場合は `build/manual-smoke/integration-runtime-*` に `status=NOT_RUN` / `result=NOT_RUN` を記録し、PASS 扱いにしません。
+- `scripts/check-integration-runtime-readiness.sh` を v0.24.0 向けに更新し、通常モードでは HOLD、`--strict` では PASS 以外を non-zero とします。
+- review archive に `checks/integration-runtime-smoke-auto.txt` と `runtime-smoke/integration-runtime-latest/`、`runtime-smoke/paper-runtime-latest/` を収集するようにしました。
+- Phase 24 docs、runtime smoke checklist、release readiness、release artifact checks を v0.24.0 向けに更新しました。
+- 新しい外部連携、Discord からの Minecraft コマンド実行、Discord role 変更、GUI、Folia 対応、v1.0.0 リリース化は追加していません。
+
 ## 0.23.0
 
 - `scripts/run-paper-runtime-smoke.sh` を追加し、`~/servers/paper-26.1.2/start.sh` が `screen` で起動する Paper test server に対して JAR 配置、screen session 特定、console command 投入、ログ検査、必要時の stop まで自動化しました。

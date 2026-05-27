@@ -12,7 +12,7 @@
 
 ## Automated Paper Smoke
 
-Phase 23 では、次の自動化スクリプトを使えます。
+Phase 23 以降は、次の Paper 単体自動化スクリプトを使えます。
 
 ```bash
 ./scripts/run-paper-runtime-smoke.sh
@@ -20,7 +20,7 @@ Phase 23 では、次の自動化スクリプトを使えます。
 ./scripts/check-paper-runtime-readiness.sh --strict
 ```
 
-`scripts/run-paper-runtime-smoke.sh` は `build/libs/ReputationBan-0.23.0.jar` を `plugins/` に配置し、起動前後の `screen -ls` を記録し、特定した screen session に console command を投入します。環境が見つからない場合は `build/manual-smoke/paper-runtime-*` に `status=NOT_RUN` / `result=NOT_RUN` を記録し、PASS にはしません。
+`scripts/run-paper-runtime-smoke.sh` は `build/libs/ReputationBan-0.24.0.jar` を `plugins/` に配置し、起動前後の `screen -ls` を記録し、特定した screen session に console command を投入します。環境が見つからない場合は `build/manual-smoke/paper-runtime-*` に `status=NOT_RUN` / `result=NOT_RUN` を記録し、PASS にはしません。
 
 主な環境変数:
 
@@ -32,10 +32,30 @@ Phase 23 では、次の自動化スクリプトを使えます。
 
 `scripts/check-paper-runtime-readiness.sh` の通常モードは `NOT_RUN` でも exit 0 とし、`judgment: HOLD_FOR_PAPER_RUNTIME_SMOKE` を表示します。`--strict` は `result=PASS` または `status=PASS` 以外を non-zero にします。
 
+## Automated Integration Smoke
+
+Phase 24 では、`~/servers/PaperPlugins/` の外部連携プラグイン JAR を使う integration runtime smoke を自動化します。
+
+```bash
+./scripts/run-integration-runtime-smoke.sh
+./scripts/check-integration-runtime-readiness.sh
+./scripts/check-integration-runtime-readiness.sh --strict
+```
+
+`scripts/run-integration-runtime-smoke.sh` は `build/libs/ReputationBan-0.24.0.jar` と `REPUTATIONBAN_INTEGRATION_PLUGIN_DIR` の `*.jar` を Paper `plugins/` に配置し、対象 plugin JAR を backup してから `screen` session に `/rep doctor`、`/rep integrations`、`/rep integrations test`、`/rep placeholders` などを投入します。既定では `REPUTATIONBAN_INTEGRATION_RESTORE_PLUGINS=1` で、外部連携 JAR を削除し、backup した既存 JAR を復元します。`~/servers/PaperPlugins/`、`*.jar`、Paper directory、start script、または `screen` が見つからない場合は `build/manual-smoke/integration-runtime-*` に `status=NOT_RUN` / `result=NOT_RUN` を記録し、PASS にはしません。
+
+主な環境変数:
+
+- `REPUTATIONBAN_INTEGRATION_PLUGIN_DIR`: 連携プラグイン JAR directory。未設定時は `~/servers/PaperPlugins`
+- `REPUTATIONBAN_INTEGRATION_RESTORE_PLUGINS`: `1` の場合に staging した外部 JAR を削除し backup を復元します。未設定時は `1`
+- `REPUTATIONBAN_PAPER_DIR`: Paper server directory。未設定時は `~/servers/paper-26.1.2`
+- `REPUTATIONBAN_PAPER_START_SCRIPT`: start script。未設定時は `~/servers/paper-26.1.2/start.sh`
+- `REPUTATIONBAN_SCREEN_NAME`: 既存 screen session を明示する場合に指定
+
 ## Install
 
 1. `./gradlew clean test build --warning-mode all` を実行します。
-2. `build/libs/ReputationBan-0.23.0.jar` を Paper `plugins` directory へコピーします。
+2. `build/libs/ReputationBan-0.24.0.jar` を Paper `plugins` directory へコピーします。
 3. Java 25 で Paper を起動します。
 
 ## Startup

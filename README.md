@@ -2,7 +2,7 @@
 
 ReputationBan は、通報とスタッフ操作をもとにプレイヤーの評判スコアを管理する PaperMC 向け moderation プラグインです。データは SQLite に保存し、未処理通報の審査、監査ログ、バックアップ、support bundle、設定に基づく Profile BAN を扱います。
 
-現在のバージョン: `0.23.0`
+現在のバージョン: `0.24.0`
 
 ## 対象環境
 
@@ -26,6 +26,7 @@ ReputationBan は、通報とスタッフ操作をもとにプレイヤーの評
 - [Integration runtime smoke checklist](docs/INTEGRATION_RUNTIME_SMOKE_CHECKLIST.md)
 - [Paper runtime smoke checklist](docs/runtime-smoke-checklist.md)
 - [Release candidate checklist](docs/RELEASE_CANDIDATE_CHECKLIST.md)
+- [Phase 24 notes](docs/phase-24.md)
 - [Phase 23 notes](docs/phase-23.md)
 - [Phase 22 notes](docs/phase-22.md)
 - [Phase 21 notes](docs/phase-21.md)
@@ -117,11 +118,11 @@ ReputationBan は、通報とスタッフ操作をもとにプレイヤーの評
 ./scripts/review_code.sh
 ```
 
-JAR は `build/libs/ReputationBan-0.23.0.jar` に生成されます。
+JAR は `build/libs/ReputationBan-0.24.0.jar` に生成されます。
 
 ## 現在の位置づけ
 
-v0.23.0 は Paper runtime smoke 自動化フェーズです。`~/servers/paper-26.1.2/start.sh` が `screen` で Paper を起動する実機テスト環境を前提に、`scripts/run-paper-runtime-smoke.sh` が JAR 配置、screen session 特定、console command 投入、ログ検査、必要時の stop を行います。環境がない場合は `NOT_RUN` として記録し、PASS 扱いにはしません。
+v0.24.0 は integration runtime smoke 自動化フェーズです。`~/servers/PaperPlugins/` の外部連携プラグイン JAR と `~/servers/paper-26.1.2/start.sh` が `screen` で Paper を起動する実機テスト環境を前提に、`scripts/run-integration-runtime-smoke.sh` が plugins staging、対象 JAR backup/restore、screen session 特定、console command 投入、ログ検査を行います。環境がない場合は `NOT_RUN` として記録し、PASS 扱いにはしません。Paper 単体の runtime smoke automation は `scripts/run-paper-runtime-smoke.sh` で継続します。
 
 v1.0.0 へ進む前に [Release candidate checklist](docs/RELEASE_CANDIDATE_CHECKLIST.md)、[Paper runtime smoke checklist](docs/runtime-smoke-checklist.md)、[Integration runtime smoke checklist](docs/INTEGRATION_RUNTIME_SMOKE_CHECKLIST.md) を確認してください。Paper / integration 実機スモークを実行していない場合は PASS と扱わず、未実施として記録します。
 

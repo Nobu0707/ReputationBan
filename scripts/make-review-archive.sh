@@ -32,7 +32,7 @@ ARCHIVE="$ROOT/reputationban-review-$HEAD_SHA-$STAMP.tar.gz"
 LATEST="$ROOT/reputationban-review-latest.tar.gz"
 
 rm -rf "$OUTDIR"
-mkdir -p "$OUTDIR"/{meta,diff,file-diffs,files,checks}
+mkdir -p "$OUTDIR"/{meta,diff,file-diffs,files,checks,runtime-smoke}
 COMMAND_STATUS="$OUTDIR/checks/command-status.txt"
 : > "$COMMAND_STATUS"
 
@@ -135,6 +135,9 @@ done < "$OUTDIR/meta/changed-files.txt"
   echo
   echo "## rg phase 23 Paper runtime smoke automation"
   rg -n "run-paper-runtime-smoke|check-paper-runtime-readiness|HOLD_FOR_PAPER_RUNTIME_SMOKE|paper-runtime-smoke-auto|paper-runtime-readiness|REPUTATIONBAN_PAPER_DIR|REPUTATIONBAN_PAPER_START_SCRIPT|REPUTATIONBAN_SCREEN_NAME|screen -ls|screen -S|start.sh|paper-26.1.2|0\\.23\\.0" README.md CHANGELOG.md docs reputationban_phase_plan.md scripts build.gradle.kts src/main/resources/plugin.yml || true
+  echo
+  echo "## rg phase 24 integration runtime smoke automation"
+  rg -n "run-integration-runtime-smoke|integration-runtime-smoke-auto|runtime-smoke/integration-runtime-latest|runtime-smoke/paper-runtime-latest|REPUTATIONBAN_INTEGRATION_PLUGIN_DIR|REPUTATIONBAN_INTEGRATION_RESTORE_PLUGINS|PaperPlugins|staged-plugins|plugin-restore|reputationban-integration-smoke|0\\.24\\.0" README.md CHANGELOG.md docs reputationban_phase_plan.md scripts build.gradle.kts src/main/resources/plugin.yml || true
 } > "$OUTDIR/checks/rg-review-signals.txt"
 
 {
@@ -187,6 +190,12 @@ else
   echo "./scripts/check-integration-runtime-readiness.sh=missing" >> "$COMMAND_STATUS"
 fi
 
+if [[ -x "$ROOT/scripts/run-integration-runtime-smoke.sh" ]]; then
+  run_logged "./scripts/run-integration-runtime-smoke.sh" "$OUTDIR/checks/integration-runtime-smoke-auto.txt" "$ROOT/scripts/run-integration-runtime-smoke.sh"
+else
+  echo "./scripts/run-integration-runtime-smoke.sh=missing" >> "$COMMAND_STATUS"
+fi
+
 if [[ -x "$ROOT/scripts/run-paper-runtime-smoke.sh" ]]; then
   run_logged "./scripts/run-paper-runtime-smoke.sh" "$OUTDIR/checks/paper-runtime-smoke-auto.txt" "$ROOT/scripts/run-paper-runtime-smoke.sh"
 else
@@ -236,8 +245,8 @@ fi
 
 if [[ -d "$ROOT/build/libs" ]]; then
   find "$ROOT/build/libs" -maxdepth 1 -type f -print | sort > "$OUTDIR/checks/built-jars.txt"
-  if [[ -f "$ROOT/build/libs/ReputationBan-0.23.0.jar" ]]; then
-    (cd "$ROOT" && sha256sum build/libs/ReputationBan-0.23.0.jar) > "$OUTDIR/checks/jar-sha256.txt"
+  if [[ -f "$ROOT/build/libs/ReputationBan-0.24.0.jar" ]]; then
+    (cd "$ROOT" && sha256sum build/libs/ReputationBan-0.24.0.jar) > "$OUTDIR/checks/jar-sha256.txt"
   fi
 fi
 
@@ -268,6 +277,45 @@ else
     echo "nextStep=Run docs/INTEGRATION_RUNTIME_SMOKE_CHECKLIST.md and record results with scripts/record-integration-runtime-smoke-result.sh"
   } > "$OUTDIR/checks/latest-integration-runtime-smoke-summary.txt"
 fi
+
+redact_runtime_tail() {
+  sed -E \
+    -e 's#https://(canary\.|ptb\.)?discord(app)?\.com/api/webhooks/[0-9]+/[A-Za-z0-9_-]+#[REDACTED_DISCORD_WEBHOOK]#g' \
+    -e 's#(webhook-url|webhookUrl|token|secret|password|sessionId)([[:space:]]*[:=][[:space:]]*)[^[:space:]]+#\1\2[REDACTED]#Ig'
+}
+
+copy_runtime_smoke_latest() {
+  local pattern="$1"
+  local dest_name="$2"
+  shift 2
+  local latest_summary
+  latest_summary="$(find "$ROOT/build/manual-smoke" -maxdepth 2 -path "*/${pattern}-*/summary.txt" -type f 2>/dev/null | sort | tail -n 1 || true)"
+  local dest="$OUTDIR/runtime-smoke/$dest_name"
+  mkdir -p "$dest"
+  if [[ -z "$latest_summary" || ! -f "$latest_summary" ]]; then
+    echo "status=NOT_RUN" > "$dest/summary.txt"
+    return 0
+  fi
+
+  local latest_dir
+  latest_dir="$(dirname "$latest_summary")"
+  local file
+  for file in "$@"; do
+    if [[ -f "$latest_dir/$file" ]]; then
+      cp "$latest_dir/$file" "$dest/$file"
+    fi
+  done
+  if [[ -f "$latest_dir/server.log" ]]; then
+    tail -n 500 "$latest_dir/server.log" | redact_runtime_tail > "$dest/server.log.tail.txt"
+  else
+    echo "server.log not found" > "$dest/server.log.tail.txt"
+  fi
+}
+
+copy_runtime_smoke_latest "paper-runtime" "paper-runtime-latest" \
+  summary.txt commands.txt environment.txt
+copy_runtime_smoke_latest "integration-runtime" "integration-runtime-latest" \
+  summary.txt commands.txt environment.txt staged-plugins.txt plugin-restore.txt
 
 tar -czf "$ARCHIVE" -C "$(dirname "$OUTDIR")" "$(basename "$OUTDIR")"
 cp "$ARCHIVE" "$LATEST"

@@ -7,29 +7,47 @@ PLUGIN_JAR="build/libs/${PROJECT_NAME}-${VERSION}.jar"
 
 REPUTATIONBAN_PAPER_DIR="${REPUTATIONBAN_PAPER_DIR:-$HOME/servers/paper-26.1.2}"
 REPUTATIONBAN_PAPER_START_SCRIPT="${REPUTATIONBAN_PAPER_START_SCRIPT:-$REPUTATIONBAN_PAPER_DIR/start.sh}"
+REPUTATIONBAN_INTEGRATION_PLUGIN_DIR="${REPUTATIONBAN_INTEGRATION_PLUGIN_DIR:-$HOME/servers/PaperPlugins}"
 REPUTATIONBAN_JAVA_BIN="${REPUTATIONBAN_JAVA_BIN:-java}"
-REPUTATIONBAN_SMOKE_TIMEOUT_SECONDS="${REPUTATIONBAN_SMOKE_TIMEOUT_SECONDS:-180}"
+REPUTATIONBAN_SMOKE_TIMEOUT_SECONDS="${REPUTATIONBAN_SMOKE_TIMEOUT_SECONDS:-240}"
 REPUTATIONBAN_SMOKE_COMMAND_DELAY_SECONDS="${REPUTATIONBAN_SMOKE_COMMAND_DELAY_SECONDS:-5}"
 REPUTATIONBAN_SMOKE_MUTATING="${REPUTATIONBAN_SMOKE_MUTATING:-0}"
 REPUTATIONBAN_SMOKE_STOP_SERVER="${REPUTATIONBAN_SMOKE_STOP_SERVER:-0}"
+REPUTATIONBAN_INTEGRATION_RESTORE_PLUGINS="${REPUTATIONBAN_INTEGRATION_RESTORE_PLUGINS:-1}"
 REPUTATIONBAN_SCREEN_NAME="${REPUTATIONBAN_SCREEN_NAME:-}"
 
 STAMP="$(date +%Y%m%d-%H%M%S)"
 STARTED_AT="$(date -Iseconds)"
-OUTDIR="build/manual-smoke/paper-runtime-${STAMP}"
+OUTDIR="build/manual-smoke/integration-runtime-${STAMP}"
 SUMMARY="${OUTDIR}/summary.txt"
 COMMANDS_FILE="${OUTDIR}/commands.txt"
 SERVER_LOG="${OUTDIR}/server.log"
 ENVIRONMENT_FILE="${OUTDIR}/environment.txt"
 SCREEN_BEFORE_FILE="${OUTDIR}/screen-before.txt"
 SCREEN_AFTER_FILE="${OUTDIR}/screen-after.txt"
+STAGED_PLUGINS_FILE="${OUTDIR}/staged-plugins.txt"
+PLUGIN_RESTORE_FILE="${OUTDIR}/plugin-restore.txt"
 mkdir -p "$OUTDIR"
 : > "$COMMANDS_FILE"
+: > "$STAGED_PLUGINS_FILE"
+: > "$PLUGIN_RESTORE_FILE"
+
+PLUGINS_DIR="$REPUTATIONBAN_PAPER_DIR/plugins"
+BACKUP_DIR="$PLUGINS_DIR/backups/reputationban-integration-smoke-${STAMP}"
+STAGED_PLUGIN_BASENAMES=()
+STAGED_PLUGIN_PATHS=()
+BACKED_UP_PLUGIN_BASENAMES=()
+RESTORED_PLUGINS=false
 
 JAR_SHA="missing"
 if [[ -f "$PLUGIN_JAR" ]]; then
   JAR_SHA="$(sha256sum "$PLUGIN_JAR" | awk '{print $1}')"
 fi
+
+join_by_comma() {
+  local IFS=,
+  echo "$*"
+}
 
 write_environment() {
   {
@@ -38,11 +56,13 @@ write_environment() {
     echo "jarSha256=$JAR_SHA"
     echo "paperDir=$REPUTATIONBAN_PAPER_DIR"
     echo "startScript=$REPUTATIONBAN_PAPER_START_SCRIPT"
+    echo "integrationPluginDir=$REPUTATIONBAN_INTEGRATION_PLUGIN_DIR"
     echo "javaBin=$REPUTATIONBAN_JAVA_BIN"
     echo "timeoutSeconds=$REPUTATIONBAN_SMOKE_TIMEOUT_SECONDS"
     echo "commandDelaySeconds=$REPUTATIONBAN_SMOKE_COMMAND_DELAY_SECONDS"
     echo "mutating=$REPUTATIONBAN_SMOKE_MUTATING"
     echo "stopServer=$REPUTATIONBAN_SMOKE_STOP_SERVER"
+    echo "restorePlugins=$REPUTATIONBAN_INTEGRATION_RESTORE_PLUGINS"
     echo "screenName=$REPUTATIONBAN_SCREEN_NAME"
     echo "createdAt=$STARTED_AT"
     if command -v "$REPUTATIONBAN_JAVA_BIN" >/dev/null 2>&1; then
@@ -64,6 +84,7 @@ write_summary() {
   {
     echo "status=$status"
     echo "result=$result"
+    echo "scenario=PaperPlugins"
     if [[ -n "$reason" ]]; then
       echo "reason=$reason"
     fi
@@ -72,10 +93,16 @@ write_summary() {
     echo "jarSha256=$JAR_SHA"
     echo "paperDir=$REPUTATIONBAN_PAPER_DIR"
     echo "startScript=$REPUTATIONBAN_PAPER_START_SCRIPT"
+    echo "integrationPluginDir=$REPUTATIONBAN_INTEGRATION_PLUGIN_DIR"
+    echo "stagedPlugins=$(join_by_comma "${STAGED_PLUGIN_BASENAMES[@]}")"
+    echo "backedUpPlugins=$(join_by_comma "${BACKED_UP_PLUGIN_BASENAMES[@]}")"
     echo "screenSession=$screen_session"
     echo "startedBySmoke=$started_by_smoke"
+    echo "restoredPlugins=$RESTORED_PLUGINS"
+    echo "reputationBanJarLeftInPlugins=true"
     echo "startedAt=$STARTED_AT"
     echo "endedAt=$ended_at"
+    echo "manualPlayerNote=report_context generation for /reportbad and /reports evidence requires at least two real players."
   } > "$SUMMARY"
   cat "$SUMMARY"
 }
@@ -95,6 +122,10 @@ list_screen_sessions() {
     | sort -u
 }
 
+list_screen_names_from_file() {
+  awk '/[0-9]+\./ && $0 !~ /Dead/ {gsub(/^[ \t]+/, "", $0); split($1, parts, " "); print parts[1]}' "$1" | sort -u
+}
+
 find_session_after_start() {
   local before_file="$1"
   local after_file="$2"
@@ -105,10 +136,6 @@ find_session_after_start() {
     return 0
   fi
   return 1
-}
-
-list_screen_names_from_file() {
-  awk '/[0-9]+\./ && $0 !~ /Dead/ {gsub(/^[ \t]+/, "", $0); split($1, parts, " "); print parts[1]}' "$1" | sort -u
 }
 
 find_candidate_session() {
@@ -180,6 +207,80 @@ wait_for_stop() {
   return 1
 }
 
+backup_matching_plugins() {
+  local patterns=(
+    "ReputationBan*.jar"
+    "LuckPerms*.jar"
+    "CoreProtect*.jar"
+    "WorldEdit*.jar"
+    "WorldGuard*.jar"
+    "GriefPrevention*.jar"
+    "PlaceholderAPI*.jar"
+    "DiscordSRV*.jar"
+  )
+  mkdir -p "$BACKUP_DIR"
+  shopt -s nullglob
+  for pattern in "${patterns[@]}"; do
+    for existing in "$PLUGINS_DIR"/$pattern; do
+      [[ -f "$existing" ]] || continue
+      local base
+      base="$(basename "$existing")"
+      if [[ -f "$BACKUP_DIR/$base" ]]; then
+        base="${base}.${STAMP}.bak"
+      fi
+      mv "$existing" "$BACKUP_DIR/$base"
+      BACKED_UP_PLUGIN_BASENAMES+=("$base")
+      echo "backedUp=$base" >> "$PLUGIN_RESTORE_FILE"
+    done
+  done
+  shopt -u nullglob
+}
+
+stage_plugins() {
+  mkdir -p "$PLUGINS_DIR"
+  backup_matching_plugins
+
+  local rb_target="$PLUGINS_DIR/$(basename "$PLUGIN_JAR")"
+  cp "$PLUGIN_JAR" "$rb_target"
+  echo "staged=$(basename "$PLUGIN_JAR")" >> "$STAGED_PLUGINS_FILE"
+
+  local plugin_jar
+  for plugin_jar in "${INTEGRATION_JARS[@]}"; do
+    local base target
+    base="$(basename "$plugin_jar")"
+    target="$PLUGINS_DIR/$base"
+    cp "$plugin_jar" "$target"
+    STAGED_PLUGIN_BASENAMES+=("$base")
+    STAGED_PLUGIN_PATHS+=("$target")
+    echo "staged=$base" >> "$STAGED_PLUGINS_FILE"
+  done
+}
+
+restore_plugins() {
+  if [[ "$REPUTATIONBAN_INTEGRATION_RESTORE_PLUGINS" != "1" ]]; then
+    echo "restoreSkipped=true" >> "$PLUGIN_RESTORE_FILE"
+    RESTORED_PLUGINS=false
+    return 0
+  fi
+
+  local staged_path
+  for staged_path in "${STAGED_PLUGIN_PATHS[@]}"; do
+    if [[ -f "$staged_path" ]]; then
+      rm -f "$staged_path"
+      echo "removedStaged=$(basename "$staged_path")" >> "$PLUGIN_RESTORE_FILE"
+    fi
+  done
+
+  shopt -s nullglob
+  for backed_up in "$BACKUP_DIR"/*.jar "$BACKUP_DIR"/*.bak; do
+    [[ -f "$backed_up" ]] || continue
+    mv "$backed_up" "$PLUGINS_DIR/$(basename "$backed_up" .bak)"
+    echo "restored=$(basename "$backed_up")" >> "$PLUGIN_RESTORE_FILE"
+  done
+  shopt -u nullglob
+  RESTORED_PLUGINS=true
+}
+
 inspect_log_result() {
   if grep -E 'NoClassDefFoundError|ClassNotFoundException|ExceptionInInitializerError|Could not load .*plugins/ReputationBan|Error occurred while enabling ReputationBan' "$SERVER_LOG" >/dev/null; then
     echo "runtime failure pattern found in server log"
@@ -197,6 +298,10 @@ inspect_log_result() {
     echo "server log does not show /rep doctor output"
     return 1
   fi
+  if ! grep -E "LuckPerms|CoreProtect|WorldGuard|GriefPrevention|PlaceholderAPI|DiscordSRV|integrations" "$SERVER_LOG" >/dev/null; then
+    echo "server log does not show integration command output"
+    return 1
+  fi
   return 0
 }
 
@@ -204,6 +309,19 @@ write_environment
 
 if [[ ! -f "$PLUGIN_JAR" ]]; then
   write_summary "NOT_RUN" "NOT_RUN" "built jar not found" "" "false"
+  exit 0
+fi
+
+if [[ ! -d "$REPUTATIONBAN_INTEGRATION_PLUGIN_DIR" ]]; then
+  write_summary "NOT_RUN" "NOT_RUN" "integration plugin directory not found" "" "false"
+  exit 0
+fi
+
+shopt -s nullglob
+INTEGRATION_JARS=("$REPUTATIONBAN_INTEGRATION_PLUGIN_DIR"/*.jar)
+shopt -u nullglob
+if [[ "${#INTEGRATION_JARS[@]}" == "0" ]]; then
+  write_summary "NOT_RUN" "NOT_RUN" "integration plugin jar not found" "" "false"
   exit 0
 fi
 
@@ -226,20 +344,10 @@ fi
 
 screen -ls > "$SCREEN_BEFORE_FILE" 2>&1 || true
 
-PLUGINS_DIR="$REPUTATIONBAN_PAPER_DIR/plugins"
-BACKUP_DIR="$PLUGINS_DIR/backups/reputationban-smoke-${STAMP}"
-if ! mkdir -p "$PLUGINS_DIR" "$BACKUP_DIR"; then
+if ! stage_plugins; then
   write_summary "FAIL" "FAIL" "plugins directory is not writable" "" "false"
   exit 1
 fi
-
-shopt -s nullglob
-for existing in "$PLUGINS_DIR"/ReputationBan*.jar; do
-  mv "$existing" "$BACKUP_DIR/$(basename "$existing")"
-done
-shopt -u nullglob
-
-cp "$PLUGIN_JAR" "$PLUGINS_DIR/$(basename "$PLUGIN_JAR")"
 
 STARTED_BY_SMOKE=false
 START_EXIT=0
@@ -263,6 +371,7 @@ screen -ls > "$SCREEN_AFTER_FILE" 2>&1 || true
 
 if [[ "$START_EXIT" != "0" ]]; then
   capture_log
+  restore_plugins
   write_summary "FAIL" "FAIL" "start script exited with code ${START_EXIT}" "" "false"
   exit 1
 fi
@@ -280,12 +389,14 @@ elif SCREEN_SESSION="$(find_candidate_session)"; then
   fi
 else
   capture_log
+  restore_plugins
   write_summary "FAIL" "FAIL" "screen session could not be identified" "" "false"
   exit 1
 fi
 
 if ! screen -S "$SCREEN_SESSION" -Q select . >/dev/null 2>&1; then
   capture_log
+  restore_plugins
   write_summary "FAIL" "FAIL" "screen session is not reachable" "$SCREEN_SESSION" "$STARTED_BY_SMOKE"
   exit 1
 fi
@@ -294,29 +405,33 @@ REQUIRE_NEW_STARTUP="$STARTED_BY_SMOKE"
 if ! wait_for_startup "$REQUIRE_NEW_STARTUP"; then
   capture_log
   stop_started_session_if_needed "$SCREEN_SESSION" "$STARTED_BY_SMOKE"
+  wait_for_stop "$SCREEN_SESSION" || true
+  restore_plugins
   write_summary "FAIL" "FAIL" "server startup timed out" "$SCREEN_SESSION" "$STARTED_BY_SMOKE"
   exit 1
 fi
 
+if [[ "$STARTED_BY_SMOKE" == "true" ]]; then
+  sleep 10
+fi
 sleep "$REPUTATIONBAN_SMOKE_COMMAND_DELAY_SECONDS"
 
 commands=(
   "version"
   "plugins"
   "rep version"
-  "rep help"
-  "reports help"
   "rep doctor"
   "rep integrations"
   "rep integrations test"
   "rep placeholders"
+  "reports help"
   "rep audit recent 5"
   "rep maintenance preview"
 )
 
 if [[ "$REPUTATIONBAN_SMOKE_MUTATING" == "1" ]]; then
   commands+=(
-    "rep backup runtime-smoke"
+    "rep backup integration-runtime-smoke"
     "rep support bundle"
   )
 fi
@@ -325,6 +440,8 @@ for command in "${commands[@]}"; do
   if ! send_command "$SCREEN_SESSION" "$command"; then
     capture_log
     stop_started_session_if_needed "$SCREEN_SESSION" "$STARTED_BY_SMOKE"
+    wait_for_stop "$SCREEN_SESSION" || true
+    restore_plugins
     write_summary "FAIL" "FAIL" "screen command injection failed: $command" "$SCREEN_SESSION" "$STARTED_BY_SMOKE"
     exit 1
   fi
@@ -344,6 +461,7 @@ if [[ "$SHOULD_STOP" == "true" ]]; then
 fi
 
 capture_log
+restore_plugins
 
 if INSPECTION_REASON="$(inspect_log_result 2>&1)"; then
   write_summary "PASS" "PASS" "" "$SCREEN_SESSION" "$STARTED_BY_SMOKE"
