@@ -16,6 +16,7 @@ import dev.modplugin.reputationban.notification.DiscordWebhookConfig;
 import dev.modplugin.reputationban.notification.NotificationEventType;
 import dev.modplugin.reputationban.notification.NotificationService;
 import dev.modplugin.reputationban.service.AuditService;
+import dev.modplugin.reputationban.service.DiagnosticService;
 import dev.modplugin.reputationban.service.PlayerDataService;
 import dev.modplugin.reputationban.service.PunishmentService;
 import dev.modplugin.reputationban.service.ReportService;
@@ -42,6 +43,7 @@ public final class ReputationBanPlugin extends JavaPlugin {
     private ScoreService scoreService;
     private ReportService reportService;
     private PunishmentService punishmentService;
+    private DiagnosticService diagnosticService;
     private NotificationService notificationService;
 
     @Override
@@ -64,9 +66,14 @@ public final class ReputationBanPlugin extends JavaPlugin {
         scoreService = new ScoreService(databaseManager, auditService, pluginConfig);
         reportService = new ReportService(databaseManager, scoreService, auditService, pluginConfig);
         punishmentService = new PunishmentService(this, databaseManager, auditService, pluginConfig);
+        diagnosticService = new DiagnosticService(this, databaseManager, auditService, this::pluginConfig);
 
         getServer().getPluginManager().registerEvents(new PlayerJoinListener(playerDataService, getLogger()), this);
-        registerCommand("rep", new RepCommand(this, playerDataService, scoreService, punishmentService, auditService), new RepTabCompleter());
+        registerCommand(
+                "rep",
+                new RepCommand(this, playerDataService, scoreService, punishmentService, auditService, diagnosticService),
+                new RepTabCompleter()
+        );
         registerCommand(
                 "reportbad",
                 new ReportBadCommand(this, playerDataService, reportService, punishmentService),
@@ -74,7 +81,7 @@ public final class ReputationBanPlugin extends JavaPlugin {
         );
         registerCommand("reports", new ReportsCommand(this, reportService, punishmentService), new ReportsTabCompleter());
         startScoreRecoveryTask();
-        getLogger().info("ReputationBan v0.9.0 enabled.");
+        getLogger().info("ReputationBan v0.10.0 enabled.");
     }
 
     @Override

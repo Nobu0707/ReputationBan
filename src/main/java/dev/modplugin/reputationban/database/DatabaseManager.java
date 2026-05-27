@@ -111,6 +111,7 @@ public final class DatabaseManager implements AutoCloseable {
                   created_by TEXT,
                   unbanned_at INTEGER,
                   unbanned_by TEXT,
+                  unbanned_by_name TEXT,
                   unban_reason TEXT
                 )
                 """);
@@ -161,6 +162,9 @@ public final class DatabaseManager implements AutoCloseable {
         Set<String> columns = tableColumns("bans");
         if (!columns.contains("unban_reason")) {
             execute("ALTER TABLE bans ADD COLUMN unban_reason TEXT");
+        }
+        if (!columns.contains("unbanned_by_name")) {
+            execute("ALTER TABLE bans ADD COLUMN unbanned_by_name TEXT");
         }
     }
 

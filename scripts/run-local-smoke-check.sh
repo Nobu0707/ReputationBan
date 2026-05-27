@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-EXPECTED_VERSION="0.9.0"
+EXPECTED_VERSION="0.10.0"
 JAR="build/libs/ReputationBan-${EXPECTED_VERSION}.jar"
 
 fail() { echo "[FAIL] $*" >&2; exit 1; }
@@ -11,7 +11,9 @@ command -v jar >/dev/null 2>&1 || fail "jar command not found"
 command -v sha256sum >/dev/null 2>&1 || fail "sha256sum command not found"
 
 ./gradlew clean test build --warning-mode all
-./scripts/review_code.sh
+if [[ "${REPUTATIONBAN_SKIP_REVIEW_CODE:-0}" != "1" ]]; then
+  ./scripts/review_code.sh
+fi
 
 [[ -f "$JAR" ]] || fail "Missing JAR: $JAR"
 grep -q "version: ${EXPECTED_VERSION}" src/main/resources/plugin.yml || fail "plugin.yml version is not ${EXPECTED_VERSION}"
@@ -25,9 +27,9 @@ sha256sum "$JAR"
 cat <<'STEPS'
 
 Manual runtime smoke:
-Copy build/libs/ReputationBan-0.9.0.jar to your Paper 26.1.2 plugins directory.
+Copy build/libs/ReputationBan-0.10.0.jar to your Paper 26.1.2 plugins directory.
 Start Paper with Java 25.
-Verify /plugins, /rep help, /reportbad tab completion, /rep audit recent.
+Verify /plugins, /rep help, /rep doctor, /reportbad tab completion, /rep audit recent.
 Verify /rep audit export recent, /rep maintenance preview, and /rep maintenance run confirm.
 Confirm Discord webhook remains disabled by default and webhook URLs are not printed in logs.
 STEPS

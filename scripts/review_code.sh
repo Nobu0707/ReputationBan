@@ -2,7 +2,7 @@
 set -euo pipefail
 
 PROJECT_NAME="ReputationBan"
-EXPECTED_VERSION="0.9.0"
+EXPECTED_VERSION="0.10.0"
 EXPECTED_MAIN="dev.modplugin.reputationban.ReputationBanPlugin"
 EXPECTED_API_VERSION="26.1.2"
 EXPECTED_PACKAGE_DIR="src/main/java/dev/modplugin/reputationban"
@@ -42,7 +42,7 @@ require_dir "$EXPECTED_PACKAGE_DIR"
 [[ -x ./scripts/run-local-smoke-check.sh ]] || fail "run-local-smoke-check.sh is not executable"
 
 grep -q "io.papermc.paper:paper-api:26.1.2.build" build.gradle.kts || fail "Paper API 26.1.2 dependency not found"
-grep -q 'version = "0.9.0"' build.gradle.kts || fail "build.gradle.kts version is not 0.9.0"
+grep -q 'version = "0.10.0"' build.gradle.kts || fail "build.gradle.kts version is not 0.10.0"
 grep -q "JavaLanguageVersion.of(25)" build.gradle.kts || fail "Java 25 toolchain not found"
 grep -q "options.release.set(25)" build.gradle.kts || fail "Java release 25 not found"
 
@@ -128,6 +128,8 @@ grep -R "secret-scan.txt" scripts/make-review-archive.sh >/dev/null || fail "rev
 grep -R "class CsvEscaper" src/main/java/dev/modplugin/reputationban/util >/dev/null || fail "CsvEscaper not found"
 grep -q "reputationban.admin.audit:" "$YML" || fail "Missing reputationban.admin.audit permission"
 grep -q "reputationban.admin.maintenance:" "$YML" || fail "Missing reputationban.admin.maintenance permission"
+grep -q "reputationban.admin.diagnostics:" "$YML" || fail "Missing reputationban.admin.diagnostics permission"
+grep -A12 "reputationban.admin:" "$YML" | grep -q "reputationban.admin.diagnostics: true" || fail "admin diagnostics child permission missing"
 grep -R "REPORT_THRESHOLD_REACHED" src/main/java/dev/modplugin/reputationban >/dev/null || fail "REPORT_THRESHOLD_REACHED audit not found"
 grep -R "REPORT_CREATED" src/main/java/dev/modplugin/reputationban/service/ReportService.java >/dev/null || fail "report-created audit not found"
 grep -R "REPORT_APPROVED" src/main/java/dev/modplugin/reputationban/service/ReportService.java >/dev/null || fail "report-approved audit not found"
@@ -158,6 +160,11 @@ grep -R "isTargetProtected\\|reputationban.bypass.*isOp\\|isOp.*reputationban.by
 grep -R "unbanned_at.*unbanned_by\\|unbanned_by.*unbanned_at" src/main/java >/dev/null || fail "ban unban DB update not found"
 grep -R "unban_reason" src/main/java/dev/modplugin/reputationban >/dev/null || fail "unban_reason column/handling not found"
 grep -R "ALTER TABLE bans ADD COLUMN unban_reason TEXT" src/main/java/dev/modplugin/reputationban/database/DatabaseManager.java >/dev/null || fail "bans unban_reason migration not found"
+grep -R "unbanned_by_name TEXT" src/main/java/dev/modplugin/reputationban/database/DatabaseManager.java >/dev/null || fail "bans.unbanned_by_name column not found"
+grep -R "ALTER TABLE bans ADD COLUMN unbanned_by_name TEXT" src/main/java/dev/modplugin/reputationban/database/DatabaseManager.java >/dev/null || fail "bans unbanned_by_name migration not found"
+grep -R "actor.databaseActorId()" src/main/java/dev/modplugin/reputationban/service/PunishmentService.java >/dev/null || fail "unbanned_by actor.databaseActorId() storage not found"
+grep -R "unbanned_by_name = ?.*actor.name()\\|actor.name()" src/main/java/dev/modplugin/reputationban/service/PunishmentService.java >/dev/null || fail "unbanned_by_name actor.name() storage not found"
+grep -R "databaseActorId" src/main/java/dev/modplugin/reputationban >/dev/null || fail "CommandActor.databaseActorId usage not found"
 grep -R "markActiveBansUnbanned" src/main/java/dev/modplugin/reputationban/command/RepCommand.java >/dev/null || fail "/rep unban does not call markActiveBansUnbanned"
 grep -R "punishmentService.pardon" src/main/java/dev/modplugin/reputationban/command/RepCommand.java >/dev/null || fail "/rep pardon does not call pardon service"
 grep -R '"pardon"' src/main/java >/dev/null || fail "pardon score_history source_type not found"
@@ -165,6 +172,11 @@ grep -R "BanListType.PROFILE\\|ProfileBanList" src/main/java >/dev/null || fail 
 grep -R "TabCompleter\\|onTabComplete\\|TabExecutor" src/main/java/dev/modplugin/reputationban >/dev/null || fail "TAB completion implementation not found"
 grep -R "categories().keySet()" src/main/java/dev/modplugin/reputationban/command/ReportBadTabCompleter.java >/dev/null || fail "/reportbad category completion not found"
 grep -R "repSubcommands" src/main/java/dev/modplugin/reputationban/command/RepTabCompleter.java src/main/java/dev/modplugin/reputationban/util/CommandSuggestionUtil.java >/dev/null || fail "/rep subcommand completion not found"
+grep -R "\"doctor\"" src/main/java/dev/modplugin/reputationban/command/RepCommand.java src/main/java/dev/modplugin/reputationban/util/CommandSuggestionUtil.java >/dev/null || fail "/rep doctor handling/completion not found"
+grep -R "\"diagnostics\"" src/main/java/dev/modplugin/reputationban/command/RepCommand.java src/main/java/dev/modplugin/reputationban/util/CommandSuggestionUtil.java >/dev/null || fail "/rep diagnostics handling/completion not found"
+grep -R "class DiagnosticService" src/main/java/dev/modplugin/reputationban/service >/dev/null || fail "DiagnosticService not found"
+grep -R "record DiagnosticReport" src/main/java/dev/modplugin/reputationban/model >/dev/null || fail "DiagnosticReport not found"
+grep -R "DIAGNOSTICS_RUN" src/main/java/dev/modplugin/reputationban src/test/java/dev/modplugin/reputationban >/dev/null || fail "DIAGNOSTICS_RUN audit event not found"
 grep -R "reportStatuses\\|reportsSecondArgumentSuggestions" src/main/java/dev/modplugin/reputationban/command/ReportsTabCompleter.java src/main/java/dev/modplugin/reputationban/util/CommandSuggestionUtil.java >/dev/null || fail "/reports list status completion not found"
 grep -R "CommandArgumentParser.parseLimit" src/main/java/dev/modplugin/reputationban/command >/dev/null || fail "explicit limit parsing not found"
 grep -R "class NotificationService" src/main/java/dev/modplugin/reputationban/notification >/dev/null || fail "NotificationService not found"
@@ -212,6 +224,14 @@ JAR="build/libs/${EXPECTED_JAR_PREFIX}-${EXPECTED_VERSION}.jar"
 require_command jar
 jar tf "$JAR" | grep -q "plugin.yml" || fail "plugin.yml missing from jar"
 jar tf "$JAR" | grep -q "dev/modplugin/reputationban/ReputationBanPlugin.class" || fail "Main class missing from jar"
+
+grep -q "EXPECTED_VERSION=\"0.10.0\"" scripts/run-local-smoke-check.sh || fail "run-local-smoke-check.sh does not check v0.10.0"
+grep -q "local-smoke-check.txt" scripts/make-review-archive.sh || fail "make-review-archive.sh does not create local-smoke-check.txt"
+grep -q "./scripts/run-local-smoke-check.sh" scripts/make-review-archive.sh || fail "make-review-archive.sh does not record run-local-smoke-check.sh status"
+
+if [[ "${REPUTATIONBAN_SKIP_LOCAL_SMOKE:-0}" != "1" ]]; then
+  REPUTATIONBAN_SKIP_REVIEW_CODE=1 ./scripts/run-local-smoke-check.sh
+fi
 
 git rev-list --count HEAD >/dev/null || fail "No commits found"
 

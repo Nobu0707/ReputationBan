@@ -52,6 +52,10 @@ public final class CommandSuggestionUtil {
         if (hasPermission.test("reputationban.admin.maintenance")) {
             candidates.add("maintenance");
         }
+        if (hasPermission.test("reputationban.admin.diagnostics")) {
+            candidates.add("doctor");
+            candidates.add("diagnostics");
+        }
         return filterByPrefix(candidates, prefix);
     }
 

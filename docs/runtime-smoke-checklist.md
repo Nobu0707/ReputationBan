@@ -10,7 +10,7 @@
 ## Install
 
 1. Run `./gradlew clean test build --warning-mode all`.
-2. Copy `build/libs/ReputationBan-0.9.0.jar` to the Paper `plugins` directory.
+2. Copy `build/libs/ReputationBan-0.10.0.jar` to the Paper `plugins` directory.
 3. Start Paper with Java 25.
 
 ## Startup
@@ -27,6 +27,8 @@
 - `/reportbad <TAB>` and category TAB completion
 - `/rep audit recent`
 - `/rep audit export recent`
+- `/rep doctor`
+- `/rep diagnostics`
 - `/rep maintenance preview`
 - `/rep maintenance run`
 - `/rep maintenance run confirm`
@@ -36,8 +38,9 @@
 - Confirm `/rep maintenance preview` only displays counts.
 - Confirm `/rep maintenance run` does not delete data and asks for `run confirm`.
 - Confirm `/rep maintenance run confirm` creates `plugins/ReputationBan/backups/reputationban-before-maintenance-*.db`.
+- Confirm `/rep doctor` displays database/table/config/Discord status and lightweight counts.
 - Confirm Discord webhook is disabled by default.
-- Confirm webhook URLs are not printed in logs, audit output, CSV output, or review archive files.
+- Confirm webhook URLs are not printed in logs, `/rep doctor`, audit output, CSV output, or review archive files.
 - Run BAN and pardon commands only against disposable test users.
 
 ## Rollback

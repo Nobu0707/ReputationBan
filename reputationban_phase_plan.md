@@ -187,7 +187,26 @@
 - review_code.sh / make-review-archive.sh Phase 9対応
 - version 0.9.0
 
-## Phase 10以降: 外部連携・高度な悪用対策
+## Phase 10 / v0.10.0: 運用診断・リリース準備
+
+目的: v1.0.0前に、Phase 9レビューで見つかった軽微な永続ID問題を修正し、運用者向けの安全な診断コマンドとレビューアーカイブ収集を整える。
+
+実装範囲:
+
+- `bans.unbanned_by_name` カラム追加と既存DB向けマイグレーション
+- `bans.unbanned_by` はプレイヤーUUID文字列または `CONSOLE`、`bans.unbanned_by_name` は表示名として分離
+- `/rep banhistory` で解除者ID、解除者名、解除理由を表示
+- `/rep doctor` / `/rep diagnostics`
+- `reputationban.admin.diagnostics`
+- `DIAGNOSTICS_RUN`
+- DB接続、主要テーブル、設定検証、Discord enabled/urlConfigured、audit export directory safety、retention、pending/threshold_pending/active DB bans の軽量診断
+- Webhook URLをdoctor、audit metadata、CSV、ログ、レビューアーカイブへ出さない方針の継続
+- `scripts/run-local-smoke-check.sh` の結果をレビューアーカイブへ収集
+- review_code.sh / make-review-archive.sh Phase 10対応
+- release readiness docs
+- version 0.10.0
+
+## Phase 11以降: 外部連携・高度な悪用対策
 
 実装候補:
 

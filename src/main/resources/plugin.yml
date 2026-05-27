@@ -1,5 +1,5 @@
 name: ReputationBan
-version: 0.9.0
+version: 0.10.0
 main: dev.modplugin.reputationban.ReputationBanPlugin
 api-version: '26.1.2'
 description: Reputation score based moderation and temporary ban plugin.
@@ -51,6 +51,7 @@ permissions:
       reputationban.admin.ban: true
       reputationban.admin.audit: true
       reputationban.admin.maintenance: true
+      reputationban.admin.diagnostics: true
       reputationban.score.others: true
       reputationban.notify: true
 
@@ -72,6 +73,10 @@ permissions:
 
   reputationban.admin.maintenance:
     description: データ保持メンテナンスを実行できます
+    default: op
+
+  reputationban.admin.diagnostics:
+    description: ReputationBanの診断情報を確認できます
     default: op
 
   reputationban.bypass:

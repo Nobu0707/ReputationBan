@@ -4,10 +4,12 @@ import dev.modplugin.reputationban.ReputationBanPlugin;
 import dev.modplugin.reputationban.model.AuditEvent;
 import dev.modplugin.reputationban.model.AuditEventType;
 import dev.modplugin.reputationban.model.CommandActor;
+import dev.modplugin.reputationban.model.DiagnosticReport;
 import dev.modplugin.reputationban.model.PlayerRecord;
 import dev.modplugin.reputationban.notification.DiscordWebhookConfig;
 import dev.modplugin.reputationban.notification.NotificationEventType;
 import dev.modplugin.reputationban.service.AuditService;
+import dev.modplugin.reputationban.service.DiagnosticService;
 import dev.modplugin.reputationban.service.PlayerDataService;
 import dev.modplugin.reputationban.service.PunishmentService;
 import dev.modplugin.reputationban.service.ScoreService;
@@ -46,19 +48,22 @@ public final class RepCommand implements CommandExecutor {
     private final ScoreService scoreService;
     private final PunishmentService punishmentService;
     private final AuditService auditService;
+    private final DiagnosticService diagnosticService;
 
     public RepCommand(
             ReputationBanPlugin plugin,
             PlayerDataService playerDataService,
             ScoreService scoreService,
             PunishmentService punishmentService,
-            AuditService auditService
+            AuditService auditService,
+            DiagnosticService diagnosticService
     ) {
         this.plugin = plugin;
         this.playerDataService = playerDataService;
         this.scoreService = scoreService;
         this.punishmentService = punishmentService;
         this.auditService = auditService;
+        this.diagnosticService = diagnosticService;
     }
 
     @Override
@@ -101,6 +106,10 @@ public final class RepCommand implements CommandExecutor {
         }
         if ("maintenance".equalsIgnoreCase(args[0])) {
             maintenance(sender, args);
+            return true;
+        }
+        if ("doctor".equalsIgnoreCase(args[0]) || "diagnostics".equalsIgnoreCase(args[0])) {
+            doctor(sender);
             return true;
         }
         if ("add".equalsIgnoreCase(args[0]) || "remove".equalsIgnoreCase(args[0]) || "set".equalsIgnoreCase(args[0])) {
@@ -149,6 +158,9 @@ public final class RepCommand implements CommandExecutor {
         if (sender.hasPermission("reputationban.admin.maintenance")) {
             sender.sendMessage(ReputationBanPlugin.PREFIX + "/rep maintenance preview - データ保持メンテナンスの予定件数");
             sender.sendMessage(ReputationBanPlugin.PREFIX + "/rep maintenance run confirm - バックアップ後にデータ保持メンテナンスを実行");
+        }
+        if (sender.hasPermission("reputationban.admin.diagnostics")) {
+            sender.sendMessage(ReputationBanPlugin.PREFIX + "/rep doctor - ReputationBanの診断情報を表示");
         }
     }
 
@@ -494,7 +506,8 @@ public final class RepCommand implements CommandExecutor {
                         ));
                         sender.sendMessage(ReputationBanPlugin.PREFIX + "理由: " + entry.reason()
                                 + " / 作成者: " + entry.createdBy()
-                                + " / 解除者: " + fallbackDash(entry.unbannedBy())
+                                + " / 解除者ID: " + fallbackDash(entry.unbannedBy())
+                                + " / 解除者名: " + fallbackDash(entry.unbannedByName())
                                 + " / 解除理由: " + fallbackDash(entry.unbanReason()));
                     }
                 }))
@@ -571,10 +584,9 @@ public final class RepCommand implements CommandExecutor {
                     }
                     UUID targetUuid = record.get().uuid();
                     return punishmentService.unbanProfile(targetUuid)
-                            .thenCompose(profileResult -> punishmentService.markActiveBansUnbanned(
+                                    .thenCompose(profileResult -> punishmentService.markActiveBansUnbanned(
                                             targetUuid,
-                                            actor.uuid(),
-                                            actor.name(),
+                                            actor,
                                             reason,
                                             profileResult.wasProfileBanned()
                                     )
@@ -630,8 +642,7 @@ public final class RepCommand implements CommandExecutor {
                                             target.uuid(),
                                             target.name(),
                                             reason,
-                                            actor.uuid(),
-                                            actor.name(),
+                                            actor,
                                             profileResult.wasProfileBanned()
                                     )
                                     .thenApply(pardonResult -> new PardonCompletion(record, profileResult, pardonResult)));
@@ -718,6 +729,24 @@ public final class RepCommand implements CommandExecutor {
         }
     }
 
+    private void doctor(CommandSender sender) {
+        if (!sender.hasPermission("reputationban.admin.diagnostics")) {
+            sender.sendMessage(ReputationBanPlugin.PREFIX + "権限がありません。");
+            return;
+        }
+        CommandActor actor = CommandActor.from(sender);
+        String version = plugin.getPluginMeta().getVersion();
+        String server = Bukkit.getVersion();
+        String javaVersion = System.getProperty("java.version", "unknown");
+        diagnosticService.run(actor, version, server, javaVersion)
+                .thenAccept(report -> plugin.runSync(() -> sendDiagnosticReport(sender, report)))
+                .exceptionally(throwable -> {
+                    plugin.getLogger().severe("Failed to run diagnostics: " + throwable.getMessage());
+                    plugin.runSync(() -> sender.sendMessage(ReputationBanPlugin.PREFIX + "診断情報の取得に失敗しました。"));
+                    return null;
+                });
+    }
+
     private static boolean canViewOthers(CommandSender sender) {
         return sender.hasPermission("reputationban.score.others") || sender.hasPermission("reputationban.admin.score");
     }
@@ -799,6 +828,29 @@ public final class RepCommand implements CommandExecutor {
         sender.sendMessage(ReputationBanPlugin.PREFIX + "audit events: " + result.auditEventsDeleted());
         sender.sendMessage(ReputationBanPlugin.PREFIX + "score_history: " + result.scoreHistoryDeleted());
         sender.sendMessage(ReputationBanPlugin.PREFIX + "bans: " + result.bansDeleted());
+    }
+
+    private static void sendDiagnosticReport(CommandSender sender, DiagnosticReport report) {
+        sender.sendMessage(ReputationBanPlugin.PREFIX + "Doctor");
+        sender.sendMessage(ReputationBanPlugin.PREFIX + "version: " + report.version());
+        sender.sendMessage(ReputationBanPlugin.PREFIX + "server: " + report.server());
+        sender.sendMessage(ReputationBanPlugin.PREFIX + "java: " + report.javaVersion());
+        sender.sendMessage(ReputationBanPlugin.PREFIX + "database: " + report.databaseStatus());
+        sender.sendMessage(ReputationBanPlugin.PREFIX + "tables: " + report.tablesStatus());
+        if (!report.missingTables().isEmpty()) {
+            sender.sendMessage(ReputationBanPlugin.PREFIX + "missingTables: " + String.join(",", report.missingTables()));
+        }
+        sender.sendMessage(ReputationBanPlugin.PREFIX + "config: warnings="
+                + report.configWarnings() + " errors=" + report.configErrors());
+        sender.sendMessage(ReputationBanPlugin.PREFIX + "discord: enabled="
+                + report.discordEnabled() + " urlConfigured=" + report.discordUrlConfigured());
+        sender.sendMessage(ReputationBanPlugin.PREFIX + "auditExportDirectory: "
+                + (report.auditExportDirectorySafe() ? "safe" : "unsafe"));
+        sender.sendMessage(ReputationBanPlugin.PREFIX + "retention: " + report.retentionSummary());
+        sender.sendMessage(ReputationBanPlugin.PREFIX + "pendingReports: " + report.pendingReports());
+        sender.sendMessage(ReputationBanPlugin.PREFIX + "thresholdPendingReports: " + report.thresholdPendingReports());
+        sender.sendMessage(ReputationBanPlugin.PREFIX + "activeDbBans: " + report.activeDbBans());
+        sender.sendMessage(ReputationBanPlugin.PREFIX + "overall: " + report.overallStatus());
     }
 
     private String unbanDiscord(

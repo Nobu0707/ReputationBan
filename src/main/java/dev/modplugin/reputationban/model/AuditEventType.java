@@ -17,7 +17,8 @@ public enum AuditEventType {
     REPORTER_PENALTY,
     CONFIG_RELOADED,
     MAINTENANCE_PREVIEW,
-    MAINTENANCE_RUN;
+    MAINTENANCE_RUN,
+    DIAGNOSTICS_RUN;
 
     public String databaseValue() {
         return name();

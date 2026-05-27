@@ -4,6 +4,7 @@ import dev.modplugin.reputationban.ReputationBanPlugin;
 import dev.modplugin.reputationban.config.PluginConfig;
 import dev.modplugin.reputationban.model.AuditEvent;
 import dev.modplugin.reputationban.model.AuditEventType;
+import dev.modplugin.reputationban.model.CommandActor;
 import dev.modplugin.reputationban.notification.DiscordWebhookConfig;
 import dev.modplugin.reputationban.notification.NotificationEventType;
 import dev.modplugin.reputationban.util.AuditMetadata;
@@ -210,7 +211,7 @@ public final class PunishmentService {
             List<BanHistoryEntry> history = new ArrayList<>();
             try (PreparedStatement statement = connection.prepareStatement("""
                     SELECT id, reason, ban_type, created_at, expires_at, created_by,
-                           unbanned_at, unbanned_by, unban_reason
+                           unbanned_at, unbanned_by, unbanned_by_name, unban_reason
                     FROM bans
                     WHERE target_uuid = ?
                     ORDER BY created_at DESC
@@ -250,7 +251,7 @@ public final class PunishmentService {
             Optional<BanHistoryEntry> latest = Optional.empty();
             try (PreparedStatement statement = connection.prepareStatement("""
                     SELECT id, reason, ban_type, created_at, expires_at, created_by,
-                           unbanned_at, unbanned_by, unban_reason
+                           unbanned_at, unbanned_by, unbanned_by_name, unban_reason
                     FROM bans
                     WHERE target_uuid = ?
                       AND unbanned_at IS NULL
@@ -282,8 +283,7 @@ public final class PunishmentService {
 
     public CompletableFuture<UnbanResult> markActiveBansUnbanned(
             UUID targetUuid,
-            UUID actorUuid,
-            String actorName,
+            CommandActor actor,
             String unbanReason,
             boolean profileBanRemoved
     ) {
@@ -292,11 +292,11 @@ public final class PunishmentService {
             boolean previousAutoCommit = connection.getAutoCommit();
             connection.setAutoCommit(false);
             try {
-                int updated = markActiveBansUnbannedInTransaction(connection, targetUuid, actorName, unbanReason, now);
+                int updated = markActiveBansUnbannedInTransaction(connection, targetUuid, actor, unbanReason, now);
                 auditService.recordEventInTransaction(connection, AuditEvent.create(
                         AuditEventType.UNBAN,
-                        actorUuid,
-                        actorName,
+                        actor.uuid(),
+                        actor.name(),
                         targetUuid,
                         playerName(connection, targetUuid),
                         null,
@@ -327,8 +327,7 @@ public final class PunishmentService {
             UUID targetUuid,
             String targetName,
             String reason,
-            UUID actorUuid,
-            String actorName,
+            CommandActor actor,
             boolean profileBanRemoved
     ) {
         long now = System.currentTimeMillis();
@@ -336,7 +335,7 @@ public final class PunishmentService {
             boolean previousAutoCommit = connection.getAutoCommit();
             connection.setAutoCommit(false);
             try {
-                int updatedBans = markActiveBansUnbannedInTransaction(connection, targetUuid, actorName, reason, now);
+                int updatedBans = markActiveBansUnbannedInTransaction(connection, targetUuid, actor, reason, now);
                 int oldScore = ScoreService.currentScoreInTransaction(connection, targetUuid, config.initialScore());
                 int newScore = BanManagementPolicy.pardonTargetScore(oldScore, config.maxScore());
                 int delta = newScore - oldScore;
@@ -375,8 +374,8 @@ public final class PunishmentService {
                 }
                 auditService.recordEventInTransaction(connection, AuditEvent.create(
                         AuditEventType.PARDON,
-                        actorUuid,
-                        actorName,
+                        actor.uuid(),
+                        actor.name(),
                         targetUuid,
                         targetName,
                         null,
@@ -408,22 +407,23 @@ public final class PunishmentService {
     private static int markActiveBansUnbannedInTransaction(
             Connection connection,
             UUID targetUuid,
-            String unbannedBy,
+            CommandActor actor,
             String unbanReason,
             long now
     ) throws SQLException {
         try (PreparedStatement update = connection.prepareStatement("""
                 UPDATE bans
-                SET unbanned_at = ?, unbanned_by = ?, unban_reason = ?
+                SET unbanned_at = ?, unbanned_by = ?, unbanned_by_name = ?, unban_reason = ?
                 WHERE target_uuid = ?
                   AND unbanned_at IS NULL
                   AND (expires_at IS NULL OR expires_at > ?)
                 """)) {
             update.setLong(1, now);
-            update.setString(2, unbannedBy);
-            update.setString(3, unbanReason);
-            update.setString(4, targetUuid.toString());
-            update.setLong(5, now);
+            update.setString(2, actor.databaseActorId());
+            update.setString(3, actor.name());
+            update.setString(4, unbanReason);
+            update.setString(5, targetUuid.toString());
+            update.setLong(6, now);
             return update.executeUpdate();
         }
     }
@@ -438,6 +438,7 @@ public final class PunishmentService {
                 result.getString("created_by"),
                 nullableLong(result, "unbanned_at"),
                 result.getString("unbanned_by"),
+                result.getString("unbanned_by_name"),
                 result.getString("unban_reason")
         );
     }
@@ -468,6 +469,7 @@ public final class PunishmentService {
             String createdBy,
             Long unbannedAt,
             String unbannedBy,
+            String unbannedByName,
             String unbanReason
     ) {
     }
