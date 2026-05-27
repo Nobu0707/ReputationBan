@@ -3,9 +3,12 @@ package dev.modplugin.reputationban.config;
 import dev.modplugin.reputationban.model.ReportCategory;
 import dev.modplugin.reputationban.notification.DiscordWebhookConfig;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
 
@@ -53,6 +56,8 @@ public final class PluginConfig {
     private final int retentionBansDays;
     private final String databaseFile;
     private final Map<String, ReportCategory> categories;
+    private final LuckPermsIntegrationConfig luckPermsIntegration;
+    private final CoreProtectIntegrationConfig coreProtectIntegration;
 
     private PluginConfig(FileConfiguration config) {
         initialScore = config.getInt("initial-score", 100);
@@ -98,6 +103,8 @@ public final class PluginConfig {
         retentionBansDays = config.getInt("retention.bans-days", 0);
         databaseFile = config.getString("database.file", "reputationban.db");
         categories = loadCategories(config);
+        luckPermsIntegration = loadLuckPermsIntegration(config);
+        coreProtectIntegration = loadCoreProtectIntegration(config);
     }
 
     public static PluginConfig load(FileConfiguration config) {
@@ -129,6 +136,49 @@ public final class PluginConfig {
         thresholds.put("final-warning", config.getInt("score-thresholds.final-warning", 10));
         thresholds.put("ban", config.getInt("score-thresholds.ban", 0));
         return Collections.unmodifiableMap(thresholds);
+    }
+
+    private static LuckPermsIntegrationConfig loadLuckPermsIntegration(FileConfiguration config) {
+        Map<String, Double> weights = new LinkedHashMap<>();
+        ConfigurationSection section = config.getConfigurationSection("integrations.luckperms.group-weights");
+        if (section != null) {
+            for (String key : section.getKeys(false)) {
+                weights.put(key.toLowerCase(Locale.ROOT), section.getDouble(key, 1.0D));
+            }
+        }
+        Set<String> bypassGroups = new HashSet<>();
+        for (String group : config.getStringList("integrations.luckperms.bypass-groups")) {
+            if (group != null && !group.isBlank()) {
+                bypassGroups.add(group.toLowerCase(Locale.ROOT));
+            }
+        }
+        return new LuckPermsIntegrationConfig(
+                config.getBoolean("integrations.luckperms.enabled", true),
+                config.getBoolean("integrations.luckperms.use-group-weight", true),
+                config.getBoolean("integrations.luckperms.apply-weight-to-deduction", false),
+                config.getDouble("integrations.luckperms.default-weight", 1.0D),
+                Collections.unmodifiableMap(weights),
+                Set.copyOf(bypassGroups)
+        );
+    }
+
+    private static CoreProtectIntegrationConfig loadCoreProtectIntegration(FileConfiguration config) {
+        return new CoreProtectIntegrationConfig(
+                config.getBoolean("integrations.coreprotect.enabled", true),
+                config.getInt("integrations.coreprotect.minimum-api-version", 11),
+                config.getBoolean("integrations.coreprotect.report-context.enabled", true),
+                List.copyOf(config.getStringList("integrations.coreprotect.report-context.categories").stream()
+                        .filter(value -> value != null && !value.isBlank())
+                        .map(value -> value.toLowerCase(Locale.ROOT))
+                        .toList()),
+                config.getInt("integrations.coreprotect.report-context.lookup-seconds", 3600),
+                config.getInt("integrations.coreprotect.report-context.radius", 20),
+                config.getInt("integrations.coreprotect.report-context.max-results", 10),
+                List.copyOf(config.getStringList("integrations.coreprotect.report-context.include-actions").stream()
+                        .filter(value -> value != null && !value.isBlank())
+                        .map(value -> value.toLowerCase(Locale.ROOT))
+                        .toList())
+        );
     }
 
     public ReportCategory category(String key) {
@@ -305,5 +355,35 @@ public final class PluginConfig {
 
     public Map<String, ReportCategory> categories() {
         return categories;
+    }
+
+    public LuckPermsIntegrationConfig luckPermsIntegration() {
+        return luckPermsIntegration;
+    }
+
+    public CoreProtectIntegrationConfig coreProtectIntegration() {
+        return coreProtectIntegration;
+    }
+
+    public record LuckPermsIntegrationConfig(
+            boolean enabled,
+            boolean useGroupWeight,
+            boolean applyWeightToDeduction,
+            double defaultWeight,
+            Map<String, Double> groupWeights,
+            Set<String> bypassGroups
+    ) {
+    }
+
+    public record CoreProtectIntegrationConfig(
+            boolean enabled,
+            int minimumApiVersion,
+            boolean reportContextEnabled,
+            List<String> reportContextCategories,
+            int lookupSeconds,
+            int radius,
+            int maxResults,
+            List<String> includeActions
+    ) {
     }
 }

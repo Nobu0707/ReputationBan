@@ -338,15 +338,38 @@
 - Webhook URLは表示、ログ、監査metadata、CSV、support bundle、release artifact、レビューアーカイブへ出さない。
 - v1.0.0前に、可能な限り実Paperサーバーで `/rep version`、`/rep doctor`、`/rep support bundle`、`/rep backup`、`/reportbad` TAB補完を確認する。
 
-## Phase 16以降: 外部連携・高度な悪用対策
+## Phase 16 / v0.16.0: LuckPerms / CoreProtect 任意連携
+
+目的: 外部プラグインが無い環境での単体動作を維持しながら、LuckPerms と CoreProtect の安全な最小連携を追加する。
+
+実装範囲:
+
+- version 0.16.0
+- `plugin.yml` softdepend: LuckPerms / CoreProtect
+- LuckPerms compileOnly dependency: `net.luckperms:api:5.5`
+- CoreProtect compileOnly dependency: `net.coreprotect:coreprotect:23.2`
+- `/rep integrations` と `/rep doctor` の連携状態表示
+- LuckPerms primary group reporter weight の記録
+- LuckPerms bypass-groups 補助保護
+- `report_context` table
+- CoreProtect griefing report context lookup の簡易サマリー保存
+- `COREPROTECT_CONTEXT_CAPTURED` と `INTEGRATION_STATUS_CHECKED` audit events
+- `docs/INTEGRATIONS.md` と `docs/phase-16.md`
+- review/release archive scripts の v0.16.0 対応
+
+注意:
+
+- CoreProtect rollback、restore、purge は実行しない。
+- LuckPerms の group/permission 書き込みは実行しない。
+- WorldGuard、GriefPrevention、DiscordSRV、GUI、Folia、v1.0.0 readiness gate は後続。
+
+## Phase 17以降: 外部連携・高度な悪用対策
 
 実装候補:
 
 - 管理GUI
-- 信頼度システム
 - 接触判定
 - 集団通報検知
-- CoreProtect連携
-- LuckPerms連携
 - WorldGuard/GriefPrevention連携
+- DiscordSRV連携
 - 設定可能なメッセージファイル

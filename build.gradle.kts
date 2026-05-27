@@ -3,7 +3,7 @@ plugins {
 }
 
 group = "dev.modplugin"
-version = "0.15.0"
+version = "0.16.0"
 
 java {
     toolchain {
@@ -19,6 +19,8 @@ tasks.withType<JavaCompile>().configureEach {
 
 dependencies {
     compileOnly("io.papermc.paper:paper-api:26.1.2.build.+")
+    compileOnly("net.luckperms:api:5.5")
+    compileOnly("net.coreprotect:coreprotect:23.2")
 
     testImplementation(platform("org.junit:junit-bom:5.14.1"))
     testImplementation("org.junit.jupiter:junit-jupiter")

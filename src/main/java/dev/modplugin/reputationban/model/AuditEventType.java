@@ -20,7 +20,9 @@ public enum AuditEventType {
     MAINTENANCE_RUN,
     DIAGNOSTICS_RUN,
     DB_BACKUP_CREATED,
-    SUPPORT_BUNDLE_CREATED;
+    SUPPORT_BUNDLE_CREATED,
+    COREPROTECT_CONTEXT_CAPTURED,
+    INTEGRATION_STATUS_CHECKED;
 
     public String databaseValue() {
         return name();

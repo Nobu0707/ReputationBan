@@ -10,7 +10,7 @@
 ## Install
 
 1. `./gradlew clean test build --warning-mode all` を実行します。
-2. `build/libs/ReputationBan-0.15.0.jar` を Paper `plugins` directory へコピーします。
+2. `build/libs/ReputationBan-0.16.0.jar` を Paper `plugins` directory へコピーします。
 3. Java 25 で Paper を起動します。
 
 ## Startup
@@ -30,6 +30,7 @@
 - `/rep audit export recent`
 - `/rep doctor`
 - `/rep diagnostics`
+- `/rep integrations`
 - `/rep backup before-runtime-smoke`
 - `/rep support bundle`
 - `/rep maintenance preview`
@@ -45,6 +46,7 @@
 - `/rep support bundle` が `plugins/ReputationBan/support/reputationban-support-*.zip` を作成することを確認します。
 - support ZIP に `config-redacted.yml` と `README-SHARING.txt` が含まれ、DB files、server logs、Webhook URLs、共有不要な absolute paths が含まれないことを確認します。
 - `/rep doctor` が database/table/config/Discord status と lightweight counts を表示することを確認します。
+- `/rep integrations` が LuckPerms と CoreProtect の連携状態を表示することを確認します。未導入なら unavailable で問題ありません。
 - Discord webhook がデフォルトで無効であることを確認します。
 - Webhook URLs が logs、`/rep doctor`、audit output、CSV output、review archive files に出ていないことを確認します。
 - BAN と pardon commands は disposable test users のみに実行します。

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-VERSION="0.15.0"
+VERSION="0.16.0"
 PROJECT_NAME="ReputationBan"
 JAR_NAME="${PROJECT_NAME}-${VERSION}.jar"
 RELEASE_DIR="build/release"
@@ -43,6 +43,7 @@ zip_contains "^README.md$"
 zip_contains "^CHANGELOG.md$"
 zip_contains "^docs/INSTALLATION.md$"
 zip_contains "^docs/CONFIGURATION.md$"
+zip_contains "^docs/INTEGRATIONS.md$"
 zip_contains "^docs/MIGRATION.md$"
 zip_contains "^docs/RELEASE_READINESS.md$"
 zip_contains "^docs/SUPPORT_BUNDLE.md$"

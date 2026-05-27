@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.16.0
+
+- LuckPerms / CoreProtect を任意依存として追加しました。
+- `/rep integrations` と `/rep doctor` の連携状態表示を追加しました。
+- LuckPerms primary group による reporter weight 記録と bypass-groups 補助保護を追加しました。
+- CoreProtect の周辺ブロックログ簡易サマリーを `report_context` と audit event に保存できるようにしました。
+- `docs/INTEGRATIONS.md` と `docs/phase-16.md` を追加しました。
+
 ## 0.15.0
 
 - docs localization check script を追加しました。

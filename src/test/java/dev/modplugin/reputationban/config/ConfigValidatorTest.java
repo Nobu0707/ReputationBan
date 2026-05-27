@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import dev.modplugin.reputationban.config.ConfigValidationIssue.Severity;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Map;
 import org.junit.jupiter.api.Test;
 
 class ConfigValidatorTest {
@@ -37,6 +38,23 @@ class ConfigValidatorTest {
         assertEquals(1, issues.stream().filter(issue -> issue.path().equals("audit.export-directory")).count());
     }
 
+    @Test
+    void detectsInvalidIntegrationValues() {
+        ConfigValidationInput config = new ConfigValidationInput(
+                100, 100, 5, 1, 7, 300, 14, 5, 15, 60, 1, 0, 2, 100, 7, 50, 1000,
+                180, 90, 90, 0, 0, 5, "exports", 0.0D, Map.of("trusted", -1.0D), 0, 0, -1, -1
+        );
+
+        List<ConfigValidationIssue> issues = ConfigValidator.validate(config, DATA_FOLDER);
+
+        assertTrue(issues.stream().anyMatch(issue -> issue.path().equals("integrations.luckperms.default-weight")));
+        assertTrue(issues.stream().anyMatch(issue -> issue.path().equals("integrations.luckperms.group-weights.trusted")));
+        assertTrue(issues.stream().anyMatch(issue -> issue.path().equals("integrations.coreprotect.minimum-api-version")));
+        assertTrue(issues.stream().anyMatch(issue -> issue.path().equals("integrations.coreprotect.report-context.lookup-seconds")));
+        assertTrue(issues.stream().anyMatch(issue -> issue.path().equals("integrations.coreprotect.report-context.radius")));
+        assertTrue(issues.stream().anyMatch(issue -> issue.path().equals("integrations.coreprotect.report-context.max-results")));
+    }
+
     private static ConfigValidationInput valid() {
         return valid(100, 100, 180, "exports");
     }
@@ -66,7 +84,13 @@ class ConfigValidatorTest {
                 0,
                 0,
                 5,
-                auditExportDirectory
+                auditExportDirectory,
+                1.0D,
+                Map.of("default", 1.0D),
+                11,
+                3600,
+                20,
+                10
         );
     }
 }

@@ -124,6 +124,34 @@ reporter-penalty:
   false-report-threshold: 5
   report-ban-days: 7
 
+integrations:
+  luckperms:
+    enabled: true
+    use-group-weight: true
+    apply-weight-to-deduction: false
+    default-weight: 1.0
+    group-weights:
+      default: 1.0
+      trusted: 1.2
+      moderator: 2.0
+    bypass-groups:
+      - admin
+      - owner
+
+  coreprotect:
+    enabled: true
+    minimum-api-version: 11
+    report-context:
+      enabled: true
+      categories:
+        - griefing
+      lookup-seconds: 3600
+      radius: 20
+      max-results: 10
+      include-actions:
+        - block-break
+        - block-place
+
 database:
   type: "sqlite"
   file: "reputationban.db"

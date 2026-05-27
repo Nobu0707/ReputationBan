@@ -59,6 +59,10 @@ public final class CommandSuggestionUtil {
             candidates.add("diagnostics");
             candidates.add("support");
         }
+        if (hasPermission.test("reputationban.admin.integrations")) {
+            candidates.add("integrations");
+            candidates.add("integration");
+        }
         return filterByPrefix(candidates, prefix);
     }
 

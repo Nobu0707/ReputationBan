@@ -5,6 +5,7 @@ import dev.modplugin.reputationban.database.DatabaseManager;
 import dev.modplugin.reputationban.model.AuditEvent;
 import dev.modplugin.reputationban.model.AuditEventType;
 import dev.modplugin.reputationban.model.ReportCategory;
+import dev.modplugin.reputationban.model.ReportContext;
 import dev.modplugin.reputationban.model.ReportStatus;
 import dev.modplugin.reputationban.util.AuditMetadata;
 import dev.modplugin.reputationban.util.ReporterPenalty;
@@ -50,6 +51,18 @@ public final class ReportService {
             String targetName,
             ReportCategory category,
             String reason
+    ) {
+        return submitReport(reporterUuid, reporterName, targetUuid, targetName, category, reason, ReportIntegrationMetadata.empty());
+    }
+
+    public CompletableFuture<ReportResult> submitReport(
+            UUID reporterUuid,
+            String reporterName,
+            UUID targetUuid,
+            String targetName,
+            ReportCategory category,
+            String reason,
+            ReportIntegrationMetadata integrationMetadata
     ) {
         long now = System.currentTimeMillis();
         long globalCutoff = now - Duration.ofSeconds(config.globalReportSeconds()).toMillis();
@@ -101,8 +114,10 @@ public final class ReportService {
                         0,
                         0,
                         0,
-                        now
+                        now,
+                        integrationMetadata
                 ));
+                insertLuckPermsContext(connection, reportId, integrationMetadata, now);
                 return ReportResult.accepted(reportId, "pending", 0, true, null, null, false);
             }
 
@@ -115,7 +130,8 @@ public final class ReportService {
                         targetName,
                         category,
                         reason,
-                        now
+                        now,
+                        integrationMetadata
                 );
             }
 
@@ -127,7 +143,8 @@ public final class ReportService {
                     targetName,
                     category,
                     reason,
-                    now
+                    now,
+                    integrationMetadata
             );
         });
     }
@@ -140,7 +157,8 @@ public final class ReportService {
             String targetName,
             ReportCategory category,
             String reason,
-            long now
+            long now,
+            ReportIntegrationMetadata integrationMetadata
     ) throws SQLException {
         boolean previousAutoCommit = connection.getAutoCommit();
         connection.setAutoCommit(false);
@@ -180,8 +198,10 @@ public final class ReportService {
                     deduction,
                     0,
                     0,
-                    now
+                    now,
+                    integrationMetadata
             ));
+            insertLuckPermsContext(connection, reportId, integrationMetadata, now);
             connection.commit();
             return ReportResult.accepted(
                     reportId,
@@ -208,7 +228,8 @@ public final class ReportService {
             String targetName,
             ReportCategory category,
             String reason,
-            long now
+            long now,
+            ReportIntegrationMetadata integrationMetadata
     ) throws SQLException {
         boolean previousAutoCommit = connection.getAutoCommit();
         connection.setAutoCommit(false);
@@ -247,8 +268,10 @@ public final class ReportService {
                         0,
                         currentUniqueReports,
                         requiredReports,
-                        now
+                        now,
+                        integrationMetadata
                 ));
+                insertLuckPermsContext(connection, reportId, integrationMetadata, now);
                 connection.commit();
                 return ReportResult.thresholdPending(reportId, requiredReports, currentUniqueReports);
             }
@@ -286,8 +309,10 @@ public final class ReportService {
                     deduction,
                     currentUniqueReports,
                     requiredReports,
-                    now
+                    now,
+                    integrationMetadata
             ));
+            insertLuckPermsContext(connection, reportId, integrationMetadata, now);
             auditService.recordEventInTransaction(connection, AuditEvent.create(
                     AuditEventType.REPORT_THRESHOLD_REACHED,
                     null,
@@ -307,6 +332,8 @@ public final class ReportService {
                             .put("thresholdCurrent", currentUniqueReports)
                             .put("thresholdRequired", requiredReports)
                             .put("actualDeduction", deduction)
+                            .put("reporterPrimaryGroup", integrationMetadata.reporterPrimaryGroup())
+                            .put("reporterWeight", integrationMetadata.reporterWeight())
                             .toJson(),
                     now
             ));
@@ -364,6 +391,44 @@ public final class ReportService {
         }
     }
 
+    private static void insertLuckPermsContext(
+            Connection connection,
+            long reportId,
+            ReportIntegrationMetadata metadata,
+            long now
+    ) throws SQLException {
+        if (!metadata.hasLuckPermsContext()) {
+            return;
+        }
+        String summary = "primaryGroup=" + metadata.reporterPrimaryGroup() + " reporterWeight=" + metadata.reporterWeight();
+        String json = AuditMetadata.create()
+                .put("primaryGroup", metadata.reporterPrimaryGroup())
+                .put("reporterWeight", metadata.reporterWeight())
+                .toJson();
+        insertReportContext(connection, reportId, "luckperms", summary, json, now);
+    }
+
+    private static void insertReportContext(
+            Connection connection,
+            long reportId,
+            String provider,
+            String summary,
+            String metadata,
+            long now
+    ) throws SQLException {
+        try (PreparedStatement statement = connection.prepareStatement("""
+                INSERT INTO report_context (report_id, provider, summary, metadata, created_at)
+                VALUES (?, ?, ?, ?, ?)
+                """)) {
+            statement.setLong(1, reportId);
+            statement.setString(2, provider);
+            statement.setString(3, summary);
+            statement.setString(4, metadata);
+            statement.setLong(5, now);
+            statement.executeUpdate();
+        }
+    }
+
     private static AuditEvent reportCreatedAudit(
             UUID reporterUuid,
             String reporterName,
@@ -376,7 +441,8 @@ public final class ReportService {
             int deduction,
             int thresholdCurrent,
             int thresholdRequired,
-            long now
+            long now,
+            ReportIntegrationMetadata integrationMetadata
     ) {
         return AuditEvent.create(
                 AuditEventType.REPORT_CREATED,
@@ -397,6 +463,8 @@ public final class ReportService {
                         .put("deduction", deduction)
                         .put("thresholdCurrent", thresholdCurrent)
                         .put("thresholdRequired", thresholdRequired)
+                        .put("reporterPrimaryGroup", integrationMetadata.reporterPrimaryGroup())
+                        .put("reporterWeight", integrationMetadata.reporterWeight())
                         .toJson(),
                 now
         );
@@ -451,6 +519,11 @@ public final class ReportService {
 
     public CompletableFuture<java.util.Optional<ReportRecord>> getReport(long id) {
         return database.supplyAsync(connection -> loadReport(connection, id));
+    }
+
+    public CompletableFuture<Void> saveReportContext(long reportId, String provider, String summary, String metadata) {
+        long now = System.currentTimeMillis();
+        return database.runAsync(connection -> insertReportContext(connection, reportId, provider, summary, metadata, now));
     }
 
     public CompletableFuture<ReviewResult> approveReport(
@@ -697,10 +770,36 @@ public final class ReportService {
                         result.getLong("created_at"),
                         result.getString("reviewed_by"),
                         nullableLong(result, "reviewed_at"),
-                        result.getString("review_note")
+                        result.getString("review_note"),
+                        loadReportContexts(connection, id)
                 ));
             }
         }
+    }
+
+    private static java.util.List<ReportContext> loadReportContexts(Connection connection, long reportId) throws SQLException {
+        java.util.List<ReportContext> contexts = new java.util.ArrayList<>();
+        try (PreparedStatement statement = connection.prepareStatement("""
+                SELECT id, report_id, provider, summary, metadata, created_at
+                FROM report_context
+                WHERE report_id = ?
+                ORDER BY created_at ASC, id ASC
+                """)) {
+            statement.setLong(1, reportId);
+            try (ResultSet result = statement.executeQuery()) {
+                while (result.next()) {
+                    contexts.add(new ReportContext(
+                            result.getLong("id"),
+                            result.getLong("report_id"),
+                            result.getString("provider"),
+                            result.getString("summary"),
+                            result.getString("metadata"),
+                            result.getLong("created_at")
+                    ));
+                }
+            }
+        }
+        return java.util.List.copyOf(contexts);
     }
 
     private static Long getReportBannedUntil(java.sql.Connection connection, UUID reporterUuid) throws java.sql.SQLException {
@@ -924,8 +1023,22 @@ public final class ReportService {
             long createdAt,
             String reviewedBy,
             Long reviewedAt,
-            String reviewNote
+            String reviewNote,
+            java.util.List<ReportContext> contexts
     ) {
+    }
+
+    public record ReportIntegrationMetadata(
+            String reporterPrimaryGroup,
+            double reporterWeight
+    ) {
+        public static ReportIntegrationMetadata empty() {
+            return new ReportIntegrationMetadata("", 1.0D);
+        }
+
+        public boolean hasLuckPermsContext() {
+            return reporterPrimaryGroup != null && !reporterPrimaryGroup.isBlank();
+        }
     }
 
     public record ReviewResult(

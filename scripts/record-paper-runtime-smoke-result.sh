@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-VERSION="0.15.0"
+VERSION="0.16.0"
 JAR="build/libs/ReputationBan-${VERSION}.jar"
 
 usage() {

@@ -2,7 +2,7 @@
 
 ReputationBan は、通報とスタッフ操作をもとにプレイヤーの評判スコアを管理する PaperMC 向け moderation プラグインです。データは SQLite に保存し、未処理通報の審査、監査ログ、バックアップ、support bundle、設定に基づく Profile BAN を扱います。
 
-現在のバージョン: `0.15.0`
+現在のバージョン: `0.16.0`
 
 ## 対象環境
 
@@ -22,9 +22,10 @@ ReputationBan は、通報とスタッフ操作をもとにプレイヤーの評
 - [リリース前確認](docs/RELEASE_READINESS.md)
 - [Support bundle](docs/SUPPORT_BUNDLE.md)
 - [Security and redaction](docs/SECURITY_REDACTION.md)
+- [外部連携](docs/INTEGRATIONS.md)
 - [Paper runtime smoke checklist](docs/runtime-smoke-checklist.md)
 - [Release candidate checklist](docs/RELEASE_CANDIDATE_CHECKLIST.md)
-- [Phase 15 notes](docs/phase-15.md)
+- [Phase 16 notes](docs/phase-16.md)
 - [Changelog](CHANGELOG.md)
 
 ## 主な機能
@@ -37,6 +38,7 @@ ReputationBan は、通報とスタッフ操作をもとにプレイヤーの評
 - audit log、CSV export、retention preview、confirm付き maintenance cleanup。
 - `/rep backup` による SQLite backup。
 - `/rep support bundle` によるシークレットを伏せた診断 ZIP 作成。
+- LuckPerms と CoreProtect の任意連携。未導入でも単体動作します。
 - 任意の Discord Webhook 通知。URL は表示、ログ、監査、CSV、support bundle、review archive に出さない方針です。
 
 ## コマンド
@@ -61,6 +63,7 @@ ReputationBan は、通報とスタッフ操作をもとにプレイヤーの評
 - `/rep maintenance run confirm`: SQLite backup を作成してから retention cleanup を実行します。
 - `/rep backup [reason...]`: 手動 SQLite backup を作成します。
 - `/rep doctor`: Discord Webhook URL を出さずに運用診断を表示します。
+- `/rep integrations`: LuckPerms / CoreProtect の連携状態を表示します。
 - `/rep diagnostics`: `/rep doctor` の alias です。
 - `/rep support bundle`: DB files や server logs を含めない診断 ZIP を作成します。
 - `/rep add <player> <points> [reason...]`: スコアを加算します。
@@ -85,6 +88,7 @@ ReputationBan は、通報とスタッフ操作をもとにプレイヤーの評
 - `reputationban.admin.audit`: audit log の表示と export ができます。
 - `reputationban.admin.maintenance`: retention cleanup preview/run と manual DB backup ができます。
 - `reputationban.admin.diagnostics`: `/rep doctor` と support bundle を使えます。
+- `reputationban.admin.integrations`: `/rep integrations` を使えます。
 - `reputationban.notify`: staff notification を受け取れます。
 - `reputationban.bypass`: online 中の通報、減点、自動 BAN 対象から除外されます。
 - `reputationban.admin`: 主な admin 権限をまとめて付与します。
@@ -104,17 +108,17 @@ ReputationBan は、通報とスタッフ操作をもとにプレイヤーの評
 ./scripts/review_code.sh
 ```
 
-JAR は `build/libs/ReputationBan-0.15.0.jar` に生成されます。
+JAR は `build/libs/ReputationBan-0.16.0.jar` に生成されます。
 
 ## 現在の位置づけ
 
-v0.15.0 は v1.0.0 前のリリース候補確認フェーズです。Phase 15 では機能追加ではなく、日本語ドキュメント品質、識別子維持、release artifact、安全な review archive、Paper 実機スモーク状態の記録を確認します。
+v0.16.0 は LuckPerms / CoreProtect 任意連携の土台フェーズです。Phase 16 では外部プラグインが無い環境での単体動作を維持しながら、通報者重み、bypass groups、CoreProtect 証拠サマリー、連携状態表示を追加します。
 
 v1.0.0 へ進む前に [Release candidate checklist](docs/RELEASE_CANDIDATE_CHECKLIST.md) を確認してください。Paper 実機スモークを実行していない場合は PASS と扱わず、未実施として記録します。
 
 ## 現在の制限
 
-- GUI menus、permissions plugin integration、protection plugin integration は未実装です。
-- offline bypass detection は OP 状態に限定されます。online players の `reputationban.bypass` は保護されます。
+- GUI menus、WorldGuard/GriefPrevention/DiscordSRV 連携は未実装です。
+- LuckPerms が無い場合、offline bypass detection は OP 状態に限定されます。online players の `reputationban.bypass` は保護されます。
 - appeal と automatic unban workflow は後続フェーズに残しています。
 - Folia support は含みません。

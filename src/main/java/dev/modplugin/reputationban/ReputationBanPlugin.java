@@ -10,6 +10,7 @@ import dev.modplugin.reputationban.config.ConfigValidationIssue;
 import dev.modplugin.reputationban.config.ConfigValidator;
 import dev.modplugin.reputationban.config.PluginConfig;
 import dev.modplugin.reputationban.database.DatabaseManager;
+import dev.modplugin.reputationban.integration.IntegrationService;
 import dev.modplugin.reputationban.listener.PlayerJoinListener;
 import dev.modplugin.reputationban.model.ScoreThresholdCrossing;
 import dev.modplugin.reputationban.notification.DiscordWebhookConfig;
@@ -47,6 +48,7 @@ public final class ReputationBanPlugin extends JavaPlugin {
     private DiagnosticService diagnosticService;
     private SupportBundleService supportBundleService;
     private NotificationService notificationService;
+    private IntegrationService integrationService;
 
     @Override
     public void onEnable() {
@@ -68,6 +70,7 @@ public final class ReputationBanPlugin extends JavaPlugin {
         scoreService = new ScoreService(databaseManager, auditService, pluginConfig);
         reportService = new ReportService(databaseManager, scoreService, auditService, pluginConfig);
         punishmentService = new PunishmentService(this, databaseManager, auditService, pluginConfig);
+        integrationService = new IntegrationService(this, this::pluginConfig, reportService, auditService);
         diagnosticService = new DiagnosticService(this, databaseManager, auditService, this::pluginConfig);
         supportBundleService = new SupportBundleService(this, databaseManager, auditService, this::pluginConfig);
 
@@ -84,7 +87,8 @@ public final class ReputationBanPlugin extends JavaPlugin {
         );
         registerCommand("reports", new ReportsCommand(this, reportService, punishmentService), new ReportsTabCompleter());
         startScoreRecoveryTask();
-        getLogger().info("ReputationBan v0.12.0 enabled.");
+        integrationService.logStartupStatuses();
+        getLogger().info("ReputationBan v0.16.0 enabled.");
     }
 
     @Override
@@ -145,6 +149,10 @@ public final class ReputationBanPlugin extends JavaPlugin {
 
     public void notifyStaff(String message) {
         notificationService.notifyStaff(message);
+    }
+
+    public IntegrationService integrationService() {
+        return integrationService;
     }
 
     public void notifyStaff(NotificationEventType type, String message) {

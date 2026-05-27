@@ -73,7 +73,9 @@ public final class ReportBadCommand implements CommandExecutor {
         }
 
         Player onlineTarget = Bukkit.getPlayerExact(args[0]);
-        if (onlineTarget != null && (onlineTarget.hasPermission("reputationban.bypass") || onlineTarget.isOp())) {
+        if (onlineTarget != null && (onlineTarget.hasPermission("reputationban.bypass")
+                || onlineTarget.isOp()
+                || plugin.integrationService().isLuckPermsBypassGroup(onlineTarget.getUniqueId()))) {
             reporter.sendMessage(ReputationBanPlugin.PREFIX + "このプレイヤーは通報対象外です。");
             return true;
         }
@@ -181,12 +183,28 @@ public final class ReportBadCommand implements CommandExecutor {
             String reason
     ) {
         return playerDataService.ensurePlayer(reporterUuid, reporterName)
-                .thenCompose(ignored -> reportService.submitReport(reporterUuid, reporterName, value.uuid(), value.name(), category, reason))
+                .thenCompose(ignored -> plugin.supplySync(() -> plugin.integrationService().luckPermsTrust(reporterUuid)))
+                .thenCompose(trust -> reportService.submitReport(
+                        reporterUuid,
+                        reporterName,
+                        value.uuid(),
+                        value.name(),
+                        category,
+                        reason,
+                        new ReportService.ReportIntegrationMetadata(trust.primaryGroup(), trust.reporterWeight())
+                ))
                 .thenCompose(result -> {
                     if (!result.accepted()) {
                         plugin.runSync(() -> reporter.sendMessage(ReputationBanPlugin.PREFIX + result.message()));
                         return CompletableFuture.completedFuture(null);
                     }
+                    plugin.runSync(() -> plugin.integrationService().captureCoreProtectContext(
+                            result.reportId(),
+                            reporter,
+                            value.uuid(),
+                            value.name(),
+                            category
+                    ));
                     if (result.staffReviewRequired()) {
                         plugin.runSync(() -> {
                             reporter.sendMessage(ReputationBanPlugin.PREFIX + "通報を受け付けました。スタッフ審査待ちです。");
@@ -300,12 +318,14 @@ public final class ReportBadCommand implements CommandExecutor {
         plugin.runSync(() -> {
             Player online = Bukkit.getPlayer(targetUuid);
             if (online != null) {
-                result.complete(online.hasPermission("reputationban.bypass") || online.isOp());
+                result.complete(online.hasPermission("reputationban.bypass")
+                        || online.isOp()
+                        || plugin.integrationService().isLuckPermsBypassGroup(targetUuid));
                 return;
             }
 
             OfflinePlayer offline = Bukkit.getOfflinePlayer(targetUuid);
-            result.complete(offline.isOp());
+            result.complete(offline.isOp() || plugin.integrationService().isLuckPermsBypassGroup(targetUuid));
         });
         return result;
     }

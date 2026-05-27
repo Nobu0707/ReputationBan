@@ -43,6 +43,21 @@ public final class ConfigValidator {
         retention(config.retentionCancelledReportsDays(), issues, "retention.cancelled-reports-days");
         retention(config.retentionScoreHistoryDays(), issues, "retention.score-history-days");
         retention(config.retentionBansDays(), issues, "retention.bans-days");
+        require(config.luckPermsDefaultWeight() > 0.0D, issues, "integrations.luckperms.default-weight",
+                "integrations.luckperms.default-weight must be greater than 0");
+        for (java.util.Map.Entry<String, Double> entry : config.luckPermsGroupWeights().entrySet()) {
+            require(entry.getValue() != null && entry.getValue() > 0.0D, issues,
+                    "integrations.luckperms.group-weights." + entry.getKey(),
+                    "integrations.luckperms.group-weights values must be greater than 0");
+        }
+        require(config.coreProtectMinimumApiVersion() >= 1, issues, "integrations.coreprotect.minimum-api-version",
+                "integrations.coreprotect.minimum-api-version must be at least 1");
+        require(config.coreProtectLookupSeconds() >= 1, issues, "integrations.coreprotect.report-context.lookup-seconds",
+                "integrations.coreprotect.report-context.lookup-seconds must be at least 1");
+        require(config.coreProtectRadius() >= 0, issues, "integrations.coreprotect.report-context.radius",
+                "integrations.coreprotect.report-context.radius must be 0 or greater");
+        require(config.coreProtectMaxResults() >= 0, issues, "integrations.coreprotect.report-context.max-results",
+                "integrations.coreprotect.report-context.max-results must be 0 or greater");
         if (config.discordWebhookTimeoutSeconds() < 1 || config.discordWebhookTimeoutSeconds() > 30) {
             issues.add(new ConfigValidationIssue(Severity.WARNING, "notify.discord-webhook.timeout-seconds",
                     "notify.discord-webhook.timeout-seconds should be between 1 and 30"));

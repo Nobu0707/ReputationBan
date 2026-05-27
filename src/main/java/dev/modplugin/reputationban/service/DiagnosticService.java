@@ -34,7 +34,8 @@ public final class DiagnosticService {
             "reports",
             "score_history",
             "bans",
-            "audit_events"
+            "audit_events",
+            "report_context"
     );
 
     private final JavaPlugin plugin;

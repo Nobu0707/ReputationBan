@@ -1,5 +1,7 @@
 package dev.modplugin.reputationban.config;
 
+import java.util.Map;
+
 public record ConfigValidationInput(
         int initialScore,
         int maxScore,
@@ -24,7 +26,13 @@ public record ConfigValidationInput(
         int retentionScoreHistoryDays,
         int retentionBansDays,
         int discordWebhookTimeoutSeconds,
-        String auditExportDirectory
+        String auditExportDirectory,
+        double luckPermsDefaultWeight,
+        Map<String, Double> luckPermsGroupWeights,
+        int coreProtectMinimumApiVersion,
+        int coreProtectLookupSeconds,
+        int coreProtectRadius,
+        int coreProtectMaxResults
 ) {
     public static ConfigValidationInput from(PluginConfig config) {
         return new ConfigValidationInput(
@@ -51,7 +59,13 @@ public record ConfigValidationInput(
                 config.retentionScoreHistoryDays(),
                 config.retentionBansDays(),
                 config.discordWebhookConfig().timeoutSeconds(),
-                config.auditExportDirectory()
+                config.auditExportDirectory(),
+                config.luckPermsIntegration().defaultWeight(),
+                config.luckPermsIntegration().groupWeights(),
+                config.coreProtectIntegration().minimumApiVersion(),
+                config.coreProtectIntegration().lookupSeconds(),
+                config.coreProtectIntegration().radius(),
+                config.coreProtectIntegration().maxResults()
         );
     }
 }

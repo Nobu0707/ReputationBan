@@ -134,6 +134,16 @@ public final class DatabaseManager implements AutoCloseable {
                   created_at INTEGER NOT NULL
                 )
                 """);
+        execute("""
+                CREATE TABLE IF NOT EXISTS report_context (
+                  id INTEGER PRIMARY KEY AUTOINCREMENT,
+                  report_id INTEGER NOT NULL,
+                  provider TEXT NOT NULL,
+                  summary TEXT,
+                  metadata TEXT,
+                  created_at INTEGER NOT NULL
+                )
+                """);
         execute("CREATE INDEX IF NOT EXISTS idx_reports_reporter_target_created ON reports(reporter_uuid, target_uuid, created_at)");
         execute("CREATE INDEX IF NOT EXISTS idx_reports_target_created ON reports(target_uuid, created_at)");
         execute("CREATE INDEX IF NOT EXISTS idx_score_history_target_created ON score_history(target_uuid, created_at)");
@@ -141,6 +151,7 @@ public final class DatabaseManager implements AutoCloseable {
         execute("CREATE INDEX IF NOT EXISTS idx_audit_events_target_created ON audit_events(target_uuid, created_at)");
         execute("CREATE INDEX IF NOT EXISTS idx_audit_events_actor_created ON audit_events(actor_uuid, created_at)");
         execute("CREATE INDEX IF NOT EXISTS idx_audit_events_type_created ON audit_events(event_type, created_at)");
+        execute("CREATE INDEX IF NOT EXISTS idx_report_context_report_created ON report_context(report_id, created_at)");
         migratePlayersTable();
         migrateBansTable();
     }

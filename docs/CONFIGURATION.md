@@ -1,6 +1,6 @@
 # Configuration
 
-このドキュメントでは ReputationBan 0.15.0 の主な `config.yml` セクションを説明します。YAML key は変更しないでください。
+このドキュメントでは ReputationBan 0.16.0 の主な `config.yml` セクションを説明します。YAML key は変更しないでください。
 
 ## Score
 
@@ -71,6 +71,12 @@
 ## Retention
 
 `retention` settings は audit events、rejected reports、cancelled reports、score history、bans の cleanup を制御します。`score-history-days` と `bans-days` はデフォルト `0` で、削除しない設定です。
+
+## Integrations
+
+`integrations.luckperms` は LuckPerms が導入されている場合だけ有効になります。`default-weight` と `group-weights` は `/reportbad` の通報者重みとして `report_context` と audit metadata に記録されます。Phase 16 では `apply-weight-to-deduction` が `false` の既定で、減点量へは反映しません。`bypass-groups` は既存の `reputationban.bypass` と OP 保護に加える補助保護です。
+
+`integrations.coreprotect` は CoreProtect が導入され、API version が `minimum-api-version` 以上の場合だけ有効になります。`report-context` は対象 category、lookup 秒数、半径、最大件数、block-break / block-place の action を制御します。保存するのは審査補助の短い証拠サマリーで、rollback、restore、purge は実行しません。
 
 ## Database
 

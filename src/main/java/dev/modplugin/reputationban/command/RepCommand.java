@@ -1,6 +1,7 @@
 package dev.modplugin.reputationban.command;
 
 import dev.modplugin.reputationban.ReputationBanPlugin;
+import dev.modplugin.reputationban.integration.IntegrationStatus;
 import dev.modplugin.reputationban.model.AuditEvent;
 import dev.modplugin.reputationban.model.AuditEventType;
 import dev.modplugin.reputationban.model.CommandActor;
@@ -129,6 +130,10 @@ public final class RepCommand implements CommandExecutor {
             doctor(sender);
             return true;
         }
+        if ("integrations".equalsIgnoreCase(args[0]) || "integration".equalsIgnoreCase(args[0])) {
+            integrations(sender);
+            return true;
+        }
         if ("add".equalsIgnoreCase(args[0]) || "remove".equalsIgnoreCase(args[0]) || "set".equalsIgnoreCase(args[0])) {
             mutateScore(sender, args);
             return true;
@@ -181,6 +186,9 @@ public final class RepCommand implements CommandExecutor {
         if (sender.hasPermission("reputationban.admin.diagnostics")) {
             sender.sendMessage(ReputationBanPlugin.PREFIX + "/rep doctor - ReputationBanの診断情報を表示");
             sender.sendMessage(ReputationBanPlugin.PREFIX + "/rep support bundle - 安全なサポート用診断バンドルを作成");
+        }
+        if (sender.hasPermission("reputationban.admin.integrations")) {
+            sender.sendMessage(ReputationBanPlugin.PREFIX + "/rep integrations - 外部プラグイン連携状態を表示");
         }
     }
 
@@ -812,6 +820,34 @@ public final class RepCommand implements CommandExecutor {
                 });
     }
 
+    private void integrations(CommandSender sender) {
+        if (!sender.hasPermission("reputationban.admin.integrations")) {
+            sender.sendMessage(ReputationBanPlugin.PREFIX + "権限がありません。");
+            return;
+        }
+        List<IntegrationStatus> statuses = plugin.integrationService().statuses();
+        sender.sendMessage(ReputationBanPlugin.PREFIX + "外部連携状態");
+        for (IntegrationStatus status : statuses) {
+            sender.sendMessage(ReputationBanPlugin.PREFIX + status.compactLine());
+        }
+        auditService.recordEvent(AuditEvent.create(
+                AuditEventType.INTEGRATION_STATUS_CHECKED,
+                senderUuid(sender),
+                sender.getName(),
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                "integration status checked",
+                AuditMetadata.create().put("command", "integrations").toJson(),
+                System.currentTimeMillis()
+        ));
+    }
+
     private static boolean canViewOthers(CommandSender sender) {
         return sender.hasPermission("reputationban.score.others") || sender.hasPermission("reputationban.admin.score");
     }
@@ -895,7 +931,7 @@ public final class RepCommand implements CommandExecutor {
         sender.sendMessage(ReputationBanPlugin.PREFIX + "bans: " + result.bansDeleted());
     }
 
-    private static void sendDiagnosticReport(CommandSender sender, DiagnosticReport report) {
+    private void sendDiagnosticReport(CommandSender sender, DiagnosticReport report) {
         sender.sendMessage(ReputationBanPlugin.PREFIX + "Doctor");
         sender.sendMessage(ReputationBanPlugin.PREFIX + "version: " + report.version());
         sender.sendMessage(ReputationBanPlugin.PREFIX + "server: " + report.server());
@@ -921,6 +957,10 @@ public final class RepCommand implements CommandExecutor {
         sender.sendMessage(ReputationBanPlugin.PREFIX + "pendingReports: " + report.pendingReports());
         sender.sendMessage(ReputationBanPlugin.PREFIX + "thresholdPendingReports: " + report.thresholdPendingReports());
         sender.sendMessage(ReputationBanPlugin.PREFIX + "activeDbBans: " + report.activeDbBans());
+        for (IntegrationStatus status : plugin.integrationService().statuses()) {
+            sender.sendMessage(ReputationBanPlugin.PREFIX + status.type().displayName()
+                    + " integration: " + status.availabilityLabel());
+        }
         sender.sendMessage(ReputationBanPlugin.PREFIX + "overall: " + report.overallStatus());
     }
 

@@ -42,6 +42,9 @@ class CommandSuggestionUtilTest {
 
         Predicate<String> maintenance = Set.of("reputationban.admin.maintenance")::contains;
         assertEquals(List.of("backup"), CommandSuggestionUtil.repSubcommands(maintenance, "back"));
+
+        Predicate<String> integrations = Set.of("reputationban.admin.integrations")::contains;
+        assertEquals(List.of("integrations", "integration"), CommandSuggestionUtil.repSubcommands(integrations, "integ"));
     }
 
     @Test
