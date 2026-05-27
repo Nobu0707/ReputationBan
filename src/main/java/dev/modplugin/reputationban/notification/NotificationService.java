@@ -2,6 +2,7 @@ package dev.modplugin.reputationban.notification;
 
 import dev.modplugin.reputationban.ReputationBanPlugin;
 import dev.modplugin.reputationban.config.PluginConfig;
+import dev.modplugin.reputationban.integration.discordsrv.DiscordSrvNotificationService;
 import java.util.function.Supplier;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
@@ -10,11 +11,13 @@ public final class NotificationService {
     private final ReputationBanPlugin plugin;
     private final Supplier<PluginConfig> configSupplier;
     private final DiscordWebhookClient discordWebhookClient;
+    private final DiscordSrvNotificationService discordSrvNotificationService;
 
     public NotificationService(ReputationBanPlugin plugin, Supplier<PluginConfig> configSupplier) {
         this.plugin = plugin;
         this.configSupplier = configSupplier;
         this.discordWebhookClient = new DiscordWebhookClient(plugin.getLogger());
+        this.discordSrvNotificationService = new DiscordSrvNotificationService(plugin);
     }
 
     public void notifyStaff(String message) {
@@ -44,6 +47,8 @@ public final class NotificationService {
         if (type == null) {
             return;
         }
-        discordWebhookClient.send(type, configSupplier.get().discordWebhookConfig(), discordContent);
+        PluginConfig config = configSupplier.get();
+        discordWebhookClient.send(type, config.discordWebhookConfig(), discordContent);
+        discordSrvNotificationService.send(type, config, discordContent);
     }
 }

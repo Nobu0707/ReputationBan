@@ -2,7 +2,7 @@
 
 ReputationBan は、通報とスタッフ操作をもとにプレイヤーの評判スコアを管理する PaperMC 向け moderation プラグインです。データは SQLite に保存し、未処理通報の審査、監査ログ、バックアップ、support bundle、設定に基づく Profile BAN を扱います。
 
-現在のバージョン: `0.20.0`
+現在のバージョン: `0.21.0`
 
 ## 対象環境
 
@@ -26,6 +26,7 @@ ReputationBan は、通報とスタッフ操作をもとにプレイヤーの評
 - [Integration runtime smoke checklist](docs/INTEGRATION_RUNTIME_SMOKE_CHECKLIST.md)
 - [Paper runtime smoke checklist](docs/runtime-smoke-checklist.md)
 - [Release candidate checklist](docs/RELEASE_CANDIDATE_CHECKLIST.md)
+- [Phase 21 notes](docs/phase-21.md)
 - [Phase 20 notes](docs/phase-20.md)
 - [Phase 19 notes](docs/phase-19.md)
 - [Changelog](CHANGELOG.md)
@@ -40,7 +41,7 @@ ReputationBan は、通報とスタッフ操作をもとにプレイヤーの評
 - audit log、CSV export、retention preview、confirm付き maintenance cleanup。
 - `/rep backup` による SQLite backup。
 - `/rep support bundle` によるシークレットを伏せた診断 ZIP 作成。
-- LuckPerms、CoreProtect、WorldGuard、GriefPrevention、PlaceholderAPI の任意連携。未導入でも単体動作します。
+- LuckPerms、CoreProtect、WorldGuard、GriefPrevention、PlaceholderAPI、DiscordSRV の任意連携。未導入でも単体動作します。
 - PlaceholderAPI 対応プラグインから `%reputationban_score%` などで評判状態を参照できます。
 - 任意の Discord Webhook 通知。URL は表示、ログ、監査、CSV、support bundle、review archive に出さない方針です。
 
@@ -67,8 +68,8 @@ ReputationBan は、通報とスタッフ操作をもとにプレイヤーの評
 - `/rep backup [reason...]`: 手動 SQLite backup を作成します。
 - `/rep doctor`: Discord Webhook URL を出さずに運用診断を表示します。
 - `/rep placeholders`: PlaceholderAPI placeholders の一覧を表示します。
-- `/rep integrations`: LuckPerms / CoreProtect / WorldGuard / GriefPrevention / PlaceholderAPI の連携状態を表示します。
-- `/rep integrations test`: LuckPerms / CoreProtect / WorldGuard / GriefPrevention / PlaceholderAPI 連携だけに絞った詳細診断を安全に実行します。
+- `/rep integrations`: LuckPerms / CoreProtect / WorldGuard / GriefPrevention / PlaceholderAPI / DiscordSRV の連携状態を表示します。
+- `/rep integrations test`: LuckPerms / CoreProtect / WorldGuard / GriefPrevention / PlaceholderAPI / DiscordSRV 連携だけに絞った詳細診断を安全に実行します。DiscordSRV のテスト送信は行いません。
 - `/rep diagnostics`: `/rep doctor` の alias です。
 - `/rep support bundle`: DB files や server logs を含めない診断 ZIP を作成します。
 - `/rep add <player> <points> [reason...]`: スコアを加算します。
@@ -79,7 +80,7 @@ ReputationBan は、通報とスタッフ操作をもとにプレイヤーの評
 - `/reports help`: report review commands を表示します。
 - `/reports list [pending|threshold_pending|approved|rejected|auto_accepted|cancelled|all] [limit]`: report を一覧表示します。
 - `/reports view <id>`: report 詳細を表示します。
-- `/reports evidence <id>`: report に保存された LuckPerms / CoreProtect / WorldGuard / GriefPrevention 証拠情報を表示します。
+- `/reports evidence <id>`: report に保存された LuckPerms / CoreProtect / WorldGuard / GriefPrevention / DiscordSRV 証拠情報を表示します。
 - `/reports approve <id> [note...]`: pending report を承認し、減点を適用します。
 - `/reports reject <id> [note...]`: pending report を却下します。
 
@@ -114,17 +115,17 @@ ReputationBan は、通報とスタッフ操作をもとにプレイヤーの評
 ./scripts/review_code.sh
 ```
 
-JAR は `build/libs/ReputationBan-0.20.0.jar` に生成されます。
+JAR は `build/libs/ReputationBan-0.21.0.jar` に生成されます。
 
 ## 現在の位置づけ
 
-v0.20.0 は PlaceholderAPI を任意連携として追加するフェーズです。Phase 20 では `/rep placeholders`、`/rep integrations`、`/rep integrations test`、`/rep doctor` に PlaceholderAPI の状態と利用可能な placeholder を追加しています。placeholder 値はDB同期問い合わせではなく online player summary cache から返します。
+v0.21.0 は DiscordSRV を任意連携として追加するフェーズです。Phase 21 では DiscordSRV account link context を `/reportbad` 後に `report_context` へ保存し、`/rep integrations`、`/rep integrations test`、`/rep doctor`、`/reports evidence` で確認できるようにしています。Discord ID はデフォルトで保存・表示せず、DiscordSRV 通知もデフォルト無効です。
 
 v1.0.0 へ進む前に [Release candidate checklist](docs/RELEASE_CANDIDATE_CHECKLIST.md) を確認してください。Paper 実機スモークを実行していない場合は PASS と扱わず、未実施として記録します。
 
 ## 現在の制限
 
-- GUI menus、DiscordSRV 連携は未実装です。
+- GUI menus、Discord ボタン承認、Discord role 変更、Discord から Minecraft コマンドを実行する機能は未実装です。
 - WorldGuard region/flag の作成、変更、削除は行いません。
 - GriefPrevention claim/trust の作成、変更、削除は行いません。
 - LuckPerms が無い場合、offline bypass detection は OP 状態に限定されます。online players の `reputationban.bypass` は保護されます。

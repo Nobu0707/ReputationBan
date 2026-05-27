@@ -1,6 +1,6 @@
 # Configuration
 
-このドキュメントでは ReputationBan 0.20.0 の主な `config.yml` セクションを説明します。YAML key は変更しないでください。
+このドキュメントでは ReputationBan 0.21.0 の主な `config.yml` セクションを説明します。YAML key は変更しないでください。
 
 ## Score
 
@@ -83,6 +83,8 @@
 `integrations.griefprevention` は GriefPrevention が導入されている場合だけ有効になります。`report-context.categories` に含まれる category の `/reportbad` で、通報者の現在地にある claim context を `report_context` provider `griefprevention` に保存します。`include-claim-owner` と `include-trust-counts` は privacy のためデフォルト `false`、`include-boundaries` はデフォルト `true` です。ReputationBan は GriefPrevention claim や trust を変更しません。
 
 `integrations.placeholderapi` は PlaceholderAPI が導入されている場合だけ有効になります。`identifier` は `%reputationban_score%` の `reputationban` 部分で、`[a-z0-9_]+` 以外は warning のうえ `reputationban` にフォールバックします。`cache-refresh-seconds` は online player summary cache の定期更新間隔で、0以下の場合は定期更新しません。placeholder の値は cache から返すため、最大でこの秒数程度の遅延があり得ます。`show-unknown-as` は cache 未取得、offline、不明値の表示です。
+
+`integrations.discordsrv` は DiscordSRV が導入されている場合だけ有効になります。`account-link-context.categories` に含まれる category の `/reportbad` で、通報者と対象の account link 状態を `report_context` provider `discordsrv` に保存します。`include-discord-ids` は privacy のためデフォルト `false` で、false の場合は linked/unlinked だけを保存します。`notifications.enabled` は既存 Discord Webhook と二重通知になり得るためデフォルト `false` です。`notifications.channel` は DiscordSRV 側の game channel 名として reflection adapter に渡します。ReputationBan は Discord から Minecraft コマンドを実行せず、Discord role 変更も行いません。
 
 ## Database
 

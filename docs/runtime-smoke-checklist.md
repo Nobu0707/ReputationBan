@@ -10,7 +10,7 @@
 ## Install
 
 1. `./gradlew clean test build --warning-mode all` を実行します。
-2. `build/libs/ReputationBan-0.20.0.jar` を Paper `plugins` directory へコピーします。
+2. `build/libs/ReputationBan-0.21.0.jar` を Paper `plugins` directory へコピーします。
 3. Java 25 で Paper を起動します。
 
 ## Startup

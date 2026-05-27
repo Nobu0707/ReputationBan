@@ -369,6 +369,9 @@ public final class ReportsCommand implements CommandExecutor {
         if ("griefprevention".equalsIgnoreCase(provider)) {
             return "GriefPrevention";
         }
+        if ("discordsrv".equalsIgnoreCase(provider)) {
+            return "DiscordSRV";
+        }
         return provider;
     }
 

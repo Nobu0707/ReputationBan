@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.21.0
+
+- DiscordSRV を `softdepend` の任意連携として追加しました。
+- DiscordSRV/JDA API 型の直接 import を避け、`DiscordSrvReflectionAdapter` の reflection に閉じ込めました。
+- `/rep integrations`、`/rep integrations test`、`/rep doctor` に DiscordSRV 状態を追加しました。
+- `/reportbad` 後に対象カテゴリの DiscordSRV account link context を `report_context` provider `discordsrv` として保存するようにしました。
+- `/reports view <id>` と `/reports evidence <id>` で DiscordSRV 文脈を表示できるようにしました。
+- `DISCORDSRV_CONTEXT_CAPTURED` audit event を追加しました。
+- DiscordSRV 通知を追加しました。既存 Webhook との二重通知を避けるためデフォルトは無効です。
+- Discord から Minecraft コマンドを実行する機能、Discord role 変更、自動BANの唯一根拠化は行いません。
+
 ## 0.20.0
 
 - PlaceholderAPI を `softdepend` + `compileOnly` の任意連携として追加しました。

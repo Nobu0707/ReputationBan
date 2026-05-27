@@ -24,11 +24,13 @@ public final class ReportContextFormatter {
         appendProvider(lines, byProvider, "coreprotect");
         appendProvider(lines, byProvider, "worldguard");
         appendProvider(lines, byProvider, "griefprevention");
+        appendProvider(lines, byProvider, "discordsrv");
         for (Map.Entry<String, List<ReportContext>> entry : byProvider.entrySet()) {
             if (!"luckperms".equals(entry.getKey())
                     && !"coreprotect".equals(entry.getKey())
                     && !"worldguard".equals(entry.getKey())
-                    && !"griefprevention".equals(entry.getKey())) {
+                    && !"griefprevention".equals(entry.getKey())
+                    && !"discordsrv".equals(entry.getKey())) {
                 appendUnknown(lines, entry.getKey(), entry.getValue());
             }
         }
@@ -53,6 +55,10 @@ public final class ReportContextFormatter {
         }
         if ("griefprevention".equals(provider)) {
             appendGriefPrevention(lines, contexts);
+            return;
+        }
+        if ("discordsrv".equals(provider)) {
+            appendDiscordSrv(lines, contexts);
             return;
         }
         appendCoreProtect(lines, contexts);
@@ -88,6 +94,15 @@ public final class ReportContextFormatter {
 
     private static void appendGriefPrevention(List<String> lines, List<ReportContext> contexts) {
         lines.add("GriefPrevention:");
+        for (ReportContext context : contexts) {
+            for (String line : splitSummary(context.summary())) {
+                lines.add("  " + line);
+            }
+        }
+    }
+
+    private static void appendDiscordSrv(List<String> lines, List<ReportContext> contexts) {
+        lines.add("DiscordSRV:");
         for (ReportContext context : contexts) {
             for (String line : splitSummary(context.summary())) {
                 lines.add("  " + line);
@@ -197,6 +212,9 @@ public final class ReportContextFormatter {
         }
         if ("griefprevention".equalsIgnoreCase(provider)) {
             return "GriefPrevention";
+        }
+        if ("discordsrv".equalsIgnoreCase(provider)) {
+            return "DiscordSRV";
         }
         return provider.toLowerCase(Locale.ROOT);
     }

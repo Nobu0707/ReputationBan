@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-EXPECTED_VERSION="0.20.0"
+EXPECTED_VERSION="0.21.0"
 JAR="build/libs/ReputationBan-${EXPECTED_VERSION}.jar"
 
 fail() { echo "[FAIL] $*" >&2; exit 1; }
@@ -29,12 +29,13 @@ sha256sum "$JAR"
 cat <<'STEPS'
 
 Manual runtime smoke:
-Copy build/libs/ReputationBan-0.20.0.jar to your Paper 26.1.2 plugins directory.
+Copy build/libs/ReputationBan-0.21.0.jar to your Paper 26.1.2 plugins directory.
 Start Paper with Java 25.
 Verify /plugins, /rep version, /rep help, /rep doctor, /rep integrations, /rep integrations test, /rep placeholders, /reports evidence <id>, /rep support bundle, /reportbad tab completion, /rep audit recent.
 For WorldGuard smoke, test without WorldGuard, with WorldEdit only, and with WorldEdit + WorldGuard; confirm no region or flag is modified.
 For GriefPrevention smoke, test without GriefPrevention and with GriefPrevention; confirm claim/trust is not modified and claim inside/outside context displays in /reports evidence <id>.
 For PlaceholderAPI smoke, test without PlaceholderAPI and with PlaceholderAPI; confirm /papi parse <player> %reputationban_score% returns cache-backed values.
+For DiscordSRV smoke, test without DiscordSRV and with DiscordSRV; confirm account link context displays in /reports evidence <id>, IDs stay hidden by default, and Discord does not execute Minecraft commands.
 Verify /rep audit export recent, /rep backup before-smoke, /rep support bundle, /rep maintenance preview, and /rep maintenance run confirm.
 Confirm Discord webhook remains disabled by default and webhook URLs are not printed in logs.
 Record results with ./scripts/record-paper-runtime-smoke-result.sh --result PASS --note "Paper runtime smoke passed".

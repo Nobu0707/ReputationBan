@@ -68,6 +68,10 @@ public final class ConfigValidator {
             issues.add(new ConfigValidationIssue(Severity.WARNING, "integrations.griefprevention.report-context.categories",
                     "integrations.griefprevention.report-context.categories is empty; GriefPrevention report context will not be captured"));
         }
+        if (config.discordSrvAccountLinkContextCategories().isEmpty()) {
+            issues.add(new ConfigValidationIssue(Severity.WARNING, "integrations.discordsrv.account-link-context.categories",
+                    "integrations.discordsrv.account-link-context.categories is empty; DiscordSRV account link context will not be captured"));
+        }
         require(config.placeholderApiCacheRefreshSeconds() >= 0, issues, "integrations.placeholderapi.cache-refresh-seconds",
                 "integrations.placeholderapi.cache-refresh-seconds must be 0 or greater");
         if (config.placeholderApiIdentifier() == null || config.placeholderApiIdentifier().isBlank()) {

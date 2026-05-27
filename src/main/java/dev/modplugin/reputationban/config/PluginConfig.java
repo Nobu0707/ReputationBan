@@ -61,6 +61,7 @@ public final class PluginConfig {
     private final WorldGuardIntegrationConfig worldGuardIntegration;
     private final GriefPreventionIntegrationConfig griefPreventionIntegration;
     private final PlaceholderApiIntegrationConfig placeholderApiIntegration;
+    private final DiscordSrvIntegrationConfig discordSrvIntegration;
 
     private PluginConfig(FileConfiguration config) {
         initialScore = config.getInt("initial-score", 100);
@@ -111,6 +112,7 @@ public final class PluginConfig {
         worldGuardIntegration = loadWorldGuardIntegration(config);
         griefPreventionIntegration = loadGriefPreventionIntegration(config);
         placeholderApiIntegration = loadPlaceholderApiIntegration(config);
+        discordSrvIntegration = loadDiscordSrvIntegration(config);
     }
 
     public static PluginConfig load(FileConfiguration config) {
@@ -225,6 +227,29 @@ public final class PluginConfig {
                 config.getString("integrations.placeholderapi.identifier", "reputationban"),
                 config.getInt("integrations.placeholderapi.cache-refresh-seconds", 60),
                 config.getString("integrations.placeholderapi.show-unknown-as", "-")
+        );
+    }
+
+    private static DiscordSrvIntegrationConfig loadDiscordSrvIntegration(FileConfiguration config) {
+        Map<String, Boolean> events = new LinkedHashMap<>();
+        ConfigurationSection section = config.getConfigurationSection("integrations.discordsrv.notifications.events");
+        if (section != null) {
+            for (String key : section.getKeys(false)) {
+                events.put(key.toLowerCase(Locale.ROOT), section.getBoolean(key, false));
+            }
+        }
+        return new DiscordSrvIntegrationConfig(
+                config.getBoolean("integrations.discordsrv.enabled", true),
+                config.getBoolean("integrations.discordsrv.account-link-context.enabled", true),
+                config.getBoolean("integrations.discordsrv.account-link-context.include-discord-ids", false),
+                List.copyOf(config.getStringList("integrations.discordsrv.account-link-context.categories").stream()
+                        .filter(value -> value != null && !value.isBlank())
+                        .map(value -> value.toLowerCase(Locale.ROOT))
+                        .toList()),
+                config.getBoolean("integrations.discordsrv.notifications.enabled", false),
+                config.getString("integrations.discordsrv.notifications.channel", "staff"),
+                config.getBoolean("integrations.discordsrv.notifications.include-reasons", true),
+                Collections.unmodifiableMap(events)
         );
     }
 
@@ -424,6 +449,10 @@ public final class PluginConfig {
         return placeholderApiIntegration;
     }
 
+    public DiscordSrvIntegrationConfig discordSrvIntegration() {
+        return discordSrvIntegration;
+    }
+
     public record LuckPermsIntegrationConfig(
             boolean enabled,
             boolean useGroupWeight,
@@ -472,6 +501,18 @@ public final class PluginConfig {
             String identifier,
             int cacheRefreshSeconds,
             String showUnknownAs
+    ) {
+    }
+
+    public record DiscordSrvIntegrationConfig(
+            boolean enabled,
+            boolean accountLinkContextEnabled,
+            boolean includeDiscordIds,
+            List<String> accountLinkContextCategories,
+            boolean notificationsEnabled,
+            String notificationChannel,
+            boolean notificationIncludeReasons,
+            Map<String, Boolean> notificationEvents
     ) {
     }
 }

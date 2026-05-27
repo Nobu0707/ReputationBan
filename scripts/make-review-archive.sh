@@ -126,6 +126,9 @@ done < "$OUTDIR/meta/changed-files.txt"
   echo
   echo "## rg phase 20 PlaceholderAPI integration"
   rg -n "PlaceholderAPI|PlaceholderApiIntegration|ReputationBanPlaceholderExpansion|PlaceholderExpansion|PlaceholderCacheService|PlaceholderValueProvider|PlayerReputationSummary|/rep placeholders|placeholderapi" src/main/java src/test/java src/main/resources README.md CHANGELOG.md docs reputationban_phase_plan.md scripts build.gradle.kts settings.gradle.kts || true
+  echo
+  echo "## rg phase 21 DiscordSRV integration"
+  rg -n "DiscordSRV|DiscordSrvIntegration|DiscordSrvReflectionAdapter|DISCORDSRV_CONTEXT_CAPTURED|provider = discordsrv|provider=discordsrv|\"discordsrv\"|getAccountLinkManager|getDiscordId|sendMessage|queue|net\\.dv8tion|github\\.scarsz\\.discordsrv" src/main/java src/test/java src/main/resources README.md CHANGELOG.md docs reputationban_phase_plan.md scripts build.gradle.kts settings.gradle.kts || true
 } > "$OUTDIR/checks/rg-review-signals.txt"
 
 {
@@ -203,8 +206,8 @@ fi
 
 if [[ -d "$ROOT/build/libs" ]]; then
   find "$ROOT/build/libs" -maxdepth 1 -type f -print | sort > "$OUTDIR/checks/built-jars.txt"
-  if [[ -f "$ROOT/build/libs/ReputationBan-0.20.0.jar" ]]; then
-    (cd "$ROOT" && sha256sum build/libs/ReputationBan-0.20.0.jar) > "$OUTDIR/checks/jar-sha256.txt"
+  if [[ -f "$ROOT/build/libs/ReputationBan-0.21.0.jar" ]]; then
+    (cd "$ROOT" && sha256sum build/libs/ReputationBan-0.21.0.jar) > "$OUTDIR/checks/jar-sha256.txt"
   fi
 fi
 

@@ -446,12 +446,37 @@
 - Phase 20 では最大 `cache-refresh-seconds` 程度の表示遅延があり得る。
 - PlaceholderAPI から他プラグイン placeholder を parse する処理や eCloud 外部 expansion 配布は行わない。
 
-## Phase 21以降: 外部連携・高度な悪用対策
+## Phase 21 / v0.21.0: DiscordSRV 任意連携
+
+目的: DiscordSRV を任意依存として扱い、account link context を通報審査の補助情報として保存する。
+
+実装範囲:
+
+- version 0.21.0
+- `DiscordSRV` の `softdepend`
+- `DiscordSrvReflectionAdapter`
+- `/rep integrations` と `/rep integrations test` の DiscordSRV 表示
+- `/rep doctor` の DiscordSRV 簡易状態表示
+- `/reportbad` 後の `report_context` provider `discordsrv`
+- `/reports view <id>` と `/reports evidence <id>` の DiscordSRV 表示
+- `DISCORDSRV_CONTEXT_CAPTURED` audit event
+- DiscordSRV 経由スタッフ通知。デフォルト無効
+- `docs/INTEGRATIONS.md` と `docs/phase-21.md`
+- review/release archive scripts の v0.21.0 対応
+
+注意:
+
+- `src/main/java` に DiscordSRV/JDA API の直接 import を追加しない。
+- DiscordSRV 未導入でも ReputationBan 本体は起動できる設計にする。
+- Discord ID はデフォルト hidden とし、`include-discord-ids` を明示した場合だけ保存・表示する。
+- DiscordSRV context は審査補助であり、自動 BAN の唯一根拠にしない。
+- Discord から Minecraft コマンドを実行する機能、Discord role 変更、Discord button 承認は行わない。
+
+## Phase 22以降: 外部連携・高度な悪用対策
 
 実装候補:
 
 - 管理GUI
 - 接触判定
 - 集団通報検知
-- DiscordSRV連携
 - 設定可能なメッセージファイル

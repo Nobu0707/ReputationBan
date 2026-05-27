@@ -43,6 +43,20 @@ if grep -R "^[[:space:]]*import[[:space:]]\\+com\\.griefprevention\\." "$SRC" >/
 fi
 pass "No GriefPrevention direct imports"
 
+if grep -R "^[[:space:]]*import[[:space:]]\\+github\\.scarsz\\.discordsrv\\." "$SRC" >/dev/null; then
+  fail "DiscordSRV API direct import detected in src/main/java"
+fi
+if grep -R "^[[:space:]]*import[[:space:]]\\+me\\.scarsz\\.discordsrv\\." "$SRC" >/dev/null; then
+  fail "DiscordSRV API direct import detected in src/main/java"
+fi
+if grep -R "^[[:space:]]*import[[:space:]]\\+net\\.dv8tion\\.jda\\." "$SRC" >/dev/null; then
+  fail "JDA direct import detected in src/main/java"
+fi
+if grep -R "^[[:space:]]*import[[:space:]]\\+club\\.minnced\\.discord\\." "$SRC" >/dev/null; then
+  fail "Discord webhook/JDA helper direct import detected in src/main/java"
+fi
+pass "No DiscordSRV/JDA direct imports"
+
 PAPI_IMPORTS="$(grep -R "^[[:space:]]*import[[:space:]]\\+me\\.clip\\.placeholderapi\\." "$SRC" || true)"
 if [[ -n "$PAPI_IMPORTS" ]] && echo "$PAPI_IMPORTS" | grep -v "ReputationBanPlaceholderExpansion.java" >/dev/null; then
   fail "PlaceholderAPI direct import escaped ReputationBanPlaceholderExpansion.java"
@@ -76,6 +90,12 @@ if grep -R "me\\.ryanhamshire\\.GriefPrevention\\|me\\.ryanhamshire\\.griefpreve
 fi
 pass "GriefPrevention API class lookup is isolated"
 
+if grep -R "github\\.scarsz\\.discordsrv\\|me\\.scarsz\\.discordsrv\\|net\\.dv8tion\\.jda\\|club\\.minnced\\.discord\\|\"getAccountLinkManager\"\\|\"getDiscordId\"\\|\"getDestinationTextChannelForGameChannelName\"" "$SRC" \
+    | grep -v "DiscordSrvReflectionAdapter.java" >/dev/null; then
+  fail "DiscordSRV/JDA API class name or reflection method escaped DiscordSrvReflectionAdapter"
+fi
+pass "DiscordSRV API class lookup is isolated"
+
 for normal_class in ReputationBanPlugin.java IntegrationService.java PlaceholderApiIntegration.java RepCommand.java ReportBadCommand.java ReportsCommand.java PlayerDataService.java ScoreService.java ReportService.java DiagnosticService.java; do
   if grep -R "me\\.clip\\.placeholderapi" "$SRC" | grep "$normal_class" >/dev/null; then
     fail "PlaceholderAPI API reference detected in normally loaded class: $normal_class"
@@ -91,6 +111,10 @@ pass "Normally loaded classes do not reference PlaceholderAPI API packages"
   || fail "WorldGuardReflectionAdapter is missing"
 [[ -f "$SRC/dev/modplugin/reputationban/integration/griefprevention/GriefPreventionReflectionAdapter.java" ]] \
   || fail "GriefPreventionReflectionAdapter is missing"
+[[ -f "$SRC/dev/modplugin/reputationban/integration/discordsrv/DiscordSrvReflectionAdapter.java" ]] \
+  || fail "DiscordSrvReflectionAdapter is missing"
+[[ -f "$SRC/dev/modplugin/reputationban/integration/discordsrv/DiscordSrvIntegration.java" ]] \
+  || fail "DiscordSrvIntegration is missing"
 [[ -f "$SRC/dev/modplugin/reputationban/integration/placeholderapi/ReputationBanPlaceholderExpansion.java" ]] \
   || fail "ReputationBanPlaceholderExpansion is missing"
 pass "Reflection adapters are present"
@@ -101,7 +125,8 @@ grep -A8 "^softdepend:" "$PLUGIN_YML" | grep -q "WorldEdit" || fail "plugin.yml 
 grep -A8 "^softdepend:" "$PLUGIN_YML" | grep -q "WorldGuard" || fail "plugin.yml softdepend missing WorldGuard"
 grep -A8 "^softdepend:" "$PLUGIN_YML" | grep -q "GriefPrevention" || fail "plugin.yml softdepend missing GriefPrevention"
 grep -A10 "^softdepend:" "$PLUGIN_YML" | grep -q "PlaceholderAPI" || fail "plugin.yml softdepend missing PlaceholderAPI"
-pass "plugin.yml softdepend includes LuckPerms, CoreProtect, WorldEdit, WorldGuard, GriefPrevention, and PlaceholderAPI"
+grep -A12 "^softdepend:" "$PLUGIN_YML" | grep -q "DiscordSRV" || fail "plugin.yml softdepend missing DiscordSRV"
+pass "plugin.yml softdepend includes LuckPerms, CoreProtect, WorldEdit, WorldGuard, GriefPrevention, PlaceholderAPI, and DiscordSRV"
 
 grep -q 'compileOnly("net.luckperms:api:' "$BUILD_GRADLE" || fail "LuckPerms compileOnly dependency missing"
 grep -q 'compileOnly("net.coreprotect:coreprotect:' "$BUILD_GRADLE" || fail "CoreProtect compileOnly dependency missing"

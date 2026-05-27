@@ -3,6 +3,10 @@ package dev.modplugin.reputationban.integration;
 import dev.modplugin.reputationban.config.PluginConfig;
 import dev.modplugin.reputationban.integration.coreprotect.CoreProtectEvidenceService;
 import dev.modplugin.reputationban.integration.coreprotect.CoreProtectIntegration;
+import dev.modplugin.reputationban.integration.discordsrv.DiscordSrvAccountLinkService;
+import dev.modplugin.reputationban.integration.discordsrv.DiscordSrvIntegration;
+import dev.modplugin.reputationban.integration.discordsrv.DiscordSrvPolicy;
+import dev.modplugin.reputationban.integration.discordsrv.DiscordSrvStatus;
 import dev.modplugin.reputationban.integration.griefprevention.GriefPreventionClaimContextService;
 import dev.modplugin.reputationban.integration.griefprevention.GriefPreventionClaimSummary;
 import dev.modplugin.reputationban.integration.griefprevention.GriefPreventionIntegration;
@@ -38,9 +42,11 @@ public final class IntegrationService {
     private final GriefPreventionIntegration griefPreventionIntegration;
     private final PlaceholderCacheService placeholderCacheService;
     private final PlaceholderApiIntegration placeholderApiIntegration;
+    private final DiscordSrvIntegration discordSrvIntegration;
     private final CoreProtectEvidenceService coreProtectEvidenceService;
     private final WorldGuardRegionContextService worldGuardRegionContextService;
     private final GriefPreventionClaimContextService griefPreventionClaimContextService;
+    private final DiscordSrvAccountLinkService discordSrvAccountLinkService;
 
     public IntegrationService(
             JavaPlugin plugin,
@@ -62,6 +68,7 @@ public final class IntegrationService {
                 plugin.getPluginMeta().getVersion()
         );
         this.placeholderApiIntegration = new PlaceholderApiIntegration(plugin, configSupplier, placeholderValueProvider);
+        this.discordSrvIntegration = new DiscordSrvIntegration(plugin);
         this.coreProtectEvidenceService = new CoreProtectEvidenceService(plugin, coreProtectIntegration, reportService, auditService);
         this.worldGuardRegionContextService = new WorldGuardRegionContextService(
                 plugin,
@@ -75,6 +82,12 @@ public final class IntegrationService {
                 reportService,
                 auditService
         );
+        this.discordSrvAccountLinkService = new DiscordSrvAccountLinkService(
+                plugin,
+                discordSrvIntegration,
+                reportService,
+                auditService
+        );
     }
 
     public List<IntegrationStatus> statuses() {
@@ -84,7 +97,8 @@ public final class IntegrationService {
                 coreProtectIntegration.status(config),
                 worldGuardIntegration.status(config),
                 griefPreventionIntegration.status(config),
-                placeholderApiStatus()
+                placeholderApiStatus(),
+                discordSrvIntegration.status(config)
         );
     }
 
@@ -95,11 +109,13 @@ public final class IntegrationService {
         PluginConfig.WorldGuardIntegrationConfig worldGuardConfig = config.worldGuardIntegration();
         PluginConfig.GriefPreventionIntegrationConfig griefConfig = config.griefPreventionIntegration();
         PluginConfig.PlaceholderApiIntegrationConfig placeholderConfig = config.placeholderApiIntegration();
+        PluginConfig.DiscordSrvIntegrationConfig discordConfig = config.discordSrvIntegration();
         IntegrationStatus luckPerms = luckPermsIntegration.status(config);
         IntegrationStatus coreProtect = coreProtectIntegration.status(config);
         WorldGuardStatus worldGuard = worldGuardIntegration.detail(config);
         GriefPreventionStatus griefPrevention = griefPreventionIntegration.detail(config);
         PlaceholderApiStatus placeholderApi = placeholderApiIntegration.status();
+        DiscordSrvStatus discordSrv = discordSrvIntegration.detail(config);
 
         return List.of(
                 "LuckPerms:",
@@ -150,7 +166,17 @@ public final class IntegrationService {
                 "  apiAvailable=" + placeholderApi.apiAvailable(),
                 "  active=" + placeholderApi.active(),
                 "  identifier=" + placeholderApi.identifier(),
-                "  cacheRefreshSeconds=" + placeholderConfig.cacheRefreshSeconds()
+                "  cacheRefreshSeconds=" + placeholderConfig.cacheRefreshSeconds(),
+                "",
+                "DiscordSRV:",
+                "  configuredEnabled=" + discordSrv.configuredEnabled(),
+                "  pluginPresent=" + discordSrv.pluginPresent(),
+                "  apiAvailable=" + discordSrv.apiAvailable(),
+                "  active=" + discordSrv.active(),
+                "  accountLinkContextEnabled=" + discordSrv.accountLinkContextEnabled(),
+                "  includeDiscordIds=" + discordSrv.includeDiscordIds(),
+                "  notificationsEnabled=" + discordSrv.notificationsEnabled(),
+                "  notificationChannel=" + fallback(discordConfig.notificationChannel())
         );
     }
 
@@ -160,11 +186,13 @@ public final class IntegrationService {
         PluginConfig.CoreProtectIntegrationConfig coreProtectConfig = config.coreProtectIntegration();
         PluginConfig.WorldGuardIntegrationConfig worldGuardConfig = config.worldGuardIntegration();
         PluginConfig.GriefPreventionIntegrationConfig griefConfig = config.griefPreventionIntegration();
+        PluginConfig.DiscordSrvIntegrationConfig discordConfig = config.discordSrvIntegration();
         IntegrationStatus luckPerms = luckPermsIntegration.status(config);
         IntegrationStatus coreProtect = coreProtectIntegration.status(config);
         WorldGuardStatus worldGuard = worldGuardIntegration.detail(config);
         GriefPreventionStatus griefPrevention = griefPreventionIntegration.detail(config);
         PlaceholderApiStatus placeholderApi = placeholderApiIntegration.status();
+        DiscordSrvStatus discordSrv = discordSrvIntegration.detail(config);
         List<String> lines = new java.util.ArrayList<>();
 
         lines.add("LuckPerms:");
@@ -263,6 +291,24 @@ public final class IntegrationService {
             lines.add("  sample version placeholder=" + placeholderApiIntegration.sampleFor(sender));
         }
 
+        lines.add("");
+        lines.add("DiscordSRV:");
+        lines.add("  pluginPresent=" + discordSrv.pluginPresent());
+        lines.add("  apiAvailable=" + discordSrv.apiAvailable());
+        lines.add("  active=" + discordSrv.active());
+        lines.add("  accountLinkAvailable=" + discordSrv.accountLinkAvailable());
+        if (sender instanceof Player player && discordSrv.active() && discordSrv.accountLinkAvailable()) {
+            String discordId = discordSrvIntegration.discordId(player.getUniqueId()).orElse("");
+            lines.add("  senderLinked=" + DiscordSrvPolicy.linked(discordId));
+            lines.add("  discordId=" + DiscordSrvPolicy.discordIdDisplay(discordConfig.includeDiscordIds(), discordId));
+        } else if (sender instanceof Player) {
+            lines.add("  senderLinked=false");
+            lines.add("  discordId=hidden");
+        } else {
+            lines.add("  DiscordSRV account link test: console sender, skipped");
+        }
+        lines.add("  notificationsEnabled=" + discordSrv.notificationsEnabled());
+
         return new IntegrationTestResult(
                 List.copyOf(lines),
                 luckPerms.active(),
@@ -270,6 +316,7 @@ public final class IntegrationService {
                 worldGuard.active(),
                 griefPrevention.active(),
                 placeholderApi.active(),
+                discordSrv.active(),
                 sender instanceof Player ? "player" : "console"
         );
     }
@@ -351,6 +398,24 @@ public final class IntegrationService {
         );
     }
 
+    public void captureDiscordSrvContext(
+            long reportId,
+            Player reporter,
+            UUID targetUuid,
+            String targetName,
+            ReportCategory category
+    ) {
+        discordSrvAccountLinkService.captureAfterReport(
+                reportId,
+                reporter.getUniqueId(),
+                reporter.getName(),
+                targetUuid,
+                targetName,
+                category,
+                configSupplier.get()
+        );
+    }
+
     public void logStartupStatuses() {
         for (IntegrationStatus status : statuses()) {
             plugin.getLogger().info(status.startupLine());
@@ -378,6 +443,10 @@ public final class IntegrationService {
 
     public PlaceholderApiStatus placeholderApiStatusDetail() {
         return placeholderApiIntegration.status();
+    }
+
+    public DiscordSrvStatus discordSrvStatusDetail() {
+        return discordSrvIntegration.detail(configSupplier.get());
     }
 
     public List<String> placeholderExamples() {
@@ -416,6 +485,7 @@ public final class IntegrationService {
             boolean worldGuardActive,
             boolean griefPreventionActive,
             boolean placeholderApiActive,
+            boolean discordSrvActive,
             String senderType
     ) {
     }

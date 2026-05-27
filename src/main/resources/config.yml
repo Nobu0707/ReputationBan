@@ -185,6 +185,29 @@ integrations:
     cache-refresh-seconds: 60
     show-unknown-as: "-"
 
+  discordsrv:
+    enabled: true
+    account-link-context:
+      enabled: true
+      include-discord-ids: false
+      categories:
+        - griefing
+        - harassment
+        - scam
+        - abusive_chat
+    notifications:
+      enabled: false
+      channel: "staff"
+      include-reasons: true
+      events:
+        report-created: true
+        report-approved: true
+        report-rejected: true
+        auto-ban: true
+        unban: true
+        pardon: true
+        reporter-penalty: true
+
 database:
   type: "sqlite"
   file: "reputationban.db"

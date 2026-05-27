@@ -892,6 +892,7 @@ public final class RepCommand implements CommandExecutor {
                         .put("worldGuardActive", result.worldGuardActive())
                         .put("griefPreventionActive", result.griefPreventionActive())
                         .put("placeholderApiActive", result.placeholderApiActive())
+                        .put("discordSrvActive", result.discordSrvActive())
                         .put("senderType", result.senderType())
                         .toJson(),
                 System.currentTimeMillis()

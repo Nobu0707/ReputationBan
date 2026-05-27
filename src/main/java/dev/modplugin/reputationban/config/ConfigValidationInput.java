@@ -37,6 +37,7 @@ public record ConfigValidationInput(
         int worldGuardMaxRegions,
         List<String> worldGuardReportContextCategories,
         List<String> griefPreventionReportContextCategories,
+        List<String> discordSrvAccountLinkContextCategories,
         String placeholderApiIdentifier,
         int placeholderApiCacheRefreshSeconds
 ) {
@@ -75,6 +76,7 @@ public record ConfigValidationInput(
                 config.worldGuardIntegration().maxRegions(),
                 config.worldGuardIntegration().reportContextCategories(),
                 config.griefPreventionIntegration().reportContextCategories(),
+                config.discordSrvIntegration().accountLinkContextCategories(),
                 config.placeholderApiIntegration().identifier(),
                 config.placeholderApiIntegration().cacheRefreshSeconds()
         );

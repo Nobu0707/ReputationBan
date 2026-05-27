@@ -1,5 +1,5 @@
 name: ReputationBan
-version: 0.20.0
+version: 0.21.0
 main: dev.modplugin.reputationban.ReputationBanPlugin
 api-version: '26.1.2'
 description: Reputation score based moderation and temporary ban plugin.
@@ -15,6 +15,7 @@ softdepend:
   - WorldGuard
   - GriefPrevention
   - PlaceholderAPI
+  - DiscordSRV
 
 commands:
   reportbad:

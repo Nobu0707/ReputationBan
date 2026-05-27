@@ -24,6 +24,7 @@ class AuditEventTypeTest {
         assertTrue(AuditEventType.databaseValues().contains("COREPROTECT_CONTEXT_CAPTURED"));
         assertTrue(AuditEventType.databaseValues().contains("WORLDGUARD_CONTEXT_CAPTURED"));
         assertTrue(AuditEventType.databaseValues().contains("GRIEFPREVENTION_CONTEXT_CAPTURED"));
+        assertTrue(AuditEventType.databaseValues().contains("DISCORDSRV_CONTEXT_CAPTURED"));
         assertTrue(AuditEventType.databaseValues().contains("INTEGRATION_STATUS_CHECKED"));
         assertEquals(AuditEventType.MAINTENANCE_PREVIEW, AuditEventType.parse("maintenance-preview"));
         assertEquals(AuditEventType.DIAGNOSTICS_RUN, AuditEventType.parse("diagnostics-run"));
@@ -32,6 +33,7 @@ class AuditEventTypeTest {
         assertEquals(AuditEventType.COREPROTECT_CONTEXT_CAPTURED, AuditEventType.parse("coreprotect-context-captured"));
         assertEquals(AuditEventType.WORLDGUARD_CONTEXT_CAPTURED, AuditEventType.parse("worldguard-context-captured"));
         assertEquals(AuditEventType.GRIEFPREVENTION_CONTEXT_CAPTURED, AuditEventType.parse("griefprevention-context-captured"));
+        assertEquals(AuditEventType.DISCORDSRV_CONTEXT_CAPTURED, AuditEventType.parse("discordsrv-context-captured"));
         assertEquals(AuditEventType.INTEGRATION_STATUS_CHECKED, AuditEventType.parse("integration-status-checked"));
     }
 

@@ -5,7 +5,8 @@ public enum ExternalIntegrationType {
     COREPROTECT("CoreProtect"),
     WORLDGUARD("WorldGuard"),
     GRIEFPREVENTION("GriefPrevention"),
-    PLACEHOLDERAPI("PlaceholderAPI");
+    PLACEHOLDERAPI("PlaceholderAPI"),
+    DISCORDSRV("DiscordSRV");
 
     private final String displayName;
 
