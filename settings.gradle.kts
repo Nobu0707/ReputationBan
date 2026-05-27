@@ -13,6 +13,7 @@ dependencyResolutionManagement {
         maven("https://repo.papermc.io/repository/maven-public/")
         maven("https://maven.playpro.com/")
         maven("https://maven.enginehub.org/repo/")
+        maven("https://repo.helpch.at/releases/")
     }
 }
 

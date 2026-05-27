@@ -1,8 +1,11 @@
 package dev.modplugin.reputationban.scripts;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import org.junit.jupiter.api.Test;
 
 class ReleaseArtifactScriptTest {
@@ -13,6 +16,16 @@ class ReleaseArtifactScriptTest {
         assertBashSyntax("scripts/record-paper-runtime-smoke-result.sh");
         assertBashSyntax("scripts/check-optional-dependency-safety.sh");
         assertBashSyntax("scripts/record-integration-runtime-smoke-result.sh");
+    }
+
+    @Test
+    void optionalDependencySafetyChecksPlaceholderApiIsolation() throws IOException {
+        String script = Files.readString(Path.of("scripts/check-optional-dependency-safety.sh"));
+
+        assertTrue(script.contains("PlaceholderAPI direct import is isolated"));
+        assertTrue(script.contains("ReputationBanPlaceholderExpansion.java"));
+        assertTrue(script.contains("PlaceholderAPI compileOnly dependency missing"));
+        assertTrue(script.contains("reflection-load ReputationBanPlaceholderExpansion"));
     }
 
     private static void assertBashSyntax(String script) throws IOException, InterruptedException {

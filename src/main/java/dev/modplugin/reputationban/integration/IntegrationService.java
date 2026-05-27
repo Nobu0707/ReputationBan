@@ -9,12 +9,17 @@ import dev.modplugin.reputationban.integration.griefprevention.GriefPreventionIn
 import dev.modplugin.reputationban.integration.griefprevention.GriefPreventionStatus;
 import dev.modplugin.reputationban.integration.luckperms.LuckPermsIntegration;
 import dev.modplugin.reputationban.integration.luckperms.LuckPermsTrustService;
+import dev.modplugin.reputationban.integration.placeholderapi.PlaceholderApiIntegration;
+import dev.modplugin.reputationban.integration.placeholderapi.PlaceholderApiStatus;
+import dev.modplugin.reputationban.integration.placeholderapi.PlaceholderCacheService;
+import dev.modplugin.reputationban.integration.placeholderapi.PlaceholderValueProvider;
 import dev.modplugin.reputationban.integration.worldguard.WorldGuardIntegration;
 import dev.modplugin.reputationban.integration.worldguard.WorldGuardRegionContextService;
 import dev.modplugin.reputationban.integration.worldguard.WorldGuardRegionSummary;
 import dev.modplugin.reputationban.integration.worldguard.WorldGuardStatus;
 import dev.modplugin.reputationban.model.ReportCategory;
 import dev.modplugin.reputationban.service.AuditService;
+import dev.modplugin.reputationban.service.PlayerDataService;
 import dev.modplugin.reputationban.service.ReportService;
 import java.util.List;
 import java.util.UUID;
@@ -31,6 +36,8 @@ public final class IntegrationService {
     private final CoreProtectIntegration coreProtectIntegration;
     private final WorldGuardIntegration worldGuardIntegration;
     private final GriefPreventionIntegration griefPreventionIntegration;
+    private final PlaceholderCacheService placeholderCacheService;
+    private final PlaceholderApiIntegration placeholderApiIntegration;
     private final CoreProtectEvidenceService coreProtectEvidenceService;
     private final WorldGuardRegionContextService worldGuardRegionContextService;
     private final GriefPreventionClaimContextService griefPreventionClaimContextService;
@@ -38,6 +45,7 @@ public final class IntegrationService {
     public IntegrationService(
             JavaPlugin plugin,
             Supplier<PluginConfig> configSupplier,
+            PlayerDataService playerDataService,
             ReportService reportService,
             AuditService auditService
     ) {
@@ -47,6 +55,13 @@ public final class IntegrationService {
         this.coreProtectIntegration = new CoreProtectIntegration(plugin);
         this.worldGuardIntegration = new WorldGuardIntegration(plugin);
         this.griefPreventionIntegration = new GriefPreventionIntegration(plugin);
+        this.placeholderCacheService = new PlaceholderCacheService(plugin, playerDataService, configSupplier);
+        PlaceholderValueProvider placeholderValueProvider = new PlaceholderValueProvider(
+                placeholderCacheService,
+                configSupplier,
+                plugin.getPluginMeta().getVersion()
+        );
+        this.placeholderApiIntegration = new PlaceholderApiIntegration(plugin, configSupplier, placeholderValueProvider);
         this.coreProtectEvidenceService = new CoreProtectEvidenceService(plugin, coreProtectIntegration, reportService, auditService);
         this.worldGuardRegionContextService = new WorldGuardRegionContextService(
                 plugin,
@@ -68,7 +83,8 @@ public final class IntegrationService {
                 luckPermsIntegration.status(config),
                 coreProtectIntegration.status(config),
                 worldGuardIntegration.status(config),
-                griefPreventionIntegration.status(config)
+                griefPreventionIntegration.status(config),
+                placeholderApiStatus()
         );
     }
 
@@ -78,10 +94,12 @@ public final class IntegrationService {
         PluginConfig.CoreProtectIntegrationConfig coreProtectConfig = config.coreProtectIntegration();
         PluginConfig.WorldGuardIntegrationConfig worldGuardConfig = config.worldGuardIntegration();
         PluginConfig.GriefPreventionIntegrationConfig griefConfig = config.griefPreventionIntegration();
+        PluginConfig.PlaceholderApiIntegrationConfig placeholderConfig = config.placeholderApiIntegration();
         IntegrationStatus luckPerms = luckPermsIntegration.status(config);
         IntegrationStatus coreProtect = coreProtectIntegration.status(config);
         WorldGuardStatus worldGuard = worldGuardIntegration.detail(config);
         GriefPreventionStatus griefPrevention = griefPreventionIntegration.detail(config);
+        PlaceholderApiStatus placeholderApi = placeholderApiIntegration.status();
 
         return List.of(
                 "LuckPerms:",
@@ -124,7 +142,15 @@ public final class IntegrationService {
                 "  reportContextEnabled=" + griefPrevention.reportContextEnabled(),
                 "  includeClaimOwner=" + griefConfig.includeClaimOwner(),
                 "  includeTrustCounts=" + griefConfig.includeTrustCounts(),
-                "  includeBoundaries=" + griefConfig.includeBoundaries()
+                "  includeBoundaries=" + griefConfig.includeBoundaries(),
+                "",
+                "PlaceholderAPI:",
+                "  configuredEnabled=" + placeholderApi.configuredEnabled(),
+                "  pluginPresent=" + placeholderApi.pluginPresent(),
+                "  apiAvailable=" + placeholderApi.apiAvailable(),
+                "  active=" + placeholderApi.active(),
+                "  identifier=" + placeholderApi.identifier(),
+                "  cacheRefreshSeconds=" + placeholderConfig.cacheRefreshSeconds()
         );
     }
 
@@ -138,6 +164,7 @@ public final class IntegrationService {
         IntegrationStatus coreProtect = coreProtectIntegration.status(config);
         WorldGuardStatus worldGuard = worldGuardIntegration.detail(config);
         GriefPreventionStatus griefPrevention = griefPreventionIntegration.detail(config);
+        PlaceholderApiStatus placeholderApi = placeholderApiIntegration.status();
         List<String> lines = new java.util.ArrayList<>();
 
         lines.add("LuckPerms:");
@@ -224,12 +251,25 @@ public final class IntegrationService {
             lines.add("  GriefPrevention claim test: console sender, skipped");
         }
 
+        lines.add("");
+        lines.add("PlaceholderAPI:");
+        lines.add("  pluginPresent=" + placeholderApi.pluginPresent());
+        lines.add("  active=" + placeholderApi.active());
+        lines.add("  identifier=" + placeholderApi.identifier());
+        lines.add("  registered=" + placeholderApi.registered());
+        if (sender instanceof Player) {
+            lines.add("  sample score placeholder=" + placeholderApiIntegration.sampleFor(sender));
+        } else {
+            lines.add("  sample version placeholder=" + placeholderApiIntegration.sampleFor(sender));
+        }
+
         return new IntegrationTestResult(
                 List.copyOf(lines),
                 luckPerms.active(),
                 coreProtect.active(),
                 worldGuard.active(),
                 griefPrevention.active(),
+                placeholderApi.active(),
                 sender instanceof Player ? "player" : "console"
         );
     }
@@ -317,6 +357,54 @@ public final class IntegrationService {
         }
     }
 
+    public void start() {
+        placeholderCacheService.start();
+        placeholderApiIntegration.register();
+    }
+
+    public void reload() {
+        placeholderCacheService.start();
+        placeholderApiIntegration.register();
+    }
+
+    public void shutdown() {
+        placeholderApiIntegration.unregister();
+        placeholderCacheService.stop();
+    }
+
+    public PlaceholderCacheService placeholderCacheService() {
+        return placeholderCacheService;
+    }
+
+    public PlaceholderApiStatus placeholderApiStatusDetail() {
+        return placeholderApiIntegration.status();
+    }
+
+    public List<String> placeholderExamples() {
+        return placeholderApiIntegration.placeholderExamples();
+    }
+
+    public void refreshPlaceholderCache(UUID uuid, String name) {
+        placeholderCacheService.refreshPlayer(uuid, name);
+    }
+
+    public void refreshOnlinePlaceholderCache() {
+        placeholderCacheService.refreshOnlinePlayers();
+    }
+
+    private IntegrationStatus placeholderApiStatus() {
+        PlaceholderApiStatus detail = placeholderApiIntegration.status();
+        return new IntegrationStatus(
+                ExternalIntegrationType.PLACEHOLDERAPI,
+                detail.configuredEnabled(),
+                detail.pluginPresent(),
+                detail.apiAvailable(),
+                "",
+                detail.active(),
+                detail.message()
+        );
+    }
+
     private static String fallback(String value) {
         return value == null || value.isBlank() ? "-" : value;
     }
@@ -327,6 +415,7 @@ public final class IntegrationService {
             boolean coreProtectActive,
             boolean worldGuardActive,
             boolean griefPreventionActive,
+            boolean placeholderApiActive,
             String senderType
     ) {
     }

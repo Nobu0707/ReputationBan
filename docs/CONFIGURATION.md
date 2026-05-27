@@ -1,6 +1,6 @@
 # Configuration
 
-このドキュメントでは ReputationBan 0.19.0 の主な `config.yml` セクションを説明します。YAML key は変更しないでください。
+このドキュメントでは ReputationBan 0.20.0 の主な `config.yml` セクションを説明します。YAML key は変更しないでください。
 
 ## Score
 
@@ -81,6 +81,8 @@
 `integrations.worldguard` は WorldGuard と WorldEdit が導入されている場合だけ有効になります。`report-context.categories` に含まれる category の `/reportbad` で、通報者の現在地に適用される region id、priority、必要に応じた flag を `report_context` に保存します。`max-regions` は保存・表示する最大件数です。`include-region-owners` と `include-region-members` は privacy のためデフォルト `false` で、`true` の場合も件数程度に留めます。ReputationBan は WorldGuard region や flag を変更しません。
 
 `integrations.griefprevention` は GriefPrevention が導入されている場合だけ有効になります。`report-context.categories` に含まれる category の `/reportbad` で、通報者の現在地にある claim context を `report_context` provider `griefprevention` に保存します。`include-claim-owner` と `include-trust-counts` は privacy のためデフォルト `false`、`include-boundaries` はデフォルト `true` です。ReputationBan は GriefPrevention claim や trust を変更しません。
+
+`integrations.placeholderapi` は PlaceholderAPI が導入されている場合だけ有効になります。`identifier` は `%reputationban_score%` の `reputationban` 部分で、`[a-z0-9_]+` 以外は warning のうえ `reputationban` にフォールバックします。`cache-refresh-seconds` は online player summary cache の定期更新間隔で、0以下の場合は定期更新しません。placeholder の値は cache から返すため、最大でこの秒数程度の遅延があり得ます。`show-unknown-as` は cache 未取得、offline、不明値の表示です。
 
 ## Database
 

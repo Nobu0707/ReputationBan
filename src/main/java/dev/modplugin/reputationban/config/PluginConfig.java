@@ -60,6 +60,7 @@ public final class PluginConfig {
     private final CoreProtectIntegrationConfig coreProtectIntegration;
     private final WorldGuardIntegrationConfig worldGuardIntegration;
     private final GriefPreventionIntegrationConfig griefPreventionIntegration;
+    private final PlaceholderApiIntegrationConfig placeholderApiIntegration;
 
     private PluginConfig(FileConfiguration config) {
         initialScore = config.getInt("initial-score", 100);
@@ -109,6 +110,7 @@ public final class PluginConfig {
         coreProtectIntegration = loadCoreProtectIntegration(config);
         worldGuardIntegration = loadWorldGuardIntegration(config);
         griefPreventionIntegration = loadGriefPreventionIntegration(config);
+        placeholderApiIntegration = loadPlaceholderApiIntegration(config);
     }
 
     public static PluginConfig load(FileConfiguration config) {
@@ -214,6 +216,15 @@ public final class PluginConfig {
                 config.getBoolean("integrations.griefprevention.report-context.include-claim-owner", false),
                 config.getBoolean("integrations.griefprevention.report-context.include-trust-counts", false),
                 config.getBoolean("integrations.griefprevention.report-context.include-boundaries", true)
+        );
+    }
+
+    private static PlaceholderApiIntegrationConfig loadPlaceholderApiIntegration(FileConfiguration config) {
+        return new PlaceholderApiIntegrationConfig(
+                config.getBoolean("integrations.placeholderapi.enabled", true),
+                config.getString("integrations.placeholderapi.identifier", "reputationban"),
+                config.getInt("integrations.placeholderapi.cache-refresh-seconds", 60),
+                config.getString("integrations.placeholderapi.show-unknown-as", "-")
         );
     }
 
@@ -409,6 +420,10 @@ public final class PluginConfig {
         return griefPreventionIntegration;
     }
 
+    public PlaceholderApiIntegrationConfig placeholderApiIntegration() {
+        return placeholderApiIntegration;
+    }
+
     public record LuckPermsIntegrationConfig(
             boolean enabled,
             boolean useGroupWeight,
@@ -449,6 +464,14 @@ public final class PluginConfig {
             boolean includeClaimOwner,
             boolean includeTrustCounts,
             boolean includeBoundaries
+    ) {
+    }
+
+    public record PlaceholderApiIntegrationConfig(
+            boolean enabled,
+            String identifier,
+            int cacheRefreshSeconds,
+            String showUnknownAs
     ) {
     }
 }

@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.20.0
+
+- PlaceholderAPI を `softdepend` + `compileOnly` の任意連携として追加しました。
+- PAPI API の直接 import は `ReputationBanPlaceholderExpansion` に隔離し、通常ロードされるクラスは reflection で登録します。
+- `%reputationban_score%`、`%reputationban_status%`、`%reputationban_version%` などの placeholder を追加しました。
+- `/rep placeholders`、`/rep integrations`、`/rep integrations test`、`/rep doctor` に PlaceholderAPI 状態を追加しました。
+- placeholder 呼び出し時にDB同期問い合わせを行わないよう、online player summary cache を追加しました。
+- Phase 20 の docs、review checks、release artifact scripts を v0.20.0 向けに更新しました。
+
 ## 0.19.0
 
 - GriefPrevention を `softdepend` の任意連携として追加しました。

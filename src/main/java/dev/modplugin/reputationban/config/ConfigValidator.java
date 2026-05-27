@@ -68,6 +68,15 @@ public final class ConfigValidator {
             issues.add(new ConfigValidationIssue(Severity.WARNING, "integrations.griefprevention.report-context.categories",
                     "integrations.griefprevention.report-context.categories is empty; GriefPrevention report context will not be captured"));
         }
+        require(config.placeholderApiCacheRefreshSeconds() >= 0, issues, "integrations.placeholderapi.cache-refresh-seconds",
+                "integrations.placeholderapi.cache-refresh-seconds must be 0 or greater");
+        if (config.placeholderApiIdentifier() == null || config.placeholderApiIdentifier().isBlank()) {
+            issues.add(new ConfigValidationIssue(Severity.WARNING, "integrations.placeholderapi.identifier",
+                    "integrations.placeholderapi.identifier is empty; reputationban will be used"));
+        } else if (!config.placeholderApiIdentifier().matches("[a-z0-9_]+")) {
+            issues.add(new ConfigValidationIssue(Severity.WARNING, "integrations.placeholderapi.identifier",
+                    "integrations.placeholderapi.identifier should match [a-z0-9_]+; reputationban will be used"));
+        }
         if (config.discordWebhookTimeoutSeconds() < 1 || config.discordWebhookTimeoutSeconds() > 30) {
             issues.add(new ConfigValidationIssue(Severity.WARNING, "notify.discord-webhook.timeout-seconds",
                     "notify.discord-webhook.timeout-seconds should be between 1 and 30"));

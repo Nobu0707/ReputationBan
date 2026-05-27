@@ -2,7 +2,7 @@
 set -euo pipefail
 
 PROJECT_NAME="ReputationBan"
-EXPECTED_VERSION="0.19.0"
+EXPECTED_VERSION="0.20.0"
 EXPECTED_MAIN="dev.modplugin.reputationban.ReputationBanPlugin"
 EXPECTED_API_VERSION="26.1.2"
 EXPECTED_PACKAGE_DIR="src/main/java/dev/modplugin/reputationban"
@@ -53,6 +53,7 @@ require_file docs/phase-14.md
 require_file docs/phase-15.md
 require_file docs/phase-17.md
 require_file docs/phase-19.md
+require_file docs/phase-20.md
 require_file docs/INTEGRATIONS.md
 require_file docs/INTEGRATION_RUNTIME_SMOKE_CHECKLIST.md
 require_file docs/RELEASE_CANDIDATE_CHECKLIST.md
@@ -76,13 +77,15 @@ YML=src/main/resources/plugin.yml
 grep -q "io.papermc.paper:paper-api:26.1.2.build" build.gradle.kts || fail "Paper API 26.1.2 dependency not found"
 grep -q "org.xerial:sqlite-jdbc" "$YML" || fail "Missing sqlite-jdbc library"
 grep -q "JavaLanguageVersion.of(25)" build.gradle.kts || fail "Java 25 toolchain not found"
-grep -q 'version = "0.19.0"' build.gradle.kts || fail "build.gradle.kts version is not 0.19.0"
+grep -q 'version = "0.20.0"' build.gradle.kts || fail "build.gradle.kts version is not 0.20.0"
 grep -q "options.release.set(25)" build.gradle.kts || fail "Java release 25 not found"
 grep -q 'net.luckperms:api:5.5' build.gradle.kts || fail "LuckPerms compileOnly dependency not found"
 grep -q 'net.coreprotect:coreprotect:23.2' build.gradle.kts || fail "CoreProtect compileOnly dependency not found"
 grep -q 'com.sk89q.worldguard:worldguard-bukkit:7.0.13' build.gradle.kts || fail "WorldGuard compileOnly dependency not found"
+grep -q 'me.clip:placeholderapi:2.12.2' build.gradle.kts || fail "PlaceholderAPI compileOnly dependency not found"
 grep -q 'maven.enginehub.org/repo' settings.gradle.kts build.gradle.kts || fail "EngineHub Maven repository not found"
 grep -q 'maven.playpro.com' settings.gradle.kts build.gradle.kts || fail "maven.playpro.com repository not found"
+grep -q 'repo.helpch.at/releases' settings.gradle.kts build.gradle.kts || fail "PlaceholderAPI HelpChat Maven repository not found"
 
 [[ "$(extract_yaml_value "$YML" name)" == "$PROJECT_NAME" ]] || fail "Invalid plugin.yml name"
 [[ "$(extract_yaml_value "$YML" version)" == "$EXPECTED_VERSION" ]] || fail "Invalid plugin.yml version"
@@ -100,6 +103,7 @@ grep -A8 "^softdepend:" "$YML" | grep -q "CoreProtect" || fail "plugin.yml softd
 grep -A8 "^softdepend:" "$YML" | grep -q "WorldEdit" || fail "plugin.yml softdepend missing WorldEdit"
 grep -A8 "^softdepend:" "$YML" | grep -q "WorldGuard" || fail "plugin.yml softdepend missing WorldGuard"
 grep -A8 "^softdepend:" "$YML" | grep -q "GriefPrevention" || fail "plugin.yml softdepend missing GriefPrevention"
+grep -A10 "^softdepend:" "$YML" | grep -q "PlaceholderAPI" || fail "plugin.yml softdepend missing PlaceholderAPI"
 grep -q "reputationban.admin.integrations:" "$YML" || fail "Missing reputationban.admin.integrations permission"
 grep -A14 "reputationban.admin:" "$YML" | grep -q "reputationban.admin.integrations: true" || fail "admin integrations child permission missing"
 
@@ -133,6 +137,10 @@ grep -q "griefprevention:" "$CFG" || fail "Missing GriefPrevention config sectio
 grep -q "include-claim-owner:" "$CFG" || fail "Missing GriefPrevention include-claim-owner config"
 grep -q "include-trust-counts:" "$CFG" || fail "Missing GriefPrevention include-trust-counts config"
 grep -q "include-boundaries:" "$CFG" || fail "Missing GriefPrevention include-boundaries config"
+grep -q "placeholderapi:" "$CFG" || fail "Missing PlaceholderAPI config section"
+grep -q "identifier:[[:space:]]*\"reputationban\"" "$CFG" || fail "Missing PlaceholderAPI default identifier"
+grep -q "cache-refresh-seconds:[[:space:]]*60" "$CFG" || fail "Missing PlaceholderAPI cache refresh default"
+grep -q "show-unknown-as:[[:space:]]*\"-\"" "$CFG" || fail "Missing PlaceholderAPI unknown fallback default"
 grep -q "url:[[:space:]]*\"\"" "$CFG" || fail "Default discord webhook URL must be empty"
 for event_key in report-created report-approved report-rejected score-threshold-crossed auto-ban unban pardon reporter-penalty recovery-summary; do
   grep -q "$event_key:" "$CFG" || fail "Missing discord webhook event key: $event_key"
@@ -254,6 +262,20 @@ grep -R "class WorldGuardIntegration" src/main/java/dev/modplugin/reputationban/
 grep -R "class WorldGuardReflectionAdapter" src/main/java/dev/modplugin/reputationban/integration >/dev/null || fail "WorldGuardReflectionAdapter not found"
 grep -R "class GriefPreventionIntegration" src/main/java/dev/modplugin/reputationban/integration >/dev/null || fail "GriefPreventionIntegration not found"
 grep -R "class GriefPreventionReflectionAdapter" src/main/java/dev/modplugin/reputationban/integration >/dev/null || fail "GriefPreventionReflectionAdapter not found"
+grep -R "class PlaceholderApiIntegration" src/main/java/dev/modplugin/reputationban/integration >/dev/null || fail "PlaceholderApiIntegration not found"
+grep -R "class ReputationBanPlaceholderExpansion" src/main/java/dev/modplugin/reputationban/integration >/dev/null || fail "ReputationBanPlaceholderExpansion not found"
+grep -R "class PlaceholderCacheService" src/main/java/dev/modplugin/reputationban/integration >/dev/null || fail "PlaceholderCacheService not found"
+grep -R "class PlaceholderValueProvider" src/main/java/dev/modplugin/reputationban/integration >/dev/null || fail "PlaceholderValueProvider not found"
+grep -R "record PlayerReputationSummary" src/main/java/dev/modplugin/reputationban/integration >/dev/null || fail "PlayerReputationSummary not found"
+grep -R "\"placeholders\"" src/main/java/dev/modplugin/reputationban/command/RepCommand.java src/main/java/dev/modplugin/reputationban/util/CommandSuggestionUtil.java >/dev/null || fail "/rep placeholders handling/completion not found"
+grep -R "PlaceholderAPI:" src/main/java/dev/modplugin/reputationban/integration/IntegrationService.java >/dev/null || fail "/rep integrations PlaceholderAPI display not found"
+grep -R "sample score placeholder\\|sample version placeholder" src/main/java/dev/modplugin/reputationban/integration/IntegrationService.java >/dev/null || fail "/rep integrations test PlaceholderAPI diagnostics not found"
+grep -R "PlaceholderAPI.*integration" src/main/java/dev/modplugin/reputationban/command/RepCommand.java >/dev/null || fail "/rep doctor PlaceholderAPI integration display not found"
+if grep -R "DatabaseManager\\|getConnection\\|executeQuery\\|PreparedStatement" src/main/java/dev/modplugin/reputationban/integration/placeholderapi/ReputationBanPlaceholderExpansion.java >/dev/null; then
+  fail "Placeholder expansion contains direct DB access markers"
+fi
+grep -q "PlaceholderAPI" docs/INTEGRATIONS.md || fail "docs/INTEGRATIONS.md missing PlaceholderAPI explanation"
+grep -q "PlaceholderAPI" docs/phase-20.md || fail "docs/phase-20.md missing PlaceholderAPI explanation"
 if grep -R "import net\.luckperms\." src/main/java >/dev/null; then
   fail "LuckPerms API direct import detected in Java sources"
 fi
@@ -265,6 +287,9 @@ if grep -R "import com\.sk89q\.worldguard\.\|import com\.sk89q\.worldedit\." src
 fi
 if grep -R "import me\.ryanhamshire\.GriefPrevention\.\|import me\.ryanhamshire\.griefprevention\.\|import com\.griefprevention\." src/main/java >/dev/null; then
   fail "GriefPrevention API direct import detected in Java sources"
+fi
+if grep -R "import me\.clip\.placeholderapi\." src/main/java | grep -v "ReputationBanPlaceholderExpansion.java" >/dev/null; then
+  fail "PlaceholderAPI API direct import escaped ReputationBanPlaceholderExpansion"
 fi
 if grep -R "CoreProtectAPI\|net\.coreprotect\.CoreProtect\|net\.luckperms\.api\.model\.user\.User" src/main/java >/dev/null; then
   fail "Optional dependency API type direct reference detected in Java sources"
@@ -371,6 +396,7 @@ for japanese_doc in \
   docs/phase-15.md \
   docs/phase-17.md \
   docs/phase-19.md \
+  docs/phase-20.md \
   docs/INTEGRATIONS.md; do
   grep -Pq '[\p{Hiragana}\p{Katakana}\p{Han}]' "$japanese_doc" || fail "$japanese_doc does not appear to contain Japanese text"
 done
@@ -380,7 +406,7 @@ bash -n scripts/check-docs-localization.sh || fail "check-docs-localization.sh s
 bash -n scripts/check-optional-dependency-safety.sh || fail "check-optional-dependency-safety.sh syntax check failed"
 ./scripts/check-optional-dependency-safety.sh
 
-grep -q "0.19.0" README.md || fail "README.md does not mention 0.19.0"
+grep -q "0.20.0" README.md || fail "README.md does not mention 0.20.0"
 grep -q "RELEASE_CANDIDATE_CHECKLIST" README.md || fail "README.md does not link RELEASE_CANDIDATE_CHECKLIST"
 grep -q "RELEASE_CANDIDATE_CHECKLIST" docs/phase-15.md docs/RELEASE_CANDIDATE_CHECKLIST.md README.md || fail "Release candidate checklist references missing"
 
@@ -392,14 +418,14 @@ require_command jar
 jar tf "$JAR" | grep -q "plugin.yml" || fail "plugin.yml missing from jar"
 jar tf "$JAR" | grep -q "dev/modplugin/reputationban/ReputationBanPlugin.class" || fail "Main class missing from jar"
 
-grep -q "EXPECTED_VERSION=\"0.19.0\"" scripts/run-local-smoke-check.sh || fail "run-local-smoke-check.sh does not check v0.19.0"
+grep -q "EXPECTED_VERSION=\"0.20.0\"" scripts/run-local-smoke-check.sh || fail "run-local-smoke-check.sh does not check v0.20.0"
 grep -q "REPUTATIONBAN_SKIP_BUILD" scripts/run-local-smoke-check.sh || fail "run-local-smoke-check.sh does not support REPUTATIONBAN_SKIP_BUILD"
-grep -q "VERSION=\"0.19.0\"" scripts/create-release-artifact.sh || fail "create-release-artifact.sh does not target v0.19.0"
+grep -q "VERSION=\"0.20.0\"" scripts/create-release-artifact.sh || fail "create-release-artifact.sh does not target v0.20.0"
 grep -q "build/release" scripts/create-release-artifact.sh || fail "create-release-artifact.sh does not write build/release"
 grep -q "sha256sum" scripts/create-release-artifact.sh || fail "create-release-artifact.sh does not create sha256"
 grep -q "release.zip" scripts/create-release-artifact.sh || fail "create-release-artifact.sh does not create release zip"
 grep -q "RELEASE_ZIP_SHA" scripts/create-release-artifact.sh || fail "create-release-artifact.sh does not create release zip sha256"
-grep -q "VERSION=\"0.19.0\"" scripts/verify-release-artifact.sh || fail "verify-release-artifact.sh does not target v0.19.0"
+grep -q "VERSION=\"0.20.0\"" scripts/verify-release-artifact.sh || fail "verify-release-artifact.sh does not target v0.20.0"
 grep -q "docs/INTEGRATIONS.md" scripts/verify-release-artifact.sh || fail "verify-release-artifact.sh does not verify integrations docs"
 grep -q "sha256sum -c" scripts/verify-release-artifact.sh || fail "verify-release-artifact.sh does not verify sha256"
 grep -q "docs/INSTALLATION.md" scripts/verify-release-artifact.sh || fail "verify-release-artifact.sh does not verify localized docs"
@@ -430,14 +456,14 @@ bash -n scripts/verify-release-artifact.sh || fail "verify-release-artifact.sh s
 bash -n scripts/record-paper-runtime-smoke-result.sh || fail "record-paper-runtime-smoke-result.sh syntax check failed"
 bash -n scripts/record-integration-runtime-smoke-result.sh || fail "record-integration-runtime-smoke-result.sh syntax check failed"
 ./scripts/create-release-artifact.sh
-[[ -f "build/release/ReputationBan-0.19.0.jar" ]] || fail "release jar not found"
-[[ -f "build/release/ReputationBan-0.19.0.jar.sha256" ]] || fail "release jar sha256 not found"
-[[ -f "build/release/ReputationBan-0.19.0-release.zip" ]] || fail "release zip not found"
-[[ -f "build/release/ReputationBan-0.19.0-release.zip.sha256" ]] || fail "release zip sha256 not found"
+[[ -f "build/release/ReputationBan-0.20.0.jar" ]] || fail "release jar not found"
+[[ -f "build/release/ReputationBan-0.20.0.jar.sha256" ]] || fail "release jar sha256 not found"
+[[ -f "build/release/ReputationBan-0.20.0-release.zip" ]] || fail "release zip not found"
+[[ -f "build/release/ReputationBan-0.20.0-release.zip.sha256" ]] || fail "release zip sha256 not found"
 ./scripts/verify-release-artifact.sh
-jar tf "build/release/ReputationBan-0.19.0-release.zip" | grep -q "README.md" || fail "release zip missing README.md"
-jar tf "build/release/ReputationBan-0.19.0-release.zip" | grep -q "docs/INTEGRATIONS.md" || fail "release zip missing docs/INTEGRATIONS.md"
-if jar tf "build/release/ReputationBan-0.19.0-release.zip" | grep -E '(^|/)(config\.yml|reputationban\.db|latest\.log|debug\.log)$|(^|/)logs/' >/dev/null; then
+jar tf "build/release/ReputationBan-0.20.0-release.zip" | grep -q "README.md" || fail "release zip missing README.md"
+jar tf "build/release/ReputationBan-0.20.0-release.zip" | grep -q "docs/INTEGRATIONS.md" || fail "release zip missing docs/INTEGRATIONS.md"
+if jar tf "build/release/ReputationBan-0.20.0-release.zip" | grep -E '(^|/)(config\.yml|reputationban\.db|latest\.log|debug\.log)$|(^|/)logs/' >/dev/null; then
   fail "release zip contains forbidden config, DB, or logs"
 fi
 

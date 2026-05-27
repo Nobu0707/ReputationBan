@@ -70,11 +70,15 @@ public final class ReputationBanPlugin extends JavaPlugin {
         scoreService = new ScoreService(databaseManager, auditService, pluginConfig);
         reportService = new ReportService(databaseManager, scoreService, auditService, pluginConfig);
         punishmentService = new PunishmentService(this, databaseManager, auditService, pluginConfig);
-        integrationService = new IntegrationService(this, this::pluginConfig, reportService, auditService);
+        integrationService = new IntegrationService(this, this::pluginConfig, playerDataService, reportService, auditService);
         diagnosticService = new DiagnosticService(this, databaseManager, auditService, this::pluginConfig);
         supportBundleService = new SupportBundleService(this, databaseManager, auditService, this::pluginConfig);
 
-        getServer().getPluginManager().registerEvents(new PlayerJoinListener(playerDataService, getLogger()), this);
+        integrationService.start();
+        getServer().getPluginManager().registerEvents(
+                new PlayerJoinListener(playerDataService, integrationService.placeholderCacheService(), getLogger()),
+                this
+        );
         registerCommand(
                 "rep",
                 new RepCommand(this, playerDataService, scoreService, punishmentService, auditService, diagnosticService, supportBundleService),
@@ -88,11 +92,14 @@ public final class ReputationBanPlugin extends JavaPlugin {
         registerCommand("reports", new ReportsCommand(this, reportService, punishmentService), new ReportsTabCompleter());
         startScoreRecoveryTask();
         integrationService.logStartupStatuses();
-        getLogger().info("ReputationBan v0.19.0 enabled.");
+        getLogger().info("ReputationBan v0.20.0 enabled.");
     }
 
     @Override
     public void onDisable() {
+        if (integrationService != null) {
+            integrationService.shutdown();
+        }
         if (databaseManager != null) {
             databaseManager.close();
         }
@@ -108,6 +115,7 @@ public final class ReputationBanPlugin extends JavaPlugin {
         scoreService.updateConfig(pluginConfig);
         reportService.updateConfig(pluginConfig);
         punishmentService.updateConfig(pluginConfig);
+        integrationService.reload();
         return issues;
     }
 
@@ -239,6 +247,7 @@ public final class ReputationBanPlugin extends JavaPlugin {
                         String message = "Score recovery completed: "
                                 + result.recoveredPlayers() + "/" + result.checkedPlayers() + " players recovered.";
                         getLogger().info(message);
+                        runSync(integrationService::refreshOnlinePlaceholderCache);
                         notifyDiscord(NotificationEventType.RECOVERY_SUMMARY, """
                                 **スコア回復**
                                 対象人数: %d / チェック対象: %d

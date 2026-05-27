@@ -419,7 +419,34 @@
 - GriefPrevention context は審査補助であり、自動 BAN の唯一根拠にしない。
 - CoreProtect rollback、restore、purge、LuckPerms 書き込み、WorldGuard region/flag 変更は引き続き行わない。
 
-## Phase 20以降: 外部連携・高度な悪用対策
+## Phase 20 / v0.20.0: PlaceholderAPI 任意連携
+
+目的: PlaceholderAPI を任意依存として扱い、scoreboard、TAB、chat などから ReputationBan の状態を読み取り専用で参照できるようにする。
+
+実装範囲:
+
+- version 0.20.0
+- `PlaceholderAPI` の `softdepend`
+- HelpChat repository と `me.clip:placeholderapi:2.12.2` の `compileOnly` dependency
+- `ReputationBanPlaceholderExpansion` への PAPI API import 隔離
+- `PlaceholderApiIntegration` の reflection 登録
+- `PlaceholderCacheService` による online player summary cache
+- `%reputationban_score%` などの placeholder
+- `/rep placeholders`
+- `/rep integrations` と `/rep integrations test` の PlaceholderAPI 表示
+- `/rep doctor` の PlaceholderAPI 簡易状態表示
+- `docs/INTEGRATIONS.md` と `docs/phase-20.md`
+- review/release archive scripts の v0.20.0 対応
+
+注意:
+
+- PlaceholderAPI 未導入でも ReputationBan 本体は起動できる設計にする。
+- `me.clip.placeholderapi.*` の直接 import は `ReputationBanPlaceholderExpansion.java` のみに限定する。
+- placeholder 呼び出し時にDB同期問い合わせを行わず、cache から値を返す。
+- Phase 20 では最大 `cache-refresh-seconds` 程度の表示遅延があり得る。
+- PlaceholderAPI から他プラグイン placeholder を parse する処理や eCloud 外部 expansion 配布は行わない。
+
+## Phase 21以降: 外部連携・高度な悪用対策
 
 実装候補:
 

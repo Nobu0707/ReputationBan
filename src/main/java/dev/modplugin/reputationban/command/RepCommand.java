@@ -3,6 +3,7 @@ package dev.modplugin.reputationban.command;
 import dev.modplugin.reputationban.ReputationBanPlugin;
 import dev.modplugin.reputationban.integration.IntegrationService;
 import dev.modplugin.reputationban.integration.IntegrationStatus;
+import dev.modplugin.reputationban.integration.placeholderapi.PlaceholderApiStatus;
 import dev.modplugin.reputationban.model.AuditEvent;
 import dev.modplugin.reputationban.model.AuditEventType;
 import dev.modplugin.reputationban.model.CommandActor;
@@ -135,6 +136,10 @@ public final class RepCommand implements CommandExecutor {
             integrations(sender, args);
             return true;
         }
+        if ("placeholders".equalsIgnoreCase(args[0]) || "placeholder".equalsIgnoreCase(args[0])) {
+            placeholders(sender);
+            return true;
+        }
         if ("add".equalsIgnoreCase(args[0]) || "remove".equalsIgnoreCase(args[0]) || "set".equalsIgnoreCase(args[0])) {
             mutateScore(sender, args);
             return true;
@@ -152,6 +157,9 @@ public final class RepCommand implements CommandExecutor {
         sender.sendMessage(ReputationBanPlugin.PREFIX + "/rep version - プラグインバージョンを表示");
         if (sender instanceof Player && sender.hasPermission("reputationban.score.self")) {
             sender.sendMessage(ReputationBanPlugin.PREFIX + "/rep - 自分のスコアを表示");
+        }
+        if (sender.hasPermission("reputationban.score.self")) {
+            sender.sendMessage(ReputationBanPlugin.PREFIX + "/rep placeholders - PlaceholderAPI placeholders一覧を表示");
         }
         if (canViewOthers(sender)) {
             sender.sendMessage(ReputationBanPlugin.PREFIX + "/rep check <player> - プレイヤーのスコア確認");
@@ -396,6 +404,7 @@ public final class RepCommand implements CommandExecutor {
                     if (result.banned()) {
                         sender.sendMessage(ReputationBanPlugin.PREFIX + "対象プレイヤーは評判スコアによりBAN処理されました。");
                     }
+                    plugin.integrationService().refreshPlaceholderCache(change.targetUuid(), change.targetName());
                 }))
                 .exceptionally(throwable -> {
                     plugin.getLogger().severe("Failed to mutate reputation score: " + throwable.getMessage());
@@ -741,6 +750,10 @@ public final class RepCommand implements CommandExecutor {
                             NotificationEventType.PARDON,
                             pardonDiscord(result.record().get(), sender.getName(), reason, result.profileResult(), result.pardonResult())
                     );
+                    plugin.integrationService().refreshPlaceholderCache(
+                            result.record().get().uuid(),
+                            result.record().get().name()
+                    );
                 }))
                 .exceptionally(throwable -> {
                     plugin.getLogger().severe("Failed to pardon player: " + throwable.getMessage());
@@ -878,10 +891,28 @@ public final class RepCommand implements CommandExecutor {
                         .put("coreProtectActive", result.coreProtectActive())
                         .put("worldGuardActive", result.worldGuardActive())
                         .put("griefPreventionActive", result.griefPreventionActive())
+                        .put("placeholderApiActive", result.placeholderApiActive())
                         .put("senderType", result.senderType())
                         .toJson(),
                 System.currentTimeMillis()
         ));
+    }
+
+    private void placeholders(CommandSender sender) {
+        if (!sender.hasPermission("reputationban.score.self")) {
+            sender.sendMessage(ReputationBanPlugin.PREFIX + "権限がありません。");
+            return;
+        }
+        PlaceholderApiStatus status = plugin.integrationService().placeholderApiStatusDetail();
+        sender.sendMessage(ReputationBanPlugin.PREFIX + "PlaceholderAPI integration: " + status.availabilityLabel());
+        sender.sendMessage(ReputationBanPlugin.PREFIX + "identifier: " + status.identifier());
+        if (!status.pluginPresent()) {
+            sender.sendMessage(ReputationBanPlugin.PREFIX + "PlaceholderAPIが未導入のため、外部プラグインからは利用できません。");
+        }
+        sender.sendMessage(ReputationBanPlugin.PREFIX + "利用可能なplaceholder:");
+        for (String placeholder : plugin.integrationService().placeholderExamples()) {
+            sender.sendMessage(ReputationBanPlugin.PREFIX + placeholder);
+        }
     }
 
     private static boolean canViewOthers(CommandSender sender) {

@@ -4,7 +4,8 @@ public enum ExternalIntegrationType {
     LUCKPERMS("LuckPerms"),
     COREPROTECT("CoreProtect"),
     WORLDGUARD("WorldGuard"),
-    GRIEFPREVENTION("GriefPrevention");
+    GRIEFPREVENTION("GriefPrevention"),
+    PLACEHOLDERAPI("PlaceholderAPI");
 
     private final String displayName;
 

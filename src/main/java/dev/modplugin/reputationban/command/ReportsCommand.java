@@ -268,6 +268,10 @@ public final class ReportsCommand implements CommandExecutor {
                 result.scoreChange().newScore(),
                 "通報承認 #" + result.report().id()
         );
+        plugin.integrationService().refreshPlaceholderCache(
+                result.scoreChange().targetUuid(),
+                result.scoreChange().targetName()
+        );
         if (completion.banned()) {
             sender.sendMessage(ReputationBanPlugin.PREFIX + "対象プレイヤーは評判スコアによりBAN処理されました。");
         }
@@ -361,6 +365,9 @@ public final class ReportsCommand implements CommandExecutor {
         }
         if ("worldguard".equalsIgnoreCase(provider)) {
             return "WorldGuard";
+        }
+        if ("griefprevention".equalsIgnoreCase(provider)) {
+            return "GriefPrevention";
         }
         return provider;
     }

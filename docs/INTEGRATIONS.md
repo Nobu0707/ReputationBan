@@ -1,8 +1,8 @@
 # 外部連携
 
-ReputationBan 0.19.0 では LuckPerms、CoreProtect、WorldGuard、GriefPrevention を任意連携として扱います。いずれも `softdepend` であり、未導入、未ロード、API unavailable の場合でも ReputationBan 単体の通報、監査、BAN、backup、support bundle は継続します。
+ReputationBan 0.20.0 では LuckPerms、CoreProtect、WorldGuard、GriefPrevention、PlaceholderAPI を任意連携として扱います。いずれも `softdepend` であり、未導入、未ロード、API unavailable の場合でも ReputationBan 単体の通報、監査、BAN、backup、support bundle は継続します。
 
-Phase 16a 以降、optional dependency class loading を安全化するため、LuckPerms / CoreProtect / WorldGuard / GriefPrevention API 型を起動時に無条件ロードされるクラスから外し、reflection adapter 経由で必要な時だけ参照します。外部プラグインが一部またはすべて未導入の構成でも、外部 API 欠落による `NoClassDefFoundError` で ReputationBan 本体が起動不能にならない設計です。
+Phase 16a 以降、optional dependency class loading を安全化するため、LuckPerms / CoreProtect / WorldGuard / GriefPrevention API 型を起動時に無条件ロードされるクラスから外し、reflection adapter 経由で必要な時だけ参照します。PlaceholderAPI は `PlaceholderExpansion` 継承が必要なため、直接 import を `ReputationBanPlaceholderExpansion` だけに隔離し、PlaceholderAPI が存在する場合だけ reflection でロードします。外部プラグインが一部またはすべて未導入の構成でも、外部 API 欠落による `NoClassDefFoundError` で ReputationBan 本体が起動不能にならない設計です。
 
 ## LuckPerms
 
@@ -42,10 +42,32 @@ Java ソースでは GriefPrevention API 型を直接 import せず、`GriefPrev
 
 GriefPrevention の claim context は自動処罰の唯一根拠にしないでください。ReputationBan は claim の作成、変更、削除、owner 変更、trust/permission 変更を行いません。`/rep integrations test` でも現在地の claim 取得だけを行います。
 
+## PlaceholderAPI
+
+PlaceholderAPI 連携は、他プラグイン、scoreboard、TAB、chat 表示から ReputationBan の状態を参照できるようにする読み取り専用連携です。PlaceholderAPI が未導入でも ReputationBan 本体は起動し、`/rep placeholders` では利用可能な placeholder 一覧を表示できます。
+
+提供する placeholder は以下です。
+
+- `%reputationban_score%`
+- `%reputationban_max_score%`
+- `%reputationban_score_percent%`
+- `%reputationban_status%`
+- `%reputationban_ban_count%`
+- `%reputationban_false_report_count%`
+- `%reputationban_report_banned%`
+- `%reputationban_report_banned_until%`
+- `%reputationban_last_seen%`
+- `%reputationban_version%`
+
+`status` は `normal`、`warning`、`watch`、`restricted`、`final-warning`、`banned-threshold` の英字 stable value です。`identifier` の既定値は `reputationban` で、`%reputationban_score%` の prefix になります。
+
+placeholder 呼び出し中に SQLite へ同期問い合わせは行いません。値は online player summary cache から返します。cache は join 後、定期 refresh、主要な score 変更後に更新しますが、Phase 20 では最大 `cache-refresh-seconds` 程度の遅延があり得ます。cache 未取得、offline、player なしの場合は `show-unknown-as` を返します。ただし `version` は player なしでも返します。
+
 ## Commands
 
-- `/rep integrations`: LuckPerms / CoreProtect / WorldGuard / GriefPrevention の設定値、plugin presence、API availability、active、lookup 設定を表示します。
-- `/rep integrations test`: LuckPerms / CoreProtect / WorldGuard / GriefPrevention だけに絞った詳細診断です。破壊的操作、CoreProtect 実 lookup、WorldGuard region/flag 変更、GriefPrevention claim/trust 変更は行いません。
+- `/rep placeholders`: PlaceholderAPI の連携状態、identifier、利用可能な placeholder 一覧を表示します。
+- `/rep integrations`: LuckPerms / CoreProtect / WorldGuard / GriefPrevention / PlaceholderAPI の設定値、plugin presence、API availability、active、lookup 設定を表示します。
+- `/rep integrations test`: LuckPerms / CoreProtect / WorldGuard / GriefPrevention / PlaceholderAPI だけに絞った詳細診断です。破壊的操作、CoreProtect 実 lookup、WorldGuard region/flag 変更、GriefPrevention claim/trust 変更は行いません。
 - `/rep doctor`: ReputationBan 全体診断です。database、tables、config、Discord、backup、連携の簡易状態をまとめて確認します。
 - `/reports view <id>`: LuckPerms reporter weight、CoreProtect 証拠サマリー、WorldGuard region context、GriefPrevention claim context がある場合に概要を表示します。
 - `/reports evidence <id>`: `report_context` の詳細を provider ごとに表示します。
@@ -107,6 +129,12 @@ integrations:
       include-claim-owner: false
       include-trust-counts: false
       include-boundaries: true
+
+  placeholderapi:
+    enabled: true
+    identifier: "reputationban"
+    cache-refresh-seconds: 60
+    show-unknown-as: "-"
 ```
 
 ## 採用依存
@@ -119,3 +147,5 @@ integrations:
 - WorldEdit API: `com.sk89q.worldedit:worldedit-bukkit:7.3.0` (`compileOnly`, transitive dependencies disabled)
 - EngineHub repository: `https://maven.enginehub.org/repo/`
 - GriefPrevention API: compile dependency は追加せず、reflection only で扱います。
+- PlaceholderAPI API: `me.clip:placeholderapi:2.12.2` (`compileOnly`)
+- PlaceholderAPI repository: `https://repo.helpch.at/releases/`

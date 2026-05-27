@@ -27,6 +27,10 @@ public final class CommandSuggestionUtil {
         List<String> candidates = new ArrayList<>();
         candidates.add("help");
         candidates.add("version");
+        if (hasPermission.test("reputationban.score.self")) {
+            candidates.add("placeholders");
+            candidates.add("placeholder");
+        }
         if (hasPermission.test("reputationban.score.others") || hasPermission.test("reputationban.admin.score")) {
             candidates.add("check");
             candidates.add("history");

@@ -283,6 +283,7 @@ public final class ReportBadCommand implements CommandExecutor {
                                         result.newScore(),
                                         "通報 #" + result.reportId()
                                 );
+                                plugin.integrationService().refreshPlaceholderCache(value.uuid(), value.name());
                             }
                         });
                         return null;

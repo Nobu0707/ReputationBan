@@ -179,6 +179,12 @@ integrations:
       include-trust-counts: false
       include-boundaries: true
 
+  placeholderapi:
+    enabled: true
+    identifier: "reputationban"
+    cache-refresh-seconds: 60
+    show-unknown-as: "-"
+
 database:
   type: "sqlite"
   file: "reputationban.db"

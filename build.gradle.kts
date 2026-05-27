@@ -3,7 +3,7 @@ plugins {
 }
 
 group = "dev.modplugin"
-version = "0.19.0"
+version = "0.20.0"
 
 java {
     toolchain {
@@ -27,6 +27,7 @@ dependencies {
     compileOnly("com.sk89q.worldedit:worldedit-bukkit:7.3.0") {
         isTransitive = false
     }
+    compileOnly("me.clip:placeholderapi:2.12.2")
 
     testImplementation(platform("org.junit:junit-bom:5.14.1"))
     testImplementation("org.junit.jupiter:junit-jupiter")

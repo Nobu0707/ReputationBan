@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-EXPECTED_VERSION="0.19.0"
+EXPECTED_VERSION="0.20.0"
 PLUGIN_JAR="build/libs/ReputationBan-${EXPECTED_VERSION}.jar"
 
 usage() {
@@ -63,6 +63,8 @@ Manual runtime smoke:
   /rep help
   /rep doctor
   /rep integrations
+  /rep integrations test
+  /rep placeholders
   /rep support bundle
   /reportbad <test-player> spam smoke-test
   /reports list all 10

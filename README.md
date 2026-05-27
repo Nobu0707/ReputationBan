@@ -2,7 +2,7 @@
 
 ReputationBan は、通報とスタッフ操作をもとにプレイヤーの評判スコアを管理する PaperMC 向け moderation プラグインです。データは SQLite に保存し、未処理通報の審査、監査ログ、バックアップ、support bundle、設定に基づく Profile BAN を扱います。
 
-現在のバージョン: `0.19.0`
+現在のバージョン: `0.20.0`
 
 ## 対象環境
 
@@ -26,6 +26,7 @@ ReputationBan は、通報とスタッフ操作をもとにプレイヤーの評
 - [Integration runtime smoke checklist](docs/INTEGRATION_RUNTIME_SMOKE_CHECKLIST.md)
 - [Paper runtime smoke checklist](docs/runtime-smoke-checklist.md)
 - [Release candidate checklist](docs/RELEASE_CANDIDATE_CHECKLIST.md)
+- [Phase 20 notes](docs/phase-20.md)
 - [Phase 19 notes](docs/phase-19.md)
 - [Changelog](CHANGELOG.md)
 
@@ -39,7 +40,8 @@ ReputationBan は、通報とスタッフ操作をもとにプレイヤーの評
 - audit log、CSV export、retention preview、confirm付き maintenance cleanup。
 - `/rep backup` による SQLite backup。
 - `/rep support bundle` によるシークレットを伏せた診断 ZIP 作成。
-- LuckPerms、CoreProtect、WorldGuard、GriefPrevention の任意連携。未導入でも単体動作します。
+- LuckPerms、CoreProtect、WorldGuard、GriefPrevention、PlaceholderAPI の任意連携。未導入でも単体動作します。
+- PlaceholderAPI 対応プラグインから `%reputationban_score%` などで評判状態を参照できます。
 - 任意の Discord Webhook 通知。URL は表示、ログ、監査、CSV、support bundle、review archive に出さない方針です。
 
 ## コマンド
@@ -64,8 +66,9 @@ ReputationBan は、通報とスタッフ操作をもとにプレイヤーの評
 - `/rep maintenance run confirm`: SQLite backup を作成してから retention cleanup を実行します。
 - `/rep backup [reason...]`: 手動 SQLite backup を作成します。
 - `/rep doctor`: Discord Webhook URL を出さずに運用診断を表示します。
-- `/rep integrations`: LuckPerms / CoreProtect / WorldGuard / GriefPrevention の連携状態を表示します。
-- `/rep integrations test`: LuckPerms / CoreProtect / WorldGuard / GriefPrevention 連携だけに絞った詳細診断を安全に実行します。
+- `/rep placeholders`: PlaceholderAPI placeholders の一覧を表示します。
+- `/rep integrations`: LuckPerms / CoreProtect / WorldGuard / GriefPrevention / PlaceholderAPI の連携状態を表示します。
+- `/rep integrations test`: LuckPerms / CoreProtect / WorldGuard / GriefPrevention / PlaceholderAPI 連携だけに絞った詳細診断を安全に実行します。
 - `/rep diagnostics`: `/rep doctor` の alias です。
 - `/rep support bundle`: DB files や server logs を含めない診断 ZIP を作成します。
 - `/rep add <player> <points> [reason...]`: スコアを加算します。
@@ -111,11 +114,11 @@ ReputationBan は、通報とスタッフ操作をもとにプレイヤーの評
 ./scripts/review_code.sh
 ```
 
-JAR は `build/libs/ReputationBan-0.19.0.jar` に生成されます。
+JAR は `build/libs/ReputationBan-0.20.0.jar` に生成されます。
 
 ## 現在の位置づけ
 
-v0.19.0 は GriefPrevention を任意連携として追加するフェーズです。Phase 19 では `/rep integrations`、`/rep integrations test`、`/rep doctor`、`/reportbad` 後の `report_context`、`/reports evidence <id>` に GriefPrevention の claim context を追加しています。
+v0.20.0 は PlaceholderAPI を任意連携として追加するフェーズです。Phase 20 では `/rep placeholders`、`/rep integrations`、`/rep integrations test`、`/rep doctor` に PlaceholderAPI の状態と利用可能な placeholder を追加しています。placeholder 値はDB同期問い合わせではなく online player summary cache から返します。
 
 v1.0.0 へ進む前に [Release candidate checklist](docs/RELEASE_CANDIDATE_CHECKLIST.md) を確認してください。Paper 実機スモークを実行していない場合は PASS と扱わず、未実施として記録します。
 

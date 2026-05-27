@@ -47,6 +47,9 @@ class CommandSuggestionUtilTest {
         assertEquals(List.of("integrations", "integration"), CommandSuggestionUtil.repSubcommands(integrations, "integ"));
         assertEquals(List.of("test"), CommandSuggestionUtil.repSecondArgumentSuggestions("integrations", List.of(), "te"));
         assertEquals(List.of("test"), CommandSuggestionUtil.repSecondArgumentSuggestions("integration", List.of(), "te"));
+
+        Predicate<String> selfScore = Set.of("reputationban.score.self")::contains;
+        assertEquals(List.of("placeholders", "placeholder"), CommandSuggestionUtil.repSubcommands(selfScore, "place"));
     }
 
     @Test

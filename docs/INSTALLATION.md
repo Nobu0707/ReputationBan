@@ -1,18 +1,18 @@
 # Installation
 
-ReputationBan 0.19.0 は PaperMC 26.1.2 と Java 25 を対象にしています。
+ReputationBan 0.20.0 は PaperMC 26.1.2 と Java 25 を対象にしています。
 
 ## 導入条件
 
 - PaperMC 26.1.2 の test server または production server
 - Java 25 runtime
-- `build/libs/ReputationBan-0.19.0.jar`
+- `build/libs/ReputationBan-0.20.0.jar`
 - SQLite JDBC は `plugin.yml` の `libraries` から読み込まれます。
 
 ## 初回導入
 
 1. Paper server を停止します。
-2. `ReputationBan-0.19.0.jar` を server の `plugins/` ディレクトリへ配置します。
+2. `ReputationBan-0.20.0.jar` を server の `plugins/` ディレクトリへ配置します。
 3. server を一度起動し、`plugins/ReputationBan/config.yml` を生成します。
 4. `plugins/ReputationBan/reputationban.db` が生成されていることを確認します。
 5. `config.yml` を確認してから server を再起動します。
