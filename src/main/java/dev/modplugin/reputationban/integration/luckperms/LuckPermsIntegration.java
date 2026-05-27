@@ -7,19 +7,15 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import net.luckperms.api.LuckPerms;
-import net.luckperms.api.model.user.User;
-import org.bukkit.Bukkit;
-import org.bukkit.plugin.RegisteredServiceProvider;
 import org.bukkit.plugin.java.JavaPlugin;
 
 public final class LuckPermsIntegration {
-    private final JavaPlugin plugin;
     private final Logger logger;
+    private final LuckPermsReflectionAdapter adapter;
 
     public LuckPermsIntegration(JavaPlugin plugin) {
-        this.plugin = plugin;
         this.logger = plugin.getLogger();
+        this.adapter = new LuckPermsReflectionAdapter(plugin);
     }
 
     public IntegrationStatus status(PluginConfig config) {
@@ -27,16 +23,16 @@ public final class LuckPermsIntegration {
         if (!luckPermsConfig.enabled()) {
             return IntegrationStatus.disabled(ExternalIntegrationType.LUCKPERMS);
         }
-        boolean pluginPresent = plugin.getServer().getPluginManager().getPlugin("LuckPerms") != null;
-        Optional<LuckPerms> api = api();
+        boolean pluginPresent = adapter.pluginPresent();
+        boolean apiAvailable = adapter.apiAvailable();
         return new IntegrationStatus(
                 ExternalIntegrationType.LUCKPERMS,
                 true,
                 pluginPresent,
-                api.isPresent(),
+                apiAvailable,
                 "",
-                pluginPresent && api.isPresent(),
-                pluginPresent ? (api.isPresent() ? "active" : "api not registered") : "plugin not found"
+                pluginPresent && apiAvailable,
+                pluginPresent ? (apiAvailable ? "active" : "api not registered") : "plugin not found"
         );
     }
 
@@ -46,15 +42,11 @@ public final class LuckPermsIntegration {
             return LuckPermsTrustService.unavailable(luckPermsConfig.defaultWeight());
         }
         try {
-            Optional<LuckPerms> api = api();
-            if (api.isEmpty()) {
+            Optional<String> primaryGroupLookup = adapter.primaryGroup(playerUuid);
+            if (primaryGroupLookup.isEmpty()) {
                 return LuckPermsTrustService.unavailable(luckPermsConfig.defaultWeight());
             }
-            User user = api.get().getUserManager().getUser(playerUuid);
-            if (user == null) {
-                return LuckPermsTrustService.unavailable(luckPermsConfig.defaultWeight());
-            }
-            String primaryGroup = user.getPrimaryGroup();
+            String primaryGroup = primaryGroupLookup.get();
             double weight = LuckPermsTrustPolicy.weightForGroup(
                     luckPermsConfig.useGroupWeight(),
                     luckPermsConfig.defaultWeight(),
@@ -66,19 +58,6 @@ public final class LuckPermsIntegration {
         } catch (RuntimeException exception) {
             logger.log(Level.WARNING, "LuckPerms integration unavailable: " + exception.getMessage());
             return LuckPermsTrustService.unavailable(luckPermsConfig.defaultWeight());
-        }
-    }
-
-    private Optional<LuckPerms> api() {
-        if (!Bukkit.isPrimaryThread()) {
-            throw new IllegalStateException("LuckPerms service lookup must run on the main thread");
-        }
-        try {
-            RegisteredServiceProvider<LuckPerms> provider =
-                    Bukkit.getServicesManager().getRegistration(LuckPerms.class);
-            return provider == null ? Optional.empty() : Optional.of(provider.getProvider());
-        } catch (NoClassDefFoundError error) {
-            return Optional.empty();
         }
     }
 }

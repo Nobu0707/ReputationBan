@@ -111,6 +111,9 @@ done < "$OUTDIR/meta/changed-files.txt"
   echo
   echo "## rg phase 16 integrations"
   rg -n "LuckPerms|CoreProtect|IntegrationService|LuckPermsIntegration|CoreProtectIntegration|report_context|COREPROTECT_CONTEXT_CAPTURED|/rep integrations|performLookup|performRollback|performRestore|performPurge" src/main/java src/test/java src/main/resources README.md CHANGELOG.md docs reputationban_phase_plan.md scripts build.gradle.kts settings.gradle.kts || true
+  echo
+  echo "## rg phase 16a optional dependency class loading"
+  rg -n "LuckPermsReflectionAdapter|CoreProtectReflectionAdapter|Class\\.forName|getRegistration|getPlugin\\(\"CoreProtect\"\\)|NoClassDefFoundError|import net\\.luckperms|import net\\.coreprotect" src/main/java src/test/java src/main/resources README.md CHANGELOG.md docs reputationban_phase_plan.md scripts build.gradle.kts settings.gradle.kts || true
 } > "$OUTDIR/checks/rg-review-signals.txt"
 
 {

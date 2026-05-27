@@ -11,8 +11,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.logging.Level;
-import net.coreprotect.CoreProtectAPI;
-import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -43,6 +41,10 @@ public final class CoreProtectEvidenceService {
             UUID targetUuid,
             String targetName,
             ReportCategory category,
+            String worldName,
+            int x,
+            int y,
+            int z,
             Location radiusLocation,
             PluginConfig config
     ) {
@@ -56,12 +58,12 @@ public final class CoreProtectEvidenceService {
             return;
         }
 
-        plugin.getServer().getScheduler().runTaskAsynchronously(plugin, () -> plugin.getServer().getScheduler().runTask(plugin, () -> {
-            java.util.Optional<CoreProtectAPI> api = integration.api(coreProtectConfig.minimumApiVersion());
+        plugin.getServer().getScheduler().runTask(plugin, () -> {
+            java.util.Optional<CoreProtectReflectionAdapter.ApiHandle> api = integration.api(coreProtectConfig.minimumApiVersion());
             if (api.isEmpty()) {
                 return;
             }
-            Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> lookupAndSave(
+            plugin.getServer().getScheduler().runTaskAsynchronously(plugin, () -> lookupAndSave(
                     api.get(),
                     reportId,
                     reporterUuid,
@@ -69,36 +71,43 @@ public final class CoreProtectEvidenceService {
                     targetUuid,
                     targetName,
                     category,
+                    worldName,
+                    x,
+                    y,
+                    z,
                     radiusLocation,
                     coreProtectConfig
             ));
-        }));
+        });
     }
 
     private void lookupAndSave(
-            CoreProtectAPI api,
+            CoreProtectReflectionAdapter.ApiHandle api,
             long reportId,
             UUID reporterUuid,
             String reporterName,
             UUID targetUuid,
             String targetName,
             ReportCategory category,
+            String worldName,
+            int x,
+            int y,
+            int z,
             Location radiusLocation,
             PluginConfig.CoreProtectIntegrationConfig config
     ) {
         try {
             List<Integer> actions = CoreProtectEvidencePolicy.actionIds(config.includeActions());
-            List<String[]> results = api.performLookup(
+            CoreProtectLookupResult lookupResult = integration.performLookup(
+                    api,
                     config.lookupSeconds(),
                     List.of(targetName),
-                    null,
-                    null,
-                    null,
-                    actions.isEmpty() ? null : actions,
+                    actions,
                     config.radius(),
-                    config.radius() > 0 ? radiusLocation : null
+                    radiusLocation,
+                    config.maxResults()
             );
-            CoreProtectEvidenceSummary summary = summarize(api, results, radiusLocation, config, category.key());
+            CoreProtectEvidenceSummary summary = summarize(lookupResult, worldName, x, y, z, config, category.key());
             if (summary.resultCount() <= 0) {
                 return;
             }
@@ -130,24 +139,25 @@ public final class CoreProtectEvidenceService {
     }
 
     private CoreProtectEvidenceSummary summarize(
-            CoreProtectAPI api,
-            List<String[]> results,
-            Location location,
+            CoreProtectLookupResult lookupResult,
+            String world,
+            int x,
+            int y,
+            int z,
             PluginConfig.CoreProtectIntegrationConfig config,
             String category
     ) {
-        int available = results == null ? 0 : results.size();
-        int count = CoreProtectEvidencePolicy.clampMaxResults(config.maxResults(), available);
-        String world = location.getWorld() == null ? "unknown" : location.getWorld().getName();
-        String header = count + " result(s) near " + world + " " + location.getBlockX() + " "
-                + location.getBlockY() + " " + location.getBlockZ()
+        List<CoreProtectLookupEntry> entries = lookupResult.entries();
+        int count = CoreProtectEvidencePolicy.clampMaxResults(config.maxResults(), entries.size());
+        String header = count + " result(s) near " + world + " " + x + " "
+                + y + " " + z
                 + " within " + config.radius() + " blocks";
         if (count == 0) {
             return CoreProtectEvidenceSummary.empty(
                     world,
-                    location.getBlockX(),
-                    location.getBlockY(),
-                    location.getBlockZ(),
+                    x,
+                    y,
+                    z,
                     config.radius(),
                     config.lookupSeconds(),
                     category
@@ -156,14 +166,14 @@ public final class CoreProtectEvidenceService {
 
         List<String> lines = new ArrayList<>();
         for (int index = 0; index < count; index++) {
-            var parsed = api.parseResult(results.get(index));
+            CoreProtectLookupEntry parsed = entries.get(index);
             lines.add("#" + (index + 1)
-                    + " action=" + parsed.getActionString()
-                    + " player=" + parsed.getPlayer()
-                    + " x=" + parsed.getX()
-                    + " y=" + parsed.getY()
-                    + " z=" + parsed.getZ()
-                    + " type=" + parsed.getType());
+                    + " action=" + parsed.action()
+                    + " player=" + parsed.player()
+                    + " x=" + parsed.x()
+                    + " y=" + parsed.y()
+                    + " z=" + parsed.z()
+                    + " type=" + parsed.type());
         }
         String summary = CoreProtectEvidencePolicy.truncateSummary(header + "\n" + String.join("\n", lines), SUMMARY_MAX_LENGTH);
         return new CoreProtectEvidenceSummary(

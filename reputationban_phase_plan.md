@@ -356,11 +356,15 @@
 - `COREPROTECT_CONTEXT_CAPTURED` と `INTEGRATION_STATUS_CHECKED` audit events
 - `docs/INTEGRATIONS.md` と `docs/phase-16.md`
 - review/release archive scripts の v0.16.0 対応
+- Phase 16a: LuckPerms / CoreProtect API 型の直接 import を排除し、reflection adapter で optional dependency class loading を安全化
 
 注意:
 
 - CoreProtect rollback、restore、purge は実行しない。
 - LuckPerms の group/permission 書き込みは実行しない。
+- LuckPerms / CoreProtect は任意依存であり、未導入や片方だけ導入の環境でも ReputationBan 本体は起動できる設計にする。
+- LuckPerms のオフラインユーザー情報が未ロードの場合、Phase 16 では `default-weight` 扱いになる場合がある。
+- CoreProtect lookup は審査補助であり、rollback、restore、purge は行わない。
 - WorldGuard、GriefPrevention、DiscordSRV、GUI、Folia、v1.0.0 readiness gate は後続。
 
 ## Phase 17以降: 外部連携・高度な悪用対策

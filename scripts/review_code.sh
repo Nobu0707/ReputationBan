@@ -231,6 +231,23 @@ grep -R "\"integrations\"" src/main/java/dev/modplugin/reputationban/command/Rep
 grep -R "class IntegrationService" src/main/java/dev/modplugin/reputationban/integration >/dev/null || fail "IntegrationService not found"
 grep -R "class LuckPermsIntegration" src/main/java/dev/modplugin/reputationban/integration >/dev/null || fail "LuckPermsIntegration not found"
 grep -R "class CoreProtectIntegration" src/main/java/dev/modplugin/reputationban/integration >/dev/null || fail "CoreProtectIntegration not found"
+if grep -R "import net\.luckperms\." src/main/java >/dev/null; then
+  fail "LuckPerms API direct import detected in Java sources"
+fi
+if grep -R "import net\.coreprotect\." src/main/java >/dev/null; then
+  fail "CoreProtect API direct import detected in Java sources"
+fi
+if grep -R "CoreProtectAPI\|net\.coreprotect\.CoreProtect\|net\.luckperms\.api\.model\.user\.User" src/main/java >/dev/null; then
+  fail "Optional dependency API type direct reference detected in Java sources"
+fi
+if grep -R "net\.luckperms\.api\.LuckPerms" src/main/java | grep -v "LuckPermsReflectionAdapter.java" >/dev/null; then
+  fail "LuckPerms API class name must stay isolated in LuckPermsReflectionAdapter"
+fi
+grep -R "class LuckPermsReflectionAdapter" src/main/java/dev/modplugin/reputationban/integration >/dev/null || fail "LuckPermsReflectionAdapter not found"
+grep -R "class CoreProtectReflectionAdapter" src/main/java/dev/modplugin/reputationban/integration >/dev/null || fail "CoreProtectReflectionAdapter not found"
+grep -R "Class\.forName(\"net\.luckperms\.api\.LuckPerms\"" src/main/java/dev/modplugin/reputationban/integration/luckperms >/dev/null || fail "LuckPerms reflection class lookup not found"
+grep -R "getRegistration" src/main/java/dev/modplugin/reputationban/integration/luckperms >/dev/null || fail "LuckPerms service reflection lookup not found"
+grep -R "getPlugin(\"CoreProtect\")" src/main/java/dev/modplugin/reputationban/integration/coreprotect >/dev/null || fail "CoreProtect plugin reflection lookup not found"
 grep -R "CREATE TABLE IF NOT EXISTS report_context" src/main/java/dev/modplugin/reputationban/database/DatabaseManager.java >/dev/null || fail "report_context table not found"
 grep -R "COREPROTECT_CONTEXT_CAPTURED" src/main/java/dev/modplugin/reputationban src/test/java/dev/modplugin/reputationban >/dev/null || fail "COREPROTECT_CONTEXT_CAPTURED audit event not found"
 grep -R "INTEGRATION_STATUS_CHECKED" src/main/java/dev/modplugin/reputationban src/test/java/dev/modplugin/reputationban >/dev/null || fail "INTEGRATION_STATUS_CHECKED audit event not found"

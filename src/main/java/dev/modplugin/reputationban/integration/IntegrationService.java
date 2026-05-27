@@ -58,7 +58,12 @@ public final class IntegrationService {
             String targetName,
             ReportCategory category
     ) {
-        Location location = reporter.getLocation().clone();
+        Location currentLocation = reporter.getLocation();
+        String worldName = currentLocation.getWorld() == null ? "unknown" : currentLocation.getWorld().getName();
+        int x = currentLocation.getBlockX();
+        int y = currentLocation.getBlockY();
+        int z = currentLocation.getBlockZ();
+        Location location = currentLocation.clone();
         coreProtectEvidenceService.captureAfterReport(
                 reportId,
                 reporter.getUniqueId(),
@@ -66,6 +71,10 @@ public final class IntegrationService {
                 targetUuid,
                 targetName,
                 category,
+                worldName,
+                x,
+                y,
+                z,
                 location,
                 configSupplier.get()
         );

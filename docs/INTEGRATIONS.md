@@ -2,11 +2,15 @@
 
 ReputationBan 0.16.0 では LuckPerms と CoreProtect を任意連携として扱います。どちらも `softdepend` であり、未導入、未ロード、API unavailable の場合でも ReputationBan 単体の通報、監査、BAN、backup、support bundle は継続します。
 
+Phase 16a では optional dependency class loading を安全化するため、LuckPerms / CoreProtect API 型を起動時に無条件ロードされるクラスから外し、reflection adapter 経由で必要な時だけ参照します。LuckPerms だけ、CoreProtect だけ、またはどちらも未導入の構成でも、外部 API 欠落による `NoClassDefFoundError` で ReputationBan 本体が起動不能にならない設計です。
+
 ## LuckPerms
 
 LuckPerms 連携は、通報者の primary group を使って reporter weight を計算し、通報の補助情報として保存します。Phase 16 では安全のため、既定では減点量に反映しません。`apply-weight-to-deduction: false` のままなら、`report_context` と audit metadata に `primaryGroup` と `reporterWeight` を記録するだけです。
 
 `bypass-groups` は `reputationban.bypass` 権限と OP 保護に加える補助保護です。対象プレイヤーの primary group が `admin` や `owner` などに一致した場合、通報、減点、自動 BAN の対象外として扱います。LuckPerms が無い場合、この判定はスキップされます。
+
+Phase 16 では、LuckPerms のオフラインユーザー情報が未ロードの場合、primary group を取得せず `default-weight` 扱いになる場合があります。
 
 ## CoreProtect
 

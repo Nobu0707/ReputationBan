@@ -3,9 +3,12 @@
 ## 0.16.0
 
 - LuckPerms / CoreProtect を任意依存として追加しました。
+- Phase 16a follow-up: LuckPerms / CoreProtect API 型の直接 import を排除し、reflection adapter により未導入環境の optional dependency class loading を安全化しました。
 - `/rep integrations` と `/rep doctor` の連携状態表示を追加しました。
 - LuckPerms primary group による reporter weight 記録と bypass-groups 補助保護を追加しました。
+- LuckPerms のオフラインユーザー情報が未ロードの場合、Phase 16 では `default-weight` 扱いになる場合があります。
 - CoreProtect の周辺ブロックログ簡易サマリーを `report_context` と audit event に保存できるようにしました。
+- CoreProtect lookup は審査補助のみで、rollback、restore、purge は行いません。
 - `docs/INTEGRATIONS.md` と `docs/phase-16.md` を追加しました。
 
 ## 0.15.0
