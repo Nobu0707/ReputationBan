@@ -184,18 +184,6 @@ else
   echo "./scripts/check-optional-dependency-safety.sh=missing" >> "$COMMAND_STATUS"
 fi
 
-if [[ -x "$ROOT/scripts/check-integration-runtime-readiness.sh" ]]; then
-  run_logged "./scripts/check-integration-runtime-readiness.sh" "$OUTDIR/checks/integration-runtime-readiness.txt" "$ROOT/scripts/check-integration-runtime-readiness.sh"
-else
-  echo "./scripts/check-integration-runtime-readiness.sh=missing" >> "$COMMAND_STATUS"
-fi
-
-if [[ -x "$ROOT/scripts/run-integration-runtime-smoke.sh" ]]; then
-  run_logged "./scripts/run-integration-runtime-smoke.sh" "$OUTDIR/checks/integration-runtime-smoke-auto.txt" "$ROOT/scripts/run-integration-runtime-smoke.sh"
-else
-  echo "./scripts/run-integration-runtime-smoke.sh=missing" >> "$COMMAND_STATUS"
-fi
-
 if [[ -x "$ROOT/scripts/run-paper-runtime-smoke.sh" ]]; then
   run_logged "./scripts/run-paper-runtime-smoke.sh" "$OUTDIR/checks/paper-runtime-smoke-auto.txt" "$ROOT/scripts/run-paper-runtime-smoke.sh"
 else
@@ -208,10 +196,50 @@ else
   echo "./scripts/check-paper-runtime-readiness.sh=missing" >> "$COMMAND_STATUS"
 fi
 
+if [[ -x "$ROOT/scripts/run-integration-runtime-smoke.sh" ]]; then
+  run_logged "./scripts/run-integration-runtime-smoke.sh" "$OUTDIR/checks/integration-runtime-smoke-auto.txt" "$ROOT/scripts/run-integration-runtime-smoke.sh"
+else
+  echo "./scripts/run-integration-runtime-smoke.sh=missing" >> "$COMMAND_STATUS"
+fi
+
+if [[ -x "$ROOT/scripts/check-integration-runtime-readiness.sh" ]]; then
+  run_logged "./scripts/check-integration-runtime-readiness.sh" "$OUTDIR/checks/integration-runtime-readiness.txt" "$ROOT/scripts/check-integration-runtime-readiness.sh"
+else
+  echo "./scripts/check-integration-runtime-readiness.sh=missing" >> "$COMMAND_STATUS"
+fi
+
 if [[ -f "$ROOT/scripts/run-integration-runtime-smoke-helper.sh" ]]; then
   run_logged "bash -n scripts/run-integration-runtime-smoke-helper.sh" "$OUTDIR/checks/integration-runtime-smoke-helper-syntax.txt" bash -n "$ROOT/scripts/run-integration-runtime-smoke-helper.sh"
 else
   echo "bash -n scripts/run-integration-runtime-smoke-helper.sh=missing" >> "$COMMAND_STATUS"
+fi
+
+LATEST_SMOKE="$(find "$ROOT/build/manual-smoke" -maxdepth 2 -path '*/paper-runtime-*/summary.txt' -type f 2>/dev/null | sort | tail -n 1 || true)"
+if [[ -n "$LATEST_SMOKE" && -f "$LATEST_SMOKE" ]]; then
+  cp "$LATEST_SMOKE" "$OUTDIR/checks/latest-paper-runtime-smoke-summary.txt"
+else
+  {
+    echo "status=NOT_RUN"
+    echo "message=No paper runtime smoke summary found."
+    echo "nextStep=Run scripts/run-paper-runtime-smoke.sh or record manual results with scripts/record-paper-runtime-smoke-result.sh"
+  } > "$OUTDIR/checks/latest-paper-runtime-smoke-summary.txt"
+fi
+
+LATEST_INTEGRATION_SMOKE="$(find "$ROOT/build/manual-smoke" -maxdepth 2 -path '*/integration-runtime-*/summary.txt' -type f 2>/dev/null | sort | tail -n 1 || true)"
+if [[ -n "$LATEST_INTEGRATION_SMOKE" && -f "$LATEST_INTEGRATION_SMOKE" ]]; then
+  cp "$LATEST_INTEGRATION_SMOKE" "$OUTDIR/checks/latest-integration-runtime-smoke-summary.txt"
+else
+  {
+    echo "status=NOT_RUN"
+    echo "message=No integration runtime smoke summary found."
+    echo "nextStep=Run docs/INTEGRATION_RUNTIME_SMOKE_CHECKLIST.md and record results with scripts/record-integration-runtime-smoke-result.sh"
+  } > "$OUTDIR/checks/latest-integration-runtime-smoke-summary.txt"
+fi
+
+if [[ -x "$ROOT/scripts/check-runtime-smoke-consistency.sh" ]]; then
+  run_logged "./scripts/check-runtime-smoke-consistency.sh" "$OUTDIR/checks/runtime-smoke-consistency.txt" "$ROOT/scripts/check-runtime-smoke-consistency.sh" --checks-dir "$OUTDIR/checks"
+else
+  echo "./scripts/check-runtime-smoke-consistency.sh=missing" >> "$COMMAND_STATUS"
 fi
 
 if [[ -x "$ROOT/scripts/run-local-smoke-check.sh" ]]; then
@@ -245,8 +273,8 @@ fi
 
 if [[ -d "$ROOT/build/libs" ]]; then
   find "$ROOT/build/libs" -maxdepth 1 -type f -print | sort > "$OUTDIR/checks/built-jars.txt"
-  if [[ -f "$ROOT/build/libs/ReputationBan-0.24.0.jar" ]]; then
-    (cd "$ROOT" && sha256sum build/libs/ReputationBan-0.24.0.jar) > "$OUTDIR/checks/jar-sha256.txt"
+  if [[ -f "$ROOT/build/libs/ReputationBan-0.25.0.jar" ]]; then
+    (cd "$ROOT" && sha256sum build/libs/ReputationBan-0.25.0.jar) > "$OUTDIR/checks/jar-sha256.txt"
   fi
 fi
 
@@ -254,28 +282,6 @@ if [[ -d "$ROOT/build/release" ]]; then
   find "$ROOT/build/release" -maxdepth 1 -type f -print | sort > "$OUTDIR/checks/release-artifacts.txt"
 else
   echo "No build/release directory found." > "$OUTDIR/checks/release-artifacts.txt"
-fi
-
-LATEST_SMOKE="$(find "$ROOT/build/manual-smoke" -maxdepth 2 -path '*/paper-runtime-*/summary.txt' -type f 2>/dev/null | sort | tail -n 1 || true)"
-if [[ -n "$LATEST_SMOKE" && -f "$LATEST_SMOKE" ]]; then
-  cp "$LATEST_SMOKE" "$OUTDIR/checks/latest-paper-runtime-smoke-summary.txt"
-else
-  {
-    echo "status=NOT_RUN"
-    echo "message=No paper runtime smoke summary found."
-    echo "nextStep=Run scripts/run-paper-runtime-smoke.sh or record manual results with scripts/record-paper-runtime-smoke-result.sh"
-  } > "$OUTDIR/checks/latest-paper-runtime-smoke-summary.txt"
-fi
-
-LATEST_INTEGRATION_SMOKE="$(find "$ROOT/build/manual-smoke" -maxdepth 2 -path '*/integration-runtime-*/summary.txt' -type f 2>/dev/null | sort | tail -n 1 || true)"
-if [[ -n "$LATEST_INTEGRATION_SMOKE" && -f "$LATEST_INTEGRATION_SMOKE" ]]; then
-  cp "$LATEST_INTEGRATION_SMOKE" "$OUTDIR/checks/latest-integration-runtime-smoke-summary.txt"
-else
-  {
-    echo "status=NOT_RUN"
-    echo "message=No integration runtime smoke summary found."
-    echo "nextStep=Run docs/INTEGRATION_RUNTIME_SMOKE_CHECKLIST.md and record results with scripts/record-integration-runtime-smoke-result.sh"
-  } > "$OUTDIR/checks/latest-integration-runtime-smoke-summary.txt"
 fi
 
 redact_runtime_tail() {
@@ -315,7 +321,7 @@ copy_runtime_smoke_latest() {
 copy_runtime_smoke_latest "paper-runtime" "paper-runtime-latest" \
   summary.txt commands.txt environment.txt
 copy_runtime_smoke_latest "integration-runtime" "integration-runtime-latest" \
-  summary.txt commands.txt environment.txt staged-plugins.txt plugin-restore.txt
+  summary.txt commands.txt environment.txt staged-plugins.txt plugin-restore.txt integration-status.txt
 
 tar -czf "$ARCHIVE" -C "$(dirname "$OUTDIR")" "$(basename "$OUTDIR")"
 cp "$ARCHIVE" "$LATEST"

@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.25.0
+
+- Phase 25 は runtime smoke readiness consistency / release gate 整合フェーズです。新機能追加ではなく、Paper runtime smoke / integration runtime smoke と readiness 判定の矛盾を防ぐための release automation を更新しました。
+- `scripts/make-review-archive.sh` の実行順を修正し、`run-paper-runtime-smoke.sh` の後に `check-paper-runtime-readiness.sh`、`run-integration-runtime-smoke.sh` の後に `check-integration-runtime-readiness.sh` が走るようにしました。
+- `scripts/check-runtime-smoke-consistency.sh` を追加し、latest summary が PASS なのに readiness が HOLD/NOT_RUN になる不整合、または NOT_RUN なのに readiness が READY になる不整合を non-zero で検出します。
+- `scripts/run-integration-runtime-smoke.sh` が `/rep integrations` のログから `integration-status.txt` を生成し、summary に `activeIntegrations` / `unavailableIntegrations` / `discordSrvUnavailableReason` を残すようにしました。
+- DiscordSRV が bot token 未設定などで `apiAvailable=false` になるケースは、ReputationBan 本体と他連携の runtime smoke PASS を妨げない WARN として記録します。本番で DiscordSRV 通知や account link を使う場合は、bot token 設定済み環境で追加確認が必要です。
+- review archive に `checks/runtime-smoke-consistency.txt` と `runtime-smoke/integration-runtime-latest/integration-status.txt` を収集するようにしました。
+- Phase 25 docs、runtime smoke checklist、release readiness、release artifact checks を v0.25.0 向けに更新しました。
+- 新しい外部連携、Discord からの Minecraft コマンド実行、Discord role 変更、GUI、Folia 対応、v1.0.0 リリース化は追加していません。
+
 ## 0.24.0
 
 - `scripts/run-integration-runtime-smoke.sh` を追加し、`~/servers/PaperPlugins/*.jar` と `build/libs/ReputationBan-0.24.0.jar` を Paper test server に staging して、`/rep integrations`、`/rep integrations test`、`/rep doctor` を自動実行できるようにしました。

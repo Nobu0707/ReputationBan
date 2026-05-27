@@ -52,9 +52,26 @@ if [[ -n "$SUMMARY" && -f "$SUMMARY" ]]; then
   STATUS="${STATUS:-UNKNOWN}"
 fi
 
+discord_srv_warning() {
+  local status_file
+  if [[ -z "$SUMMARY" || ! -f "$SUMMARY" ]]; then
+    return 0
+  fi
+  status_file="$(dirname "$SUMMARY")/integration-status.txt"
+  if [[ -f "$status_file" ]] && grep -q '^DiscordSRV=unavailable$' "$status_file"; then
+    echo "warning: DiscordSRV unavailable is treated as WARN for this release gate."
+    if grep -q '^DiscordSRV.note=' "$status_file"; then
+      grep '^DiscordSRV.note=' "$status_file" | tail -n 1 | sed 's/^DiscordSRV.note=/warningDetail: /'
+    else
+      echo "warningDetail: Bot token not configured or API unavailable"
+    fi
+  fi
+}
+
 if [[ "$RESULT" == "PASS" || "$STATUS" == "PASS" ]]; then
   echo "integration runtime smoke: PASS"
   echo "summary: $SUMMARY"
+  discord_srv_warning
   echo "judgment: READY_FOR_INTEGRATION_RUNTIME_RELEASE_REVIEW"
   exit 0
 fi
@@ -63,6 +80,7 @@ case "$RESULT" in
   PASS)
     echo "integration runtime smoke: PASS"
     echo "summary: $SUMMARY"
+    discord_srv_warning
     echo "judgment: READY_FOR_INTEGRATION_RUNTIME_RELEASE_REVIEW"
     exit 0
     ;;

@@ -1,6 +1,6 @@
 # Integration Runtime Smoke Checklist
 
-Phase 24 では LuckPerms / CoreProtect / WorldEdit / WorldGuard / GriefPrevention / PlaceholderAPI / DiscordSRV の JAR を `~/servers/PaperPlugins/` から Paper test server へ staging し、ReputationBan が連携込みで起動・診断できるかを自動確認できます。未実施でも v0.24.0 の local release checks は失敗扱いにしませんが、未実施は PASS ではありません。v1.0.0 前には実施し、`run-integration-runtime-smoke.sh` または `record-integration-runtime-smoke-result.sh` で結果を記録してください。
+Phase 25 では LuckPerms / CoreProtect / WorldEdit / WorldGuard / GriefPrevention / PlaceholderAPI / DiscordSRV の JAR を `~/servers/PaperPlugins/` から Paper test server へ staging し、ReputationBan が連携込みで起動・診断できるかを自動確認できます。未実施でも v0.25.0 の local release checks は失敗扱いにしませんが、未実施は PASS ではありません。v1.0.0 前には実施し、`run-integration-runtime-smoke.sh` または `record-integration-runtime-smoke-result.sh` で結果を記録してください。
 
 ## Runtime Gate
 
@@ -20,12 +20,13 @@ Phase 24 では LuckPerms / CoreProtect / WorldEdit / WorldGuard / GriefPreventi
 - restore override: `REPUTATIONBAN_INTEGRATION_RESTORE_PLUGINS`
 - `REPUTATIONBAN_INTEGRATION_RESTORE_PLUGINS=1` が既定です。既存対象 JAR を backup し、smoke 後に外部連携 JAR を削除して既存 JAR を復元します。ReputationBan JAR は test server に残す方針です。
 - `~/servers/PaperPlugins/`、`*.jar`、Paper directory、start script、または `screen` がない場合は `NOT_RUN` summary を作成して exit 0 します。
-- summary、server log、commands、environment、screen snapshots、staged plugins、restore log は `build/manual-smoke/integration-runtime-YYYYMMDD-HHMMSS/` に保存されます。
+- summary、server log、commands、environment、screen snapshots、staged plugins、restore log、`integration-status.txt` は `build/manual-smoke/integration-runtime-YYYYMMDD-HHMMSS/` に保存されます。
+- summary には `activeIntegrations` と `unavailableIntegrations` が記録されます。
 
 ## 共通確認
 
 - PaperMC 26.1.2 と Java 25 で起動します。
-- `build/libs/ReputationBan-0.24.0.jar` を配置します。
+- `build/libs/ReputationBan-0.25.0.jar` を配置します。
 - 自動 smoke は `version`、`plugins`、`rep version`、`rep doctor`、`rep integrations`、`rep integrations test`、`rep placeholders`、`reports help`、`rep audit recent 5`、`rep maintenance preview` を console へ投入します。
 - `/reportbad` と `/reports evidence` による report_context の実生成確認は、実プレイヤー2名以上で手動確認が必要です。
 - CoreProtect rollback、restore、purge は使いません。
@@ -34,6 +35,8 @@ Phase 24 では LuckPerms / CoreProtect / WorldEdit / WorldGuard / GriefPreventi
 - GriefPrevention claim / trust の作成、変更、削除は行いません。
 - Discord から Minecraft コマンドを実行する機能、Discord role 変更、Discord button 承認は行いません。
 - DiscordSRV 通知はデフォルト無効です。明示的に有効化した smoke 以外では送信されないことを確認します。
+- DiscordSRV は bot token 未設定だと `apiAvailable=false` になる場合があります。ReputationBan の起動・他連携確認とは別に、DiscordSRV 通知や account link 確認を行うには bot token 設定済み環境で追加テストしてください。
+- DiscordSRV unavailable だけで integration runtime smoke の PASS は取り消しません。`check-integration-runtime-readiness.sh` は WARN として理由を表示します。
 
 ## LuckPerms 未導入
 

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-VERSION="0.24.0"
+VERSION="0.25.0"
 PROJECT_NAME="ReputationBan"
 PLUGIN_JAR="build/libs/${PROJECT_NAME}-${VERSION}.jar"
 
@@ -27,10 +27,12 @@ SCREEN_BEFORE_FILE="${OUTDIR}/screen-before.txt"
 SCREEN_AFTER_FILE="${OUTDIR}/screen-after.txt"
 STAGED_PLUGINS_FILE="${OUTDIR}/staged-plugins.txt"
 PLUGIN_RESTORE_FILE="${OUTDIR}/plugin-restore.txt"
+INTEGRATION_STATUS_FILE="${OUTDIR}/integration-status.txt"
 mkdir -p "$OUTDIR"
 : > "$COMMANDS_FILE"
 : > "$STAGED_PLUGINS_FILE"
 : > "$PLUGIN_RESTORE_FILE"
+: > "$INTEGRATION_STATUS_FILE"
 
 PLUGINS_DIR="$REPUTATIONBAN_PAPER_DIR/plugins"
 BACKUP_DIR="$PLUGINS_DIR/backups/reputationban-integration-smoke-${STAMP}"
@@ -38,6 +40,9 @@ STAGED_PLUGIN_BASENAMES=()
 STAGED_PLUGIN_PATHS=()
 BACKED_UP_PLUGIN_BASENAMES=()
 RESTORED_PLUGINS=false
+ACTIVE_INTEGRATIONS=""
+UNAVAILABLE_INTEGRATIONS=""
+DISCORDSRV_UNAVAILABLE_REASON=""
 
 JAR_SHA="missing"
 if [[ -f "$PLUGIN_JAR" ]]; then
@@ -47,6 +52,107 @@ fi
 join_by_comma() {
   local IFS=,
   echo "$*"
+}
+
+write_not_run_integration_status() {
+  local reason="$1"
+  {
+    echo "LuckPerms=not_run"
+    echo "CoreProtect=not_run"
+    echo "WorldGuard=not_run"
+    echo "GriefPrevention=not_run"
+    echo "PlaceholderAPI=not_run"
+    echo "DiscordSRV=not_run"
+    echo "note=$reason"
+  } > "$INTEGRATION_STATUS_FILE"
+  ACTIVE_INTEGRATIONS=""
+  UNAVAILABLE_INTEGRATIONS=""
+  DISCORDSRV_UNAVAILABLE_REASON=""
+}
+
+write_integration_status_from_log() {
+  local parsed="${OUTDIR}/integration-status.parsed"
+  local names=(
+    "LuckPerms"
+    "CoreProtect"
+    "WorldGuard"
+    "GriefPrevention"
+    "PlaceholderAPI"
+    "DiscordSRV"
+  )
+  local active=()
+  local unavailable=()
+  local name configured plugin_present api_available is_active state
+
+  if [[ ! -f "$SERVER_LOG" ]]; then
+    write_not_run_integration_status "server log not found"
+    return 0
+  fi
+
+  awk '
+    BEGIN {
+      split("LuckPerms CoreProtect WorldGuard GriefPrevention PlaceholderAPI DiscordSRV", ordered, " ")
+      for (idx in ordered) {
+        name = ordered[idx]
+        names[name] = 1
+        order[idx] = name
+      }
+    }
+    {
+      line = $0
+      gsub(/\033\[[0-9;]*m/, "", line)
+      sub(/\r$/, "", line)
+      if (line ~ /\[ReputationBan\]/) {
+        sub(/^.*\[ReputationBan\][[:space:]]*/, "", line)
+      }
+      if (line ~ /^(LuckPerms|CoreProtect|WorldGuard|GriefPrevention|PlaceholderAPI|DiscordSRV):$/) {
+        current = line
+        sub(/:$/, "", current)
+        seen[current] = 1
+        next
+      }
+      if (current != "" && line ~ /^[[:space:]]*(configuredEnabled|pluginPresent|apiAvailable|active)=/) {
+        gsub(/^[[:space:]]*/, "", line)
+        split(line, parts, "=")
+        values[current, parts[1]] = parts[2]
+      }
+    }
+    END {
+      for (i = 1; i <= 6; i++) {
+        name = order[i]
+        print name "|" values[name, "configuredEnabled"] "|" values[name, "pluginPresent"] "|" values[name, "apiAvailable"] "|" values[name, "active"]
+      }
+    }
+  ' "$SERVER_LOG" > "$parsed"
+
+  : > "$INTEGRATION_STATUS_FILE"
+  while IFS='|' read -r name configured plugin_present api_available is_active; do
+    if [[ "$is_active" == "true" ]]; then
+      state="active"
+      active+=("$name")
+    else
+      state="unavailable"
+      unavailable+=("$name")
+    fi
+    {
+      echo "$name=$state"
+      echo "$name.configuredEnabled=${configured:-unknown}"
+      echo "$name.pluginPresent=${plugin_present:-unknown}"
+      echo "$name.apiAvailable=${api_available:-unknown}"
+      echo "$name.active=${is_active:-unknown}"
+    } >> "$INTEGRATION_STATUS_FILE"
+    if [[ "$name" == "DiscordSRV" && "$state" == "unavailable" ]]; then
+      if [[ "$plugin_present" == "true" && "$api_available" != "true" ]]; then
+        DISCORDSRV_UNAVAILABLE_REASON="Bot token not configured or API unavailable"
+      else
+        DISCORDSRV_UNAVAILABLE_REASON="DiscordSRV optional integration unavailable"
+      fi
+      echo "DiscordSRV.note=$DISCORDSRV_UNAVAILABLE_REASON" >> "$INTEGRATION_STATUS_FILE"
+    fi
+  done < "$parsed"
+
+  ACTIVE_INTEGRATIONS="$(join_by_comma "${active[@]}")"
+  UNAVAILABLE_INTEGRATIONS="$(join_by_comma "${unavailable[@]}")"
 }
 
 write_environment() {
@@ -80,6 +186,13 @@ write_summary() {
   local screen_session="${4:-}"
   local started_by_smoke="${5:-false}"
   local ended_at
+  if [[ ! -s "$INTEGRATION_STATUS_FILE" ]]; then
+    if [[ "$status" != "NOT_RUN" && -f "$SERVER_LOG" ]]; then
+      write_integration_status_from_log
+    else
+      write_not_run_integration_status "${reason:-integration runtime smoke not run}"
+    fi
+  fi
   ended_at="$(date -Iseconds)"
   {
     echo "status=$status"
@@ -96,6 +209,11 @@ write_summary() {
     echo "integrationPluginDir=$REPUTATIONBAN_INTEGRATION_PLUGIN_DIR"
     echo "stagedPlugins=$(join_by_comma "${STAGED_PLUGIN_BASENAMES[@]}")"
     echo "backedUpPlugins=$(join_by_comma "${BACKED_UP_PLUGIN_BASENAMES[@]}")"
+    echo "activeIntegrations=$ACTIVE_INTEGRATIONS"
+    echo "unavailableIntegrations=$UNAVAILABLE_INTEGRATIONS"
+    if [[ -n "$DISCORDSRV_UNAVAILABLE_REASON" ]]; then
+      echo "discordSrvUnavailableReason=$DISCORDSRV_UNAVAILABLE_REASON"
+    fi
     echo "screenSession=$screen_session"
     echo "startedBySmoke=$started_by_smoke"
     echo "restoredPlugins=$RESTORED_PLUGINS"

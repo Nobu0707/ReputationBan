@@ -1,13 +1,13 @@
 # Migration
 
-ReputationBan 0.24.0 はデフォルトで `plugins/ReputationBan/reputationban.db` に SQLite database を保存します。
+ReputationBan 0.25.0 はデフォルトで `plugins/ReputationBan/reputationban.db` に SQLite database を保存します。
 
 ## 更新前
 
 1. server を停止します。
 2. `plugins/ReputationBan/reputationban.db` をバックアップします。
 3. `plugins/ReputationBan/config.yml` をバックアップします。
-4. plugin JAR を `ReputationBan-0.24.0.jar` に置き換えます。
+4. plugin JAR を `ReputationBan-0.25.0.jar` に置き換えます。
 5. server を起動して `/rep doctor` を実行します。
 
 ## 自動マイグレーション

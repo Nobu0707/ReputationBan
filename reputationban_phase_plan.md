@@ -553,7 +553,33 @@
 - CoreProtect rollback、restore、purge、LuckPerms 書き込み、WorldGuard region/flag 変更、GriefPrevention claim/trust 変更は引き続き行わない。
 - Discord から Minecraft コマンドを実行する機能、Discord role 変更、Discord button 承認は行わない。
 
-## Phase 25以降: 外部連携・高度な悪用対策
+## Phase 25 / v0.25.0: Runtime smoke readiness consistency
+
+目的: Paper runtime smoke / integration runtime smoke の latest summary と readiness 判定が矛盾しないように、review archive の実行順と release gate を整える。
+
+実装範囲:
+
+- version 0.25.0
+- `scripts/make-review-archive.sh` で `run-paper-runtime-smoke.sh` の後に `check-paper-runtime-readiness.sh` を実行
+- `scripts/make-review-archive.sh` で `run-integration-runtime-smoke.sh` の後に `check-integration-runtime-readiness.sh` を実行
+- `scripts/check-runtime-smoke-consistency.sh`
+- review archive の `checks/runtime-smoke-consistency.txt`
+- `run-integration-runtime-smoke.sh` の `integration-status.txt`
+- integration summary の `activeIntegrations` / `unavailableIntegrations`
+- DiscordSRV bot token 未設定などによる `apiAvailable=false` は WARN として記録し、ReputationBan 本体と他連携が PASS なら release gate を止めない
+- `docs/phase-25.md`
+- runtime smoke / release readiness docs の v0.25.0 対応
+- review/release archive scripts の v0.25.0 対応
+
+注意:
+
+- latest summary が PASS なのに readiness が HOLD/NOT_RUN になる状態を残さない。
+- latest summary が NOT_RUN なのに readiness が READY になる状態を残さない。
+- DiscordSRV 通知や account link の本番確認は bot token 設定済み環境で別途実施する。
+- CoreProtect rollback、restore、purge、LuckPerms 書き込み、WorldGuard region/flag 変更、GriefPrevention claim/trust 変更は引き続き行わない。
+- Discord から Minecraft コマンドを実行する機能、Discord role 変更、Discord button 承認は行わない。
+
+## Phase 26以降: 外部連携・高度な悪用対策
 
 実装候補:
 

@@ -50,6 +50,7 @@ require_japanese_text docs/RELEASE_READINESS.md
 require_japanese_text docs/SUPPORT_BUNDLE.md
 require_japanese_text docs/SECURITY_REDACTION.md
 require_japanese_text docs/PAPER_RUNTIME_SMOKE_REPORT_TEMPLATE.md
+require_japanese_text docs/phase-25.md
 
 require_literal README.md "/rep version"
 require_literal README.md "/reportbad"
