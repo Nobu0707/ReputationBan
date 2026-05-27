@@ -10,7 +10,7 @@
 ## Install
 
 1. `./gradlew clean test build --warning-mode all` を実行します。
-2. `build/libs/ReputationBan-0.14.0.jar` を Paper `plugins` directory へコピーします。
+2. `build/libs/ReputationBan-0.15.0.jar` を Paper `plugins` directory へコピーします。
 3. Java 25 で Paper を起動します。
 
 ## Startup
@@ -48,7 +48,14 @@
 - Discord webhook がデフォルトで無効であることを確認します。
 - Webhook URLs が logs、`/rep doctor`、audit output、CSV output、review archive files に出ていないことを確認します。
 - BAN と pardon commands は disposable test users のみに実行します。
-- 結果は `./scripts/record-paper-runtime-smoke-result.sh --result PASS --note "local Paper smoke passed"`、または FAIL の note で記録します。
+- 実行後の結果は次のように記録します。
+
+```bash
+./scripts/record-paper-runtime-smoke-result.sh --result PASS --note "Paper runtime smoke passed"
+```
+
+- 失敗した場合は `--result FAIL` と原因の note を記録します。
+- 未実施を PASS 扱いにしないでください。未実施の場合、review archive では `status=NOT_RUN` として扱います。
 
 ## Rollback
 

@@ -1,6 +1,6 @@
 # Configuration
 
-このドキュメントでは ReputationBan 0.14.0 の主な `config.yml` セクションを説明します。YAML key は変更しないでください。
+このドキュメントでは ReputationBan 0.15.0 の主な `config.yml` セクションを説明します。YAML key は変更しないでください。
 
 ## Score
 
@@ -70,7 +70,7 @@
 
 ## Retention
 
-Retention settings は audit events、rejected reports、cancelled reports、score history、bans の cleanup を制御します。`score-history-days` と `bans-days` はデフォルト `0` で、削除しない設定です。
+`retention` settings は audit events、rejected reports、cancelled reports、score history、bans の cleanup を制御します。`score-history-days` と `bans-days` はデフォルト `0` で、削除しない設定です。
 
 ## Database
 

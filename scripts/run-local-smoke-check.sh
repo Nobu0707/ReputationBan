@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-EXPECTED_VERSION="0.14.0"
+EXPECTED_VERSION="0.15.0"
 JAR="build/libs/ReputationBan-${EXPECTED_VERSION}.jar"
 
 fail() { echo "[FAIL] $*" >&2; exit 1; }
@@ -29,10 +29,10 @@ sha256sum "$JAR"
 cat <<'STEPS'
 
 Manual runtime smoke:
-Copy build/libs/ReputationBan-0.14.0.jar to your Paper 26.1.2 plugins directory.
+Copy build/libs/ReputationBan-0.15.0.jar to your Paper 26.1.2 plugins directory.
 Start Paper with Java 25.
 Verify /plugins, /rep version, /rep help, /rep doctor, /rep support bundle, /reportbad tab completion, /rep audit recent.
 Verify /rep audit export recent, /rep backup before-smoke, /rep support bundle, /rep maintenance preview, and /rep maintenance run confirm.
 Confirm Discord webhook remains disabled by default and webhook URLs are not printed in logs.
-Record results with ./scripts/record-paper-runtime-smoke-result.sh --result PASS --note "local Paper smoke passed".
+Record results with ./scripts/record-paper-runtime-smoke-result.sh --result PASS --note "Paper runtime smoke passed".
 STEPS

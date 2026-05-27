@@ -2,7 +2,7 @@
 set -euo pipefail
 
 PROJECT_NAME="ReputationBan"
-EXPECTED_VERSION="0.14.0"
+EXPECTED_VERSION="0.15.0"
 EXPECTED_MAIN="dev.modplugin.reputationban.ReputationBanPlugin"
 EXPECTED_API_VERSION="26.1.2"
 EXPECTED_PACKAGE_DIR="src/main/java/dev/modplugin/reputationban"
@@ -33,6 +33,7 @@ require_file gradlew
 require_file scripts/make-review-archive.sh
 require_file scripts/run-local-smoke-check.sh
 require_file scripts/run-paper-runtime-smoke-helper.sh
+require_file scripts/check-docs-localization.sh
 require_file scripts/create-release-artifact.sh
 require_file scripts/verify-release-artifact.sh
 require_file scripts/record-paper-runtime-smoke-result.sh
@@ -47,6 +48,8 @@ require_file docs/SECURITY_REDACTION.md
 require_file docs/PAPER_RUNTIME_SMOKE_REPORT_TEMPLATE.md
 require_file docs/phase-13.md
 require_file docs/phase-14.md
+require_file docs/phase-15.md
+require_file docs/RELEASE_CANDIDATE_CHECKLIST.md
 require_file docs/runtime-smoke-checklist.md
 require_file src/main/resources/plugin.yml
 require_file src/main/resources/config.yml
@@ -56,6 +59,7 @@ require_dir "$EXPECTED_PACKAGE_DIR"
 [[ -x ./scripts/make-review-archive.sh ]] || fail "make-review-archive.sh is not executable"
 [[ -x ./scripts/run-local-smoke-check.sh ]] || fail "run-local-smoke-check.sh is not executable"
 [[ -x ./scripts/run-paper-runtime-smoke-helper.sh ]] || fail "run-paper-runtime-smoke-helper.sh is not executable"
+[[ -x ./scripts/check-docs-localization.sh ]] || fail "check-docs-localization.sh is not executable"
 [[ -x ./scripts/create-release-artifact.sh ]] || fail "create-release-artifact.sh is not executable"
 [[ -x ./scripts/verify-release-artifact.sh ]] || fail "verify-release-artifact.sh is not executable"
 [[ -x ./scripts/record-paper-runtime-smoke-result.sh ]] || fail "record-paper-runtime-smoke-result.sh is not executable"
@@ -64,7 +68,7 @@ YML=src/main/resources/plugin.yml
 grep -q "io.papermc.paper:paper-api:26.1.2.build" build.gradle.kts || fail "Paper API 26.1.2 dependency not found"
 grep -q "org.xerial:sqlite-jdbc" "$YML" || fail "Missing sqlite-jdbc library"
 grep -q "JavaLanguageVersion.of(25)" build.gradle.kts || fail "Java 25 toolchain not found"
-grep -q 'version = "0.14.0"' build.gradle.kts || fail "build.gradle.kts version is not 0.14.0"
+grep -q 'version = "0.15.0"' build.gradle.kts || fail "build.gradle.kts version is not 0.15.0"
 grep -q "options.release.set(25)" build.gradle.kts || fail "Java release 25 not found"
 
 [[ "$(extract_yaml_value "$YML" name)" == "$PROJECT_NAME" ]] || fail "Invalid plugin.yml name"
@@ -268,9 +272,17 @@ for japanese_doc in \
   docs/SUPPORT_BUNDLE.md \
   docs/SECURITY_REDACTION.md \
   docs/PAPER_RUNTIME_SMOKE_REPORT_TEMPLATE.md \
-  docs/phase-14.md; do
+  docs/phase-14.md \
+  docs/phase-15.md; do
   grep -Pq '[\p{Hiragana}\p{Katakana}\p{Han}]' "$japanese_doc" || fail "$japanese_doc does not appear to contain Japanese text"
 done
+
+bash -n scripts/check-docs-localization.sh || fail "check-docs-localization.sh syntax check failed"
+./scripts/check-docs-localization.sh
+
+grep -q "0.15.0" README.md || fail "README.md does not mention 0.15.0"
+grep -q "RELEASE_CANDIDATE_CHECKLIST" README.md || fail "README.md does not link RELEASE_CANDIDATE_CHECKLIST"
+grep -q "RELEASE_CANDIDATE_CHECKLIST" docs/phase-15.md docs/RELEASE_CANDIDATE_CHECKLIST.md README.md || fail "Release candidate checklist references missing"
 
 ./gradlew clean test build --warning-mode all
 
@@ -280,37 +292,44 @@ require_command jar
 jar tf "$JAR" | grep -q "plugin.yml" || fail "plugin.yml missing from jar"
 jar tf "$JAR" | grep -q "dev/modplugin/reputationban/ReputationBanPlugin.class" || fail "Main class missing from jar"
 
-grep -q "EXPECTED_VERSION=\"0.14.0\"" scripts/run-local-smoke-check.sh || fail "run-local-smoke-check.sh does not check v0.14.0"
+grep -q "EXPECTED_VERSION=\"0.15.0\"" scripts/run-local-smoke-check.sh || fail "run-local-smoke-check.sh does not check v0.15.0"
 grep -q "REPUTATIONBAN_SKIP_BUILD" scripts/run-local-smoke-check.sh || fail "run-local-smoke-check.sh does not support REPUTATIONBAN_SKIP_BUILD"
-grep -q "VERSION=\"0.14.0\"" scripts/create-release-artifact.sh || fail "create-release-artifact.sh does not target v0.14.0"
+grep -q "VERSION=\"0.15.0\"" scripts/create-release-artifact.sh || fail "create-release-artifact.sh does not target v0.15.0"
 grep -q "build/release" scripts/create-release-artifact.sh || fail "create-release-artifact.sh does not write build/release"
 grep -q "sha256sum" scripts/create-release-artifact.sh || fail "create-release-artifact.sh does not create sha256"
 grep -q "release.zip" scripts/create-release-artifact.sh || fail "create-release-artifact.sh does not create release zip"
 grep -q "RELEASE_ZIP_SHA" scripts/create-release-artifact.sh || fail "create-release-artifact.sh does not create release zip sha256"
-grep -q "VERSION=\"0.14.0\"" scripts/verify-release-artifact.sh || fail "verify-release-artifact.sh does not target v0.14.0"
+grep -q "VERSION=\"0.15.0\"" scripts/verify-release-artifact.sh || fail "verify-release-artifact.sh does not target v0.15.0"
 grep -q "sha256sum -c" scripts/verify-release-artifact.sh || fail "verify-release-artifact.sh does not verify sha256"
+grep -q "docs/INSTALLATION.md" scripts/verify-release-artifact.sh || fail "verify-release-artifact.sh does not verify localized docs"
+grep -q "require_japanese_text" scripts/verify-release-artifact.sh || fail "verify-release-artifact.sh does not verify Japanese docs text"
+grep -q "api/webhooks" scripts/verify-release-artifact.sh || fail "verify-release-artifact.sh does not scan release zip for concrete Discord webhook URLs"
 grep -q "record-paper-runtime-smoke-result" scripts/record-paper-runtime-smoke-result.sh || fail "record paper runtime smoke script missing usage text"
+grep -q "docs-localization.txt" scripts/make-review-archive.sh || fail "make-review-archive.sh does not create docs-localization.txt"
+grep -q "check-docs-localization.sh" scripts/make-review-archive.sh || fail "make-review-archive.sh does not record docs localization status"
 grep -q "local-smoke-check.txt" scripts/make-review-archive.sh || fail "make-review-archive.sh does not create local-smoke-check.txt"
 grep -q "scripts/run-local-smoke-check.sh" scripts/make-review-archive.sh || fail "make-review-archive.sh does not record run-local-smoke-check.sh status"
 grep -q "create-release-artifact.txt" scripts/make-review-archive.sh || fail "make-review-archive.sh does not create create-release-artifact.txt"
 grep -q "scripts/create-release-artifact.sh" scripts/make-review-archive.sh || fail "make-review-archive.sh does not record create-release-artifact status"
 grep -q "verify-release-artifact.txt" scripts/make-review-archive.sh || fail "make-review-archive.sh does not create verify-release-artifact.txt"
 grep -q "latest-paper-runtime-smoke-summary.txt" scripts/make-review-archive.sh || fail "make-review-archive.sh does not create latest paper runtime smoke summary"
+grep -q "status=NOT_RUN" scripts/make-review-archive.sh || fail "make-review-archive.sh does not write NOT_RUN paper runtime summary"
 grep -q "secret-scan.txt" scripts/make-review-archive.sh || fail "make-review-archive.sh does not create secret-scan.txt"
 grep -q "run-paper-runtime-smoke-helper" scripts/make-review-archive.sh || fail "make-review-archive.sh review signals do not mention paper runtime helper"
 grep -Eq "CHANGELOG|INSTALLATION|CONFIGURATION|MIGRATION|RELEASE_READINESS" scripts/make-review-archive.sh || fail "make-review-archive.sh review signals do not mention release docs"
 bash -n scripts/run-paper-runtime-smoke-helper.sh || fail "run-paper-runtime-smoke-helper.sh syntax check failed"
+bash -n scripts/check-docs-localization.sh || fail "check-docs-localization.sh syntax check failed"
 bash -n scripts/create-release-artifact.sh || fail "create-release-artifact.sh syntax check failed"
 bash -n scripts/verify-release-artifact.sh || fail "verify-release-artifact.sh syntax check failed"
 bash -n scripts/record-paper-runtime-smoke-result.sh || fail "record-paper-runtime-smoke-result.sh syntax check failed"
 ./scripts/create-release-artifact.sh
-[[ -f "build/release/ReputationBan-0.14.0.jar" ]] || fail "release jar not found"
-[[ -f "build/release/ReputationBan-0.14.0.jar.sha256" ]] || fail "release jar sha256 not found"
-[[ -f "build/release/ReputationBan-0.14.0-release.zip" ]] || fail "release zip not found"
-[[ -f "build/release/ReputationBan-0.14.0-release.zip.sha256" ]] || fail "release zip sha256 not found"
+[[ -f "build/release/ReputationBan-0.15.0.jar" ]] || fail "release jar not found"
+[[ -f "build/release/ReputationBan-0.15.0.jar.sha256" ]] || fail "release jar sha256 not found"
+[[ -f "build/release/ReputationBan-0.15.0-release.zip" ]] || fail "release zip not found"
+[[ -f "build/release/ReputationBan-0.15.0-release.zip.sha256" ]] || fail "release zip sha256 not found"
 ./scripts/verify-release-artifact.sh
-jar tf "build/release/ReputationBan-0.14.0-release.zip" | grep -q "README.md" || fail "release zip missing README.md"
-if jar tf "build/release/ReputationBan-0.14.0-release.zip" | grep -E '(^|/)(config\.yml|reputationban\.db|latest\.log|debug\.log)$|(^|/)logs/' >/dev/null; then
+jar tf "build/release/ReputationBan-0.15.0-release.zip" | grep -q "README.md" || fail "release zip missing README.md"
+if jar tf "build/release/ReputationBan-0.15.0-release.zip" | grep -E '(^|/)(config\.yml|reputationban\.db|latest\.log|debug\.log)$|(^|/)logs/' >/dev/null; then
   fail "release zip contains forbidden config, DB, or logs"
 fi
 

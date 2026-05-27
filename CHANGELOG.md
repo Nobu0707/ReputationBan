@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.15.0
+
+- docs localization check script を追加しました。
+- release candidate checklist を追加しました。
+- Paper runtime smoke status reporting を改善しました。
+- localized docs 向けの release artifact verification を強化しました。
+
 ## 0.14.0
 
 - README.md を日本語トップページとして再整備しました。

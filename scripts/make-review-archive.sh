@@ -4,7 +4,7 @@ set -euo pipefail
 # ReputationBan review archive generator.
 # Usage:
 #   bash scripts/make-review-archive.sh
-#   bash scripts/make-review-archive.sh "Phase 14"
+#   bash scripts/make-review-archive.sh "Phase 15"
 #
 # The optional argument is an expected substring of HEAD's commit subject.
 # If it does not match, the script exits before producing an archive, which
@@ -105,6 +105,9 @@ done < "$OUTDIR/meta/changed-files.txt"
   echo
   echo "## rg phase 14 documentation localization"
   rg -n "日本語化|README|INSTALLATION|CONFIGURATION|RELEASE_READINESS|SUPPORT_BUNDLE|SECURITY_REDACTION|phase-14|0\\.14\\.0" README.md CHANGELOG.md docs reputationban_phase_plan.md scripts build.gradle.kts src/main/resources/plugin.yml || true
+  echo
+  echo "## rg phase 15 release candidate checks"
+  rg -n "check-docs-localization|RELEASE_CANDIDATE_CHECKLIST|status=NOT_RUN|docs-localization|0\\.15\\.0|phase-15|Phase 15|release candidate" README.md CHANGELOG.md docs reputationban_phase_plan.md scripts build.gradle.kts src/main/resources/plugin.yml || true
 } > "$OUTDIR/checks/rg-review-signals.txt"
 
 {
@@ -139,6 +142,12 @@ else
   echo "review-code=missing" >> "$COMMAND_STATUS"
 fi
 
+if [[ -x "$ROOT/scripts/check-docs-localization.sh" ]]; then
+  run_logged "./scripts/check-docs-localization.sh" "$OUTDIR/checks/docs-localization.txt" "$ROOT/scripts/check-docs-localization.sh"
+else
+  echo "./scripts/check-docs-localization.sh=missing" >> "$COMMAND_STATUS"
+fi
+
 if [[ -x "$ROOT/scripts/run-local-smoke-check.sh" ]]; then
   run_logged "local-smoke-check" "$OUTDIR/checks/local-smoke-check.txt" env REPUTATIONBAN_SKIP_REVIEW_CODE=1 REPUTATIONBAN_SKIP_BUILD=1 "$ROOT/scripts/run-local-smoke-check.sh"
 else
@@ -170,8 +179,8 @@ fi
 
 if [[ -d "$ROOT/build/libs" ]]; then
   find "$ROOT/build/libs" -maxdepth 1 -type f -print | sort > "$OUTDIR/checks/built-jars.txt"
-  if [[ -f "$ROOT/build/libs/ReputationBan-0.14.0.jar" ]]; then
-    (cd "$ROOT" && sha256sum build/libs/ReputationBan-0.14.0.jar) > "$OUTDIR/checks/jar-sha256.txt"
+  if [[ -f "$ROOT/build/libs/ReputationBan-0.15.0.jar" ]]; then
+    (cd "$ROOT" && sha256sum build/libs/ReputationBan-0.15.0.jar) > "$OUTDIR/checks/jar-sha256.txt"
   fi
 fi
 
@@ -185,7 +194,11 @@ LATEST_SMOKE="$(find "$ROOT/build/manual-smoke" -maxdepth 2 -path '*/paper-runti
 if [[ -n "$LATEST_SMOKE" && -f "$LATEST_SMOKE" ]]; then
   cp "$LATEST_SMOKE" "$OUTDIR/checks/latest-paper-runtime-smoke-summary.txt"
 else
-  echo "No paper runtime smoke summary found." > "$OUTDIR/checks/latest-paper-runtime-smoke-summary.txt"
+  {
+    echo "status=NOT_RUN"
+    echo "message=No paper runtime smoke summary found."
+    echo "nextStep=Run scripts/run-paper-runtime-smoke-helper.sh and record results with scripts/record-paper-runtime-smoke-result.sh"
+  } > "$OUTDIR/checks/latest-paper-runtime-smoke-summary.txt"
 fi
 
 tar -czf "$ARCHIVE" -C "$(dirname "$OUTDIR")" "$(basename "$OUTDIR")"

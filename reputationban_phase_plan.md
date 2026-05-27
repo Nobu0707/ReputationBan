@@ -312,7 +312,33 @@
 - Webhook URLは表示、ログ、監査metadata、CSV、support bundle、release artifact、レビューアーカイブへ出さない。
 - secret scanは確認用であり、説明文に `token` や `secret` があるだけでは即失敗にしない。
 
-## Phase 15以降: 外部連携・高度な悪用対策
+## Phase 15 / v0.15.0: リリース候補確認ゲート
+
+目的: v1.0.0候補へ進む前に、日本語ドキュメント品質、release artifact、review archive、Paper実機スモーク状態を確認しやすくする。
+
+実装範囲:
+
+- version 0.15.0
+- `docs/phase-15.md`
+- `docs/RELEASE_CANDIDATE_CHECKLIST.md`
+- `scripts/check-docs-localization.sh`
+- README.md と docs/*.md の日本語テキスト確認
+- command names、permission nodes、config keys、YAML examples を翻訳しない方針の確認
+- docs 内の実 Discord Webhook URL 風パターン検出
+- `scripts/review_code.sh` の Phase 15 対応
+- `scripts/run-local-smoke-check.sh` の v0.15.0 対応
+- `scripts/create-release-artifact.sh` の v0.15.0 対応
+- `scripts/verify-release-artifact.sh` の localized docs と禁止ファイル検証強化
+- `scripts/make-review-archive.sh` の docs localization 収集と Paper runtime smoke 未実施 summary 明確化
+
+注意:
+
+- Phase 15では Java 本体の機能追加、DBスキーマ変更、コマンド追加は行わない。
+- Paper runtime smokeを実施していない場合はPASS扱いにせず、`status=NOT_RUN` と記録する。
+- Webhook URLは表示、ログ、監査metadata、CSV、support bundle、release artifact、レビューアーカイブへ出さない。
+- v1.0.0前に、可能な限り実Paperサーバーで `/rep version`、`/rep doctor`、`/rep support bundle`、`/rep backup`、`/reportbad` TAB補完を確認する。
+
+## Phase 16以降: 外部連携・高度な悪用対策
 
 実装候補:
 

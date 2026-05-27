@@ -2,7 +2,7 @@
 
 ReputationBan は、通報とスタッフ操作をもとにプレイヤーの評判スコアを管理する PaperMC 向け moderation プラグインです。データは SQLite に保存し、未処理通報の審査、監査ログ、バックアップ、support bundle、設定に基づく Profile BAN を扱います。
 
-現在のバージョン: `0.14.0`
+現在のバージョン: `0.15.0`
 
 ## 対象環境
 
@@ -23,7 +23,8 @@ ReputationBan は、通報とスタッフ操作をもとにプレイヤーの評
 - [Support bundle](docs/SUPPORT_BUNDLE.md)
 - [Security and redaction](docs/SECURITY_REDACTION.md)
 - [Paper runtime smoke checklist](docs/runtime-smoke-checklist.md)
-- [Phase 14 notes](docs/phase-14.md)
+- [Release candidate checklist](docs/RELEASE_CANDIDATE_CHECKLIST.md)
+- [Phase 15 notes](docs/phase-15.md)
 - [Changelog](CHANGELOG.md)
 
 ## 主な機能
@@ -103,11 +104,13 @@ ReputationBan は、通報とスタッフ操作をもとにプレイヤーの評
 ./scripts/review_code.sh
 ```
 
-JAR は `build/libs/ReputationBan-0.14.0.jar` に生成されます。
+JAR は `build/libs/ReputationBan-0.15.0.jar` に生成されます。
 
 ## 現在の位置づけ
 
-v0.14.0 は v1.0.0 前の配布準備フェーズです。Phase 14 では機能追加ではなく、README.md と docs/*.md の日本語化、release artifact と review archive の v0.14.0 対応を行っています。
+v0.15.0 は v1.0.0 前のリリース候補確認フェーズです。Phase 15 では機能追加ではなく、日本語ドキュメント品質、識別子維持、release artifact、安全な review archive、Paper 実機スモーク状態の記録を確認します。
+
+v1.0.0 へ進む前に [Release candidate checklist](docs/RELEASE_CANDIDATE_CHECKLIST.md) を確認してください。Paper 実機スモークを実行していない場合は PASS と扱わず、未実施として記録します。
 
 ## 現在の制限
 
