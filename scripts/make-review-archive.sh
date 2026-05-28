@@ -32,11 +32,17 @@ ARCHIVE="$ROOT/reputationban-review-$HEAD_SHA-$STAMP.tar.gz"
 LATEST="$ROOT/reputationban-review-latest.tar.gz"
 
 rm -rf "$OUTDIR"
-mkdir -p "$OUTDIR"/{meta,diff,file-diffs,files,checks,runtime-smoke}
+mkdir -p "$OUTDIR"/{meta,diff,file-diffs,files,checks,runtime-smoke,release-prep}
 COMMAND_STATUS="$OUTDIR/checks/command-status.txt"
 : > "$COMMAND_STATUS"
+PRESERVED_MANUAL_SMOKE_DIR="$OUTDIR/meta/preserved-manual-smoke"
 PRESERVED_PLAYER_REPORT_DIR="$OUTDIR/meta/preserved-player-report-runtime"
 PRESERVED_PLAYER_REPORT_NAME=""
+
+if [[ -d "$ROOT/build/manual-smoke" ]]; then
+  mkdir -p "$PRESERVED_MANUAL_SMOKE_DIR"
+  cp -R "$ROOT/build/manual-smoke/." "$PRESERVED_MANUAL_SMOKE_DIR/"
+fi
 
 LATEST_PLAYER_REPORT_BEFORE_CLEAN="$(find "$ROOT/build/manual-smoke" -maxdepth 2 -path '*/player-report-runtime-*/summary.txt' -type f 2>/dev/null | sort | tail -n 1 || true)"
 if [[ -n "$LATEST_PLAYER_REPORT_BEFORE_CLEAN" && -f "$LATEST_PLAYER_REPORT_BEFORE_CLEAN" ]]; then
@@ -150,6 +156,9 @@ done < "$OUTDIR/meta/changed-files.txt"
   echo
   echo "## rg phase 27 player report runtime smoke result recording"
   rg -n "player-report-runtime|PLAYER_REPORT_RUNTIME_SMOKE_CHECKLIST|check-player-report-runtime-readiness|record-player-report-runtime-smoke-result|manualConfirmed|manual-checklist|--manual-confirmed|HOLD_FOR_PLAYER_REPORT_RUNTIME_SMOKE|/reportbad|/reports evidence|report_context|0\\.27\\.0" README.md CHANGELOG.md docs reputationban_phase_plan.md scripts build.gradle.kts src/main/resources/plugin.yml || true
+  echo
+  echo "## rg phase 28 v1 release review"
+  rg -n "check-v1-release-gates|generate-v1-go-no-go-report|generate-v1-release-notes-draft|READY_FOR_V1_RELEASE_REVIEW|READY_FOR_V1_RELEASE_REVIEW_WITH_DISCORDSRV_WARNING|V1_RELEASE_PLAN|ReputationBan-v1-go-no-go-report|ReputationBan-v1\\.0\\.0-release-notes-draft|v1 release gates|Go/No-Go" README.md CHANGELOG.md docs reputationban_phase_plan.md scripts build.gradle.kts src/main/resources/plugin.yml || true
 } > "$OUTDIR/checks/rg-review-signals.txt"
 
 {
@@ -177,6 +186,14 @@ run_logged "git-diff-check" "$OUTDIR/checks/git-diff-check.txt" git diff --check
 run_logged "gradle-clean-test-build" \
   "$OUTDIR/checks/gradle-clean-test-build.txt" \
   ./gradlew clean test build --warning-mode all
+
+if [[ -d "$PRESERVED_MANUAL_SMOKE_DIR" ]]; then
+  mkdir -p "$ROOT/build/manual-smoke"
+  cp -R "$PRESERVED_MANUAL_SMOKE_DIR/." "$ROOT/build/manual-smoke/"
+  echo "preserve-manual-smoke=restored" >> "$COMMAND_STATUS"
+else
+  echo "preserve-manual-smoke=not-found" >> "$COMMAND_STATUS"
+fi
 
 if [[ -x "$ROOT/scripts/review_code.sh" ]]; then
   run_logged "review-code" "$OUTDIR/checks/review-code.txt" "$ROOT/scripts/review_code.sh"
@@ -273,8 +290,8 @@ else
   {
     echo "status=NOT_RUN"
     echo "result=NOT_RUN"
-    echo "version=0.27.0"
-    echo "jar=build/libs/ReputationBan-0.27.0.jar"
+    echo "version=0.28.0"
+    echo "jar=build/libs/ReputationBan-0.28.0.jar"
     echo "jarSha256=missing"
     echo "reporter="
     echo "target="
@@ -288,6 +305,24 @@ if [[ -x "$ROOT/scripts/check-runtime-smoke-consistency.sh" ]]; then
   run_logged "./scripts/check-runtime-smoke-consistency.sh" "$OUTDIR/checks/runtime-smoke-consistency.txt" "$ROOT/scripts/check-runtime-smoke-consistency.sh" --checks-dir "$OUTDIR/checks"
 else
   echo "./scripts/check-runtime-smoke-consistency.sh=missing" >> "$COMMAND_STATUS"
+fi
+
+if [[ -x "$ROOT/scripts/check-v1-release-gates.sh" ]]; then
+  run_logged "./scripts/check-v1-release-gates.sh" "$OUTDIR/checks/v1-release-gates.txt" "$ROOT/scripts/check-v1-release-gates.sh"
+else
+  echo "./scripts/check-v1-release-gates.sh=missing" >> "$COMMAND_STATUS"
+fi
+
+if [[ -x "$ROOT/scripts/generate-v1-go-no-go-report.sh" ]]; then
+  run_logged "./scripts/generate-v1-go-no-go-report.sh" "$OUTDIR/checks/generate-v1-go-no-go-report.txt" "$ROOT/scripts/generate-v1-go-no-go-report.sh"
+else
+  echo "./scripts/generate-v1-go-no-go-report.sh=missing" >> "$COMMAND_STATUS"
+fi
+
+if [[ -x "$ROOT/scripts/generate-v1-release-notes-draft.sh" ]]; then
+  run_logged "./scripts/generate-v1-release-notes-draft.sh" "$OUTDIR/checks/generate-v1-release-notes-draft.txt" "$ROOT/scripts/generate-v1-release-notes-draft.sh"
+else
+  echo "./scripts/generate-v1-release-notes-draft.sh=missing" >> "$COMMAND_STATUS"
 fi
 
 if [[ -x "$ROOT/scripts/run-local-smoke-check.sh" ]]; then
@@ -308,6 +343,14 @@ else
   echo "verify-release-artifact=missing" >> "$COMMAND_STATUS"
 fi
 
+for release_prep_file in \
+  "$ROOT/build/release/ReputationBan-v1-go-no-go-report.md" \
+  "$ROOT/build/release/ReputationBan-v1.0.0-release-notes-draft.md"; do
+  if [[ -f "$release_prep_file" ]]; then
+    cp "$release_prep_file" "$OUTDIR/release-prep/"
+  fi
+done
+
 if compgen -G "$ROOT/build/test-results/test/*.xml" >/dev/null; then
   {
     echo "JUnit XML files:"
@@ -321,8 +364,8 @@ fi
 
 if [[ -d "$ROOT/build/libs" ]]; then
   find "$ROOT/build/libs" -maxdepth 1 -type f -print | sort > "$OUTDIR/checks/built-jars.txt"
-  if [[ -f "$ROOT/build/libs/ReputationBan-0.27.0.jar" ]]; then
-    (cd "$ROOT" && sha256sum build/libs/ReputationBan-0.27.0.jar) > "$OUTDIR/checks/jar-sha256.txt"
+  if [[ -f "$ROOT/build/libs/ReputationBan-0.28.0.jar" ]]; then
+    (cd "$ROOT" && sha256sum build/libs/ReputationBan-0.28.0.jar) > "$OUTDIR/checks/jar-sha256.txt"
   fi
 fi
 
@@ -351,8 +394,8 @@ copy_runtime_smoke_latest() {
       echo "status=NOT_RUN"
       echo "result=NOT_RUN"
       if [[ "$dest_name" == "player-report-runtime-latest" ]]; then
-        echo "version=0.27.0"
-        echo "jar=build/libs/ReputationBan-0.27.0.jar"
+        echo "version=0.28.0"
+        echo "jar=build/libs/ReputationBan-0.28.0.jar"
         echo "jarSha256=missing"
         echo "reporter="
         echo "target="

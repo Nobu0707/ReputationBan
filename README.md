@@ -2,7 +2,9 @@
 
 ReputationBan は、通報とスタッフ操作をもとにプレイヤーの評判スコアを管理する PaperMC 向け moderation プラグインです。データは SQLite に保存し、未処理通報の審査、監査ログ、バックアップ、support bundle、設定に基づく Profile BAN を扱います。
 
-現在のバージョン: `0.27.0`
+現在のバージョン: `0.28.0`
+
+v1.0.0 release candidate review 準備中です。主要 runtime gate は Paper runtime smoke、Integration runtime smoke、Player report/evidence runtime smoke、runtime smoke consistency まで PASS 済みです。DiscordSRV は bot token 未設定時に WARN として扱い、ReputationBan 本体や他連携の release gate は止めません。
 
 ## 対象環境
 
@@ -27,6 +29,8 @@ ReputationBan は、通報とスタッフ操作をもとにプレイヤーの評
 - [Player report runtime smoke checklist](docs/PLAYER_REPORT_RUNTIME_SMOKE_CHECKLIST.md)
 - [Paper runtime smoke checklist](docs/runtime-smoke-checklist.md)
 - [Release candidate checklist](docs/RELEASE_CANDIDATE_CHECKLIST.md)
+- [v1.0.0 release plan](docs/V1_RELEASE_PLAN.md)
+- [Phase 28 notes](docs/phase-28.md)
 - [Phase 27 notes](docs/phase-27.md)
 - [Phase 26 notes](docs/phase-26.md)
 - [Phase 25 notes](docs/phase-25.md)
@@ -121,11 +125,11 @@ ReputationBan は、通報とスタッフ操作をもとにプレイヤーの評
 ./scripts/review_code.sh
 ```
 
-JAR は `build/libs/ReputationBan-0.27.0.jar` に生成されます。
+JAR は `build/libs/ReputationBan-0.28.0.jar` に生成されます。
 
 ## 現在の位置づけ
 
-v0.27.0 は Phase 26 でユーザーが手動確認済みと報告した player report/evidence runtime smoke PASS を正式記録し、release gate を閉じるフェーズです。`scripts/record-player-report-runtime-smoke-result.sh --manual-confirmed` は reporter、target、report id を公開せず、`manualConfirmed=true` と `manual-checklist.txt` を保存します。Paper runtime smoke、integration runtime smoke、player report runtime smoke の主要 gate は PASS/READY で揃い、`scripts/check-runtime-smoke-consistency.sh` で整合確認します。
+v0.28.0 は v1.0.0 release candidate readiness review の準備フェーズです。新機能追加ではなく、`scripts/check-v1-release-gates.sh`、Go/No-Go report、v1.0.0 release notes draft、`docs/V1_RELEASE_PLAN.md` を整備し、v1.0.0 へ進むための判断材料をまとめます。Paper runtime smoke、integration runtime smoke、player report runtime smoke の主要 gate は PASS/READY で揃い、`scripts/check-runtime-smoke-consistency.sh` で整合確認します。
 
 v1.0.0 へ進む前に [Release candidate checklist](docs/RELEASE_CANDIDATE_CHECKLIST.md)、[Paper runtime smoke checklist](docs/runtime-smoke-checklist.md)、[Integration runtime smoke checklist](docs/INTEGRATION_RUNTIME_SMOKE_CHECKLIST.md)、[Player report runtime smoke checklist](docs/PLAYER_REPORT_RUNTIME_SMOKE_CHECKLIST.md) を確認してください。DiscordSRV は bot token 未設定時 WARN 扱いのため、本番で DiscordSRV 通知や account link を使う場合は追加確認してください。
 

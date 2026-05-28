@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-EXPECTED_VERSION="0.27.0"
+EXPECTED_VERSION="0.28.0"
 JAR="build/libs/ReputationBan-${EXPECTED_VERSION}.jar"
 
 fail() { echo "[FAIL] $*" >&2; exit 1; }
@@ -11,7 +11,17 @@ command -v jar >/dev/null 2>&1 || fail "jar command not found"
 command -v sha256sum >/dev/null 2>&1 || fail "sha256sum command not found"
 
 if [[ "${REPUTATIONBAN_SKIP_BUILD:-0}" != "1" ]]; then
+  PRESERVED_MANUAL_SMOKE="$(mktemp -d)"
+  if [[ -d build/manual-smoke ]]; then
+    cp -R build/manual-smoke "$PRESERVED_MANUAL_SMOKE/manual-smoke"
+  fi
   ./gradlew clean test build --warning-mode all
+  if [[ -d "$PRESERVED_MANUAL_SMOKE/manual-smoke" ]]; then
+    mkdir -p build
+    rm -rf build/manual-smoke
+    cp -R "$PRESERVED_MANUAL_SMOKE/manual-smoke" build/manual-smoke
+  fi
+  rm -rf "$PRESERVED_MANUAL_SMOKE"
 fi
 if [[ "${REPUTATIONBAN_SKIP_REVIEW_CODE:-0}" != "1" ]]; then
   ./scripts/review_code.sh
@@ -29,7 +39,7 @@ sha256sum "$JAR"
 cat <<'STEPS'
 
 Manual runtime smoke:
-Copy build/libs/ReputationBan-0.27.0.jar to your Paper 26.1.2 plugins directory.
+Copy build/libs/ReputationBan-0.28.0.jar to your Paper 26.1.2 plugins directory.
 Start Paper with Java 25.
 Verify /plugins, /rep version, /rep help, /rep doctor, /rep integrations, /rep integrations test, /rep placeholders, /reports evidence <id>, /rep support bundle, /reportbad tab completion, /rep audit recent.
 For WorldGuard smoke, test without WorldGuard, with WorldEdit only, and with WorldEdit + WorldGuard; confirm no region or flag is modified.

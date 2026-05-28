@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-VERSION="0.27.0"
+VERSION="0.28.0"
 PROJECT_NAME="ReputationBan"
 JAR_NAME="${PROJECT_NAME}-${VERSION}.jar"
 RELEASE_DIR="build/release"
@@ -48,6 +48,8 @@ zip_contains "^docs/INTEGRATION_RUNTIME_SMOKE_CHECKLIST.md$"
 zip_contains "^docs/PLAYER_REPORT_RUNTIME_SMOKE_CHECKLIST.md$"
 zip_contains "^docs/MIGRATION.md$"
 zip_contains "^docs/RELEASE_READINESS.md$"
+zip_contains "^docs/RELEASE_CANDIDATE_CHECKLIST.md$"
+zip_contains "^docs/V1_RELEASE_PLAN.md$"
 zip_contains "^docs/SUPPORT_BUNDLE.md$"
 zip_contains "^docs/SECURITY_REDACTION.md$"
 zip_contains "^docs/PAPER_RUNTIME_SMOKE_REPORT_TEMPLATE.md$"
@@ -68,6 +70,7 @@ mkdir -p "$VERIFY_DIR"
 
 require_japanese_text "$VERIFY_DIR/README.md"
 require_japanese_text "$VERIFY_DIR/docs/INSTALLATION.md"
+require_japanese_text "$VERIFY_DIR/docs/V1_RELEASE_PLAN.md"
 
 if grep -RE "https://(canary\\.|ptb\\.)?discord(app)?\\.com/api/webhooks/[0-9]+/[A-Za-z0-9_-]{20,}" "$VERIFY_DIR" >/dev/null; then
   fail "Release zip contains concrete Discord webhook URL-like value"

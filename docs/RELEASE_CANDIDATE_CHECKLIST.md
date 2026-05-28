@@ -1,6 +1,6 @@
-# v0.27.0 リリース候補チェックリスト
+# v0.28.0 リリース候補チェックリスト
 
-v0.27.0 の player report/evidence runtime smoke result recording / release gate close として次を確認します。
+v0.28.0 の v1.0.0 release candidate final checklist として次を確認します。
 
 ## Build / Test / Review
 
@@ -13,10 +13,14 @@ v0.27.0 の player report/evidence runtime smoke result recording / release gate
 - `./scripts/check-integration-runtime-readiness.sh` が成功し、未実施なら HOLD/NOT_RUN を表示します。
 - `./scripts/check-player-report-runtime-readiness.sh` が成功し、未実施なら HOLD/NOT_RUN を表示します。
 - `./scripts/check-runtime-smoke-consistency.sh` が成功します。
+- `./scripts/check-v1-release-gates.sh` が成功します。
+- `./scripts/generate-v1-go-no-go-report.sh` が成功します。
+- `./scripts/generate-v1-release-notes-draft.sh` が成功します。
 - `./scripts/run-local-smoke-check.sh` が成功します。
-- JAR 名が `ReputationBan-0.27.0.jar` です。
+- JAR 名が `ReputationBan-0.28.0.jar` です。
 - Paper runtime smoke、Integration runtime smoke、Player report/evidence runtime smoke は PASS 済みです。
 - Player report/evidence runtime smoke は `manualConfirmed=true` で Phase 26 のユーザー手動確認結果を記録済みです。
+- v1 release gates の既定 judgment は `READY_FOR_V1_RELEASE_REVIEW_WITH_DISCORDSRV_WARNING` です。
 
 ## Docs Localization
 
@@ -32,6 +36,8 @@ v0.27.0 の player report/evidence runtime smoke result recording / release gate
 - release ZIP に `docs/INTEGRATIONS.md` が含まれます。
 - release ZIP に `docs/INTEGRATION_RUNTIME_SMOKE_CHECKLIST.md` が含まれます。
 - release ZIP に `docs/PLAYER_REPORT_RUNTIME_SMOKE_CHECKLIST.md` が含まれます。
+- release ZIP に `docs/V1_RELEASE_PLAN.md` が含まれます。
+- Go/No-Go report と release notes draft は review archive の `release-prep/` に収集します。
 - release ZIP に live `config.yml`、`reputationban.db`、WAL/SHM、logs は含まれません。
 
 ## Secret Scan
@@ -78,6 +84,7 @@ v0.27.0 の player report/evidence runtime smoke result recording / release gate
 - Integration runtime smoke readiness と latest summary に矛盾がないことを確認します。
 - `integration-status.txt` に active / unavailable integration が記録されていることを確認します。
 - DiscordSRV unavailable が残る場合は、本番で DiscordSRV 連携を使うかどうか判断します。通知や account link を使う場合は bot token 設定済み環境で追加テストします。
+- DiscordSRV optional warning は通常の v1 release gate を止めません。DiscordSRV を本番必須にする場合だけ `--require-discordsrv` で HOLD 判定にします。
 - `max-results: 0` では個別行を保存せず、件数と lookup 条件だけを保存します。
 - CoreProtect rollback、restore、purge と LuckPerms 書き込み操作は実行しません。
 - CoreProtect rollback、restore、purge、LuckPerms 書き込み操作、WorldGuard region/flag 変更、GriefPrevention claim/trust 変更は実行しません。
@@ -114,4 +121,8 @@ v0.27.0 の player report/evidence runtime smoke result recording / release gate
 - Paper runtime smoke: PASS です。
 - Integration runtime smoke: PASS です。
 - Player report/evidence runtime smoke: PASS です。
+- Runtime smoke consistency: PASS です。
+- Optional dependency safety、docs localization、release artifact verification、secret scan が PASS です。
+- Go/No-Go report と release notes draft が生成済みです。
+- DiscordSRV unavailable は WARN として明記済みです。
 - 既知の未解決事項が v1.0.0 を妨げないことを確認します。

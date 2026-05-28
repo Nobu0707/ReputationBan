@@ -1,6 +1,6 @@
 # Player Report Runtime Smoke Checklist
 
-Phase 26 の player report/evidence runtime smoke は、実プレイヤー操作が必要な `/reportbad`、`/reports view`、`/reports evidence`、`report_context` 表示を確認する手動ゲートです。Phase 27 では、ユーザーが全項目 OK と報告済みの手動確認結果を `manualConfirmed=true` として正式記録します。実プレイヤー2名以上で確認していない場合は PASS にせず、`NOT_RUN` / `HOLD_FOR_PLAYER_REPORT_RUNTIME_SMOKE` として記録します。
+Phase 26 の player report/evidence runtime smoke は、実プレイヤー操作が必要な `/reportbad`、`/reports view`、`/reports evidence`、`report_context` 表示を確認する手動ゲートです。Phase 27 では、ユーザーが全項目 OK と報告済みの手動確認結果を `manualConfirmed=true` として正式記録しました。Phase 28 では v1.0.0 release candidate review の必須 gate として、この PASS 状態を維持します。実プレイヤー2名以上で確認していない場合は PASS にせず、`NOT_RUN` / `HOLD_FOR_PLAYER_REPORT_RUNTIME_SMOKE` として記録します。
 
 ## 前提
 

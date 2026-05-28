@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-VERSION="0.27.0"
+VERSION="0.28.0"
 PROJECT_NAME="ReputationBan"
 JAR_NAME="${PROJECT_NAME}-${VERSION}.jar"
 SOURCE_JAR="build/libs/${JAR_NAME}"
@@ -25,8 +25,9 @@ rm -f "${RELEASE_DIR}/${JAR_NAME}" "${RELEASE_DIR}/${JAR_NAME}.sha256" "$RELEASE
 
 cp "$SOURCE_JAR" "${RELEASE_DIR}/${JAR_NAME}"
 sha256sum "${RELEASE_DIR}/${JAR_NAME}" > "${RELEASE_DIR}/${JAR_NAME}.sha256"
+touch -t 202605280000 "${RELEASE_DIR}/${JAR_NAME}" "${RELEASE_DIR}/${JAR_NAME}.sha256"
 
-jar --create --file "$RELEASE_ZIP" \
+jar --create --date=2026-05-28T00:00:00+09:00 --file "$RELEASE_ZIP" \
   -C "$RELEASE_DIR" "$JAR_NAME" \
   -C "$RELEASE_DIR" "${JAR_NAME}.sha256" \
   -C . README.md \

@@ -632,7 +632,34 @@
 - CoreProtect rollback、restore、purge、LuckPerms 書き込み、WorldGuard region/flag 変更、GriefPrevention claim/trust 変更は引き続き行わない。
 - Discord から Minecraft コマンドを実行する機能、Discord role 変更、Discord button 承認は行わない。
 
-## Phase 28以降: 外部連携・高度な悪用対策
+## Phase 28 / v0.28.0: v1.0.0 Release Candidate Readiness Review
+
+目的: v1.0.0 公開前の最終レビュー資料と自動判定を整え、Go/No-Go を判断できる状態にする。
+
+実装範囲:
+
+- version 0.28.0
+- `scripts/check-v1-release-gates.sh`
+- `scripts/generate-v1-go-no-go-report.sh`
+- `scripts/generate-v1-release-notes-draft.sh`
+- `build/release/ReputationBan-v1-go-no-go-report.md`
+- `build/release/ReputationBan-v1.0.0-release-notes-draft.md`
+- `docs/phase-28.md`
+- `docs/V1_RELEASE_PLAN.md`
+- release readiness docs に v1 release gates、Go/No-Go report、release notes draft を追加
+- release artifact と review archive に v1準備資料を収集
+- DiscordSRV bot token 未設定時の WARN 扱いを明文化
+- review/release archive scripts の v0.28.0 対応
+
+注意:
+
+- Phase 28 では v1.0.0 への version bump、v1.0.0 tag 作成、GitHub Release 公開は行わない。
+- DiscordSRV unavailable は WARN とし、ReputationBan 本体と他連携の release gate は止めない。
+- DiscordSRV 通知や account link を本番で使う場合は bot token 設定済み環境で追加確認する。
+- CoreProtect rollback、restore、purge、LuckPerms 書き込み、WorldGuard region/flag 変更、GriefPrevention claim/trust 変更は引き続き行わない。
+- Discord から Minecraft コマンドを実行する機能、Discord role 変更、Discord button 承認は行わない。
+
+## Phase 29以降: 外部連携・高度な悪用対策
 
 実装候補:
 

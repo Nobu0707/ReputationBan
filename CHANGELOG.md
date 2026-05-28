@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.28.0
+
+- Phase 28 は v1.0.0 release candidate readiness review フェーズです。新機能追加ではなく、v1.0.0 公開前の最終 Go/No-Go 判定、release gates、release notes draft を整備しました。
+- `scripts/check-v1-release-gates.sh` を追加し、Paper runtime smoke、Integration runtime smoke、Player report/evidence runtime smoke、runtime smoke consistency、optional dependency safety、docs localization、release artifact verification、secret scan、破壊的連携操作なしをまとめて判定できるようにしました。
+- `scripts/generate-v1-go-no-go-report.sh` と `scripts/generate-v1-release-notes-draft.sh` を追加し、`build/release/` に v1.0.0 Go/No-Go report と GitHub Release向け下書きを生成できるようにしました。
+- `docs/phase-28.md` と `docs/V1_RELEASE_PLAN.md` を追加し、v1.0.0 へ進む条件、タグ作成方針、GitHub Release公開方針、Rollback方針、DiscordSRV WARN扱いを明文化しました。
+- release artifact と review archive が v1準備資料を収集できるようにし、`make-review-archive.sh` に v1 release gates、Go/No-Go report、release notes draft の出力を追加しました。
+- DiscordSRV は bot token 未設定時 WARN として扱います。DiscordSRV通知はデフォルト無効であり、ReputationBan 本体や他連携の release gate は止めません。本番で DiscordSRV 通知や account link を使う場合は、bot token 設定済み環境で追加確認が必要です。
+- v1.0.0 への version bump、v1.0.0 tag 作成、GitHub Release 公開は行っていません。
+
 ## 0.27.0
 
 - Phase 27 は player report/evidence runtime smoke result recording / release gate close フェーズです。新機能追加ではなく、Phase 26 でユーザーが手動確認済みと報告した player report/evidence runtime smoke PASS を正式な記録として保存しました。

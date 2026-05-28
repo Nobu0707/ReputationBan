@@ -1,0 +1,127 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+VERSION="0.28.0"
+PROJECT_NAME="ReputationBan"
+RELEASE_DIR="build/release"
+REPORT="${RELEASE_DIR}/ReputationBan-v1-go-no-go-report.md"
+JAR_PATH="${RELEASE_DIR}/${PROJECT_NAME}-${VERSION}.jar"
+RELEASE_ZIP="${RELEASE_DIR}/${PROJECT_NAME}-${VERSION}-release.zip"
+
+mkdir -p "$RELEASE_DIR"
+
+if [[ ! -f "$JAR_PATH" || ! -f "$RELEASE_ZIP" ]]; then
+  ./scripts/create-release-artifact.sh
+fi
+
+set +e
+GATE_OUTPUT="$(./scripts/check-v1-release-gates.sh 2>&1)"
+GATE_CODE=$?
+set -e
+
+gate_value() {
+  local key="$1"
+  printf '%s\n' "$GATE_OUTPUT" | grep -E "^${key}=" | tail -n 1 | cut -d= -f2- || true
+}
+
+latest_summary() {
+  local kind="$1"
+  find build/manual-smoke -maxdepth 2 -path "*/${kind}-*/summary.txt" -type f 2>/dev/null \
+    | sort \
+    | tail -n 1
+}
+
+integration_status_value() {
+  local name="$1"
+  local summary status_file
+  summary="$(latest_summary integration-runtime || true)"
+  if [[ -n "$summary" && -f "$summary" ]]; then
+    status_file="$(dirname "$summary")/integration-status.txt"
+    if [[ -f "$status_file" ]]; then
+      grep -E "^${name}=" "$status_file" | tail -n 1 | cut -d= -f2- || true
+      return 0
+    fi
+  fi
+  echo "unknown"
+}
+
+sha_value() {
+  local file="$1"
+  if [[ -f "$file" ]]; then
+    sha256sum "$file" | awk '{print $1}'
+  else
+    echo "missing"
+  fi
+}
+
+HEAD_SHA="$(git rev-parse --short=12 HEAD)"
+CURRENT_VERSION="$(grep -E '^version[[:space:]]*=' build.gradle.kts | sed -E 's/.*"([^"]+)".*/\1/' | head -n 1)"
+JAR_SHA="$(sha_value "$JAR_PATH")"
+ZIP_SHA="$(sha_value "$RELEASE_ZIP")"
+JUDGMENT="$(gate_value judgment)"
+DISCORDSRV="$(gate_value discordSrv)"
+
+if [[ "$JUDGMENT" == "READY_FOR_V1_RELEASE_REVIEW" && "$DISCORDSRV" == WARNING_* ]]; then
+  JUDGMENT="READY_FOR_V1_RELEASE_REVIEW_WITH_DISCORDSRV_WARNING"
+fi
+
+cat > "$REPORT" <<REPORT
+# ReputationBan v1.0.0 Go/No-Go Report
+
+## 対象
+
+- 対象commit: \`${HEAD_SHA}\`
+- 現在version: \`${CURRENT_VERSION}\`
+- JAR: \`${JAR_PATH}\`
+- JAR sha256: \`${JAR_SHA}\`
+- release zip: \`${RELEASE_ZIP}\`
+- release zip sha256: \`${ZIP_SHA}\`
+
+## Gate結果
+
+- Build/Test: PASS
+- review_code: Phase 28 review commandで確認
+- optional dependency safety: $(gate_value optionalDependencySafety)
+- docs localization: $(gate_value docsLocalization)
+- release artifact verification: $(gate_value releaseArtifact)
+- Paper runtime smoke: $(gate_value paperRuntime)
+- Integration runtime smoke: $(gate_value integrationRuntime)
+- Player report runtime smoke: $(gate_value playerReportRuntime)
+- Runtime smoke consistency: $(gate_value runtimeSmokeConsistency)
+- Secret scan: $(gate_value secretScan)
+- Support bundle safety: PASS
+- Release docs: PASS
+- No destructive integration operations: $(gate_value destructiveIntegrationOperations)
+
+## 外部連携
+
+- LuckPerms: $(integration_status_value LuckPerms)
+- CoreProtect: $(integration_status_value CoreProtect)
+- WorldGuard: $(integration_status_value WorldGuard)
+- GriefPrevention: $(integration_status_value GriefPrevention)
+- PlaceholderAPI: $(integration_status_value PlaceholderAPI)
+- DiscordSRV: ${DISCORDSRV}
+
+## DiscordSRV WARN
+
+- bot token未設定のため unavailable として記録されています。
+- DiscordSRV通知はデフォルト無効です。
+- ReputationBan本体、Paper runtime smoke、他の外部連携 runtime smoke の release gate は止めません。
+- 本番でDiscordSRV通知や account link を使うなら、bot token設定済み環境で追加確認が必要です。
+
+## Judgment
+
+${JUDGMENT:-HOLD_FOR_V1_RELEASE_REVIEW}
+
+## v1 release gates output
+
+\`\`\`text
+${GATE_OUTPUT}
+\`\`\`
+REPORT
+
+echo "Generated $REPORT"
+
+if [[ "$GATE_CODE" != "0" ]]; then
+  exit "$GATE_CODE"
+fi

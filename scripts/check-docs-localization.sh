@@ -52,11 +52,15 @@ require_japanese_text docs/SECURITY_REDACTION.md
 require_japanese_text docs/PAPER_RUNTIME_SMOKE_REPORT_TEMPLATE.md
 require_japanese_text docs/phase-25.md
 require_japanese_text docs/phase-26.md
+require_japanese_text docs/phase-28.md
+require_japanese_text docs/V1_RELEASE_PLAN.md
 require_japanese_text docs/PLAYER_REPORT_RUNTIME_SMOKE_CHECKLIST.md
 
 require_literal README.md "/rep version"
 require_literal README.md "/reportbad"
 require_literal README.md "reputationban.admin"
+require_literal README.md "0.28.0"
+require_literal docs/V1_RELEASE_PLAN.md "v1.0.0"
 require_literal docs/CONFIGURATION.md "initial-score"
 require_any_literal docs/CONFIGURATION.md "notify.discord-webhook" "discord-webhook"
 require_literal docs/CONFIGURATION.md "min-unique-reports-before-deduction"
