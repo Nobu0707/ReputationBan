@@ -66,6 +66,7 @@ for file in \
   scripts/check-player-report-runtime-readiness.sh \
   scripts/check-runtime-smoke-consistency.sh \
   scripts/check-v1-release-gates.sh \
+  scripts/check-maintenance-baseline.sh \
   scripts/run-local-smoke-check.sh \
   scripts/run-paper-runtime-smoke.sh \
   scripts/run-integration-runtime-smoke.sh \
@@ -90,7 +91,10 @@ for file in \
   CONTRIBUTING.md \
   docs/POST_RELEASE_MONITORING.md \
   docs/BUGFIX_INTAKE.md \
+  docs/MAINTENANCE_BASELINE.md \
+  docs/ISSUE_TRIAGE_GUIDE.md \
   docs/V1_0_1_CANDIDATES.md \
+  docs/phase-36.md \
   docs/phase-35.md \
   docs/DISCORDSRV_CONFIGURED_RUNTIME_SMOKE_CHECKLIST.md \
   docs/phase-34.md \
@@ -129,6 +133,7 @@ for executable in \
   scripts/check-player-report-runtime-readiness.sh \
   scripts/check-runtime-smoke-consistency.sh \
   scripts/check-v1-release-gates.sh \
+  scripts/check-maintenance-baseline.sh \
   scripts/run-local-smoke-check.sh \
   scripts/run-paper-runtime-smoke.sh \
   scripts/run-integration-runtime-smoke.sh \
@@ -161,11 +166,14 @@ grep -q "1.0.0" CHANGELOG.md || fail "CHANGELOG.md does not mention 1.0.0"
 grep -q "POST_RELEASE_MONITORING.md" README.md || fail "README.md does not mention post-release monitoring docs"
 grep -q "BUGFIX_INTAKE.md" README.md || fail "README.md does not mention bugfix intake docs"
 grep -q "V1_0_1_CANDIDATES.md" README.md || fail "README.md does not mention v1.0.1 candidates docs"
+grep -q "MAINTENANCE_BASELINE.md" README.md || fail "README.md does not mention maintenance baseline docs"
+grep -q "ISSUE_TRIAGE_GUIDE.md" README.md || fail "README.md does not mention issue triage guide docs"
 grep -q "DISCORDSRV_CONFIGURED_RUNTIME_SMOKE_CHECKLIST.md" README.md || fail "README.md does not mention DiscordSRV configured smoke checklist"
 grep -q "SUPPORT.md" README.md || fail "README.md does not mention SUPPORT.md"
 grep -q "SECURITY.md" README.md || fail "README.md does not mention SECURITY.md"
 grep -q "CONTRIBUTING.md" README.md || fail "README.md does not mention CONTRIBUTING.md"
 grep -q "phase-35.md" README.md || fail "README.md does not mention Phase 35 docs"
+grep -q "phase-36.md" README.md || fail "README.md does not mention Phase 36 docs"
 grep -q "phase-34.md" README.md || fail "README.md does not mention Phase 34 docs"
 grep -q "phase-33.md" README.md || fail "README.md does not mention Phase 33 docs"
 grep -q "v1.0.0 tag" README.md docs/phase-30.md docs/phase-29.md docs/V1_RELEASE_EXECUTION_PLAN.md || fail "v1.0.0 tag status docs missing"
@@ -205,7 +213,17 @@ grep -q "SECURITY.md" docs/phase-35.md || fail "Phase 35 docs missing SECURITY.m
 grep -q "CONTRIBUTING.md" docs/phase-35.md || fail "Phase 35 docs missing CONTRIBUTING.md"
 grep -q "discordSrvConfiguredSmoke" scripts/check-v1-release-gates.sh || fail "v1 release gates do not show DiscordSRV configured smoke status"
 grep -q "GitHub issue templates" reputationban_phase_plan.md || fail "phase plan missing Phase 35 GitHub issue templates"
+grep -q "Post-release maintenance baseline" reputationban_phase_plan.md || fail "phase plan missing Phase 36 maintenance baseline"
 grep -q "checks/github-templates.txt" scripts/make-review-archive.sh || fail "review archive does not collect GitHub template status"
+grep -q "checks/maintenance-baseline.txt" scripts/make-review-archive.sh || fail "review archive does not collect maintenance baseline status"
+grep -q "checks/github-issues-open.txt" scripts/make-review-archive.sh || fail "review archive does not collect open GitHub issues"
+grep -q "checks/github-prs-open.txt" scripts/make-review-archive.sh || fail "review archive does not collect open GitHub PRs"
+grep -q "Confirmed bug candidates" docs/MAINTENANCE_BASELINE.md docs/V1_0_1_CANDIDATES.md || fail "maintenance baseline missing confirmed bug candidates"
+grep -q "Open issues: none" docs/MAINTENANCE_BASELINE.md docs/V1_0_1_CANDIDATES.md || fail "Phase 36 docs missing open issue none status"
+grep -q "Open PRs: none" docs/MAINTENANCE_BASELINE.md docs/V1_0_1_CANDIDATES.md || fail "Phase 36 docs missing open PR none status"
+grep -q "HOLD_FOR_DISCORDSRV_CONFIGURED_SMOKE" docs/MAINTENANCE_BASELINE.md docs/phase-36.md || fail "Phase 36 docs missing DiscordSRV configured smoke HOLD"
+grep -q "tag は移動しません" docs/phase-36.md || fail "Phase 36 docs missing v1.0.0 tag no-move policy"
+grep -q "GitHub Release assets は差し替えません" docs/phase-36.md || fail "Phase 36 docs missing release asset no-replace policy"
 
 for template in \
   .github/ISSUE_TEMPLATE/bug_report.yml \
@@ -300,6 +318,7 @@ done
 
 ./scripts/check-docs-localization.sh
 ./scripts/check-optional-dependency-safety.sh
+./scripts/check-maintenance-baseline.sh
 
 info "Running Gradle clean test build"
 preserve_manual_smoke ./gradlew clean test build --warning-mode all

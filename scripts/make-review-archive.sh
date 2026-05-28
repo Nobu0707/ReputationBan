@@ -199,6 +199,9 @@ done < "$OUTDIR/meta/changed-files.txt"
   echo
   echo "## rg phase 35 support templates"
   rg -n "phase-35|Phase 35|bug_report|integration_issue|support_request|feature_request|pull_request_template|SECURITY.md|SUPPORT.md|CONTRIBUTING.md|GitHub issue templates|v1.1.0以降|Confirmed bug candidates|Docs/support improvements" .github README.md CHANGELOG.md docs reputationban_phase_plan.md scripts SECURITY.md SUPPORT.md CONTRIBUTING.md || true
+  echo
+  echo "## rg phase 36 maintenance baseline"
+  rg -n "phase-36|Phase 36|MAINTENANCE_BASELINE|ISSUE_TRIAGE_GUIDE|check-maintenance-baseline|maintenance baseline|issue/PR intake dry-run|Open issues: none|Open PRs: none|Confirmed bug candidates|v1.0.1 candidates|HOLD_FOR_DISCORDSRV_CONFIGURED_SMOKE" .github README.md CHANGELOG.md docs reputationban_phase_plan.md scripts SECURITY.md SUPPORT.md CONTRIBUTING.md || true
 } > "$OUTDIR/checks/rg-review-signals.txt"
 
 {
@@ -251,6 +254,12 @@ if [[ -x "$ROOT/scripts/check-optional-dependency-safety.sh" ]]; then
   run_logged "./scripts/check-optional-dependency-safety.sh" "$OUTDIR/checks/optional-dependency-safety.txt" "$ROOT/scripts/check-optional-dependency-safety.sh"
 else
   echo "./scripts/check-optional-dependency-safety.sh=missing" >> "$COMMAND_STATUS"
+fi
+
+if [[ -x "$ROOT/scripts/check-maintenance-baseline.sh" ]]; then
+  run_logged "./scripts/check-maintenance-baseline.sh" "$OUTDIR/checks/maintenance-baseline.txt" "$ROOT/scripts/check-maintenance-baseline.sh"
+else
+  echo "./scripts/check-maintenance-baseline.sh=missing" >> "$COMMAND_STATUS"
 fi
 
 if [[ -n "$PRESERVED_PLAYER_REPORT_NAME" && -f "$PRESERVED_PLAYER_REPORT_DIR/summary.txt" ]]; then
@@ -482,6 +491,44 @@ fi
     echo "discordsrv-configured-smoke-hold=missing"
   fi
 } > "$OUTDIR/checks/github-templates.txt"
+
+{
+  if command -v gh >/dev/null 2>&1; then
+    echo "ghAvailable=true"
+    set +e
+    gh issue list --state open --limit 50 --json number,title,labels,createdAt,updatedAt,author,url
+    code=$?
+    set -e
+    echo "exitCode=$code"
+    if [[ "$code" != "0" ]]; then
+      echo "issueList=not_checked"
+      echo "reason=gh unavailable or unauthenticated"
+    fi
+  else
+    echo "ghAvailable=false"
+    echo "issueList=not_checked"
+    echo "reason=gh unavailable or unauthenticated"
+  fi
+} > "$OUTDIR/checks/github-issues-open.txt" 2>&1
+
+{
+  if command -v gh >/dev/null 2>&1; then
+    echo "ghAvailable=true"
+    set +e
+    gh pr list --state open --limit 50 --json number,title,labels,createdAt,updatedAt,author,url,headRefName,baseRefName
+    code=$?
+    set -e
+    echo "exitCode=$code"
+    if [[ "$code" != "0" ]]; then
+      echo "prList=not_checked"
+      echo "reason=gh unavailable or unauthenticated"
+    fi
+  else
+    echo "ghAvailable=false"
+    echo "prList=not_checked"
+    echo "reason=gh unavailable or unauthenticated"
+  fi
+} > "$OUTDIR/checks/github-prs-open.txt" 2>&1
 
 {
   local_tag="$(git tag --list "v1.0.0" || true)"

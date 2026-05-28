@@ -2,7 +2,7 @@
 
 この文書は ReputationBan v1.0.0 公開後の監視項目です。新機能追加、version bump、`v1.0.0` tag 移動、GitHub Release asset 差し替えは行いません。
 
-Phase 35 では GitHub issue templates、PR template、`SUPPORT.md`、`SECURITY.md`、`CONTRIBUTING.md` を追加し、公開後サポートと v1.0.1 intake の導線を整えました。
+Phase 35 では GitHub issue templates、PR template、`SUPPORT.md`、`SECURITY.md`、`CONTRIBUTING.md` を追加し、公開後サポートと v1.0.1 intake の導線を整えました。Phase 36 では `docs/MAINTENANCE_BASELINE.md` と `docs/ISSUE_TRIAGE_GUIDE.md` を追加し、GitHub Issues / PRs の intake dry-run を実施しました。
 
 ## 公開状態
 
@@ -55,6 +55,18 @@ GitHub issue templates を使い、種類に応じて bug report、integration i
 - `/rep support bundle` で作成した support bundle
 
 v1.0.x は原則 bugfix 中心です。feature request は v1.1.0 以降候補として扱います。
+
+## Phase 36 Maintenance Baseline
+
+- Maintenance baseline: `docs/MAINTENANCE_BASELINE.md`
+- Issue triage guide: `docs/ISSUE_TRIAGE_GUIDE.md`
+- Open issues: none
+- Open PRs: none
+- Confirmed bug candidates: none
+- v1.0.1 candidates: none selected
+- DiscordSRV configured smoke: `NOT_RUN` / `HOLD_FOR_DISCORDSRV_CONFIGURED_SMOKE`
+
+Phase 36 の dry-run では template や support docs の不足は見つかりませんでした。v1.0.0 tag、GitHub Release、Release assets、version は変更していません。
 
 ## Support Bundle
 

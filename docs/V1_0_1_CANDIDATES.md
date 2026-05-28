@@ -8,6 +8,16 @@
 
 現時点で v1.0.1 に入れることが確定した bugfix はありません。実ユーザー報告または追加 runtime smoke の結果が入ったら追記します。
 
+## Phase 36 Intake Baseline
+
+- Open issues: none
+- Open PRs: none
+- Confirmed bug candidates: none
+- v1.0.1 candidates: none selected
+- DiscordSRV configured smoke: `NOT_RUN` / `HOLD`, operational verification candidate
+
+Phase 36 の issue/PR intake dry-run では、GitHub open issues と open PRs は 0 件でした。`docs/MAINTENANCE_BASELINE.md` と `docs/ISSUE_TRIAGE_GUIDE.md` を追加し、今後の triage では confirmed regression、startup failure、data loss risk、false ban / pardon failure、secret exposure、release artifact problem を v1.0.1 候補として扱います。
+
 ## Operational verification candidates
 
 - DiscordSRV token-configured runtime smoke: `NOT_RUN` / `HOLD`

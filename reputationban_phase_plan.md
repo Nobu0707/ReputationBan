@@ -859,7 +859,37 @@
 - 新機能、DB schema 変更、runtime behavior 変更は行わない。
 - v1.0.x は bugfix 中心、feature requests は v1.1.0 以降候補として扱う。
 
-## Phase 36以降: 外部連携・高度な悪用対策
+## Phase 36 / v1.0.0: Post-release maintenance baseline / issue intake dry-run
+
+目的: 公開済み v1.0.0 の状態を維持しながら、初回の保守 baseline、issue/PR intake dry-run、v1.0.1 判断基準を整理する。
+
+実装範囲:
+
+- v1.0.0 GitHub Release 公開状態の再確認
+- GitHub issue templates、PR template、`SECURITY.md`、`SUPPORT.md`、`CONTRIBUTING.md` の再確認
+- GitHub open issues / open PRs の確認
+- `docs/MAINTENANCE_BASELINE.md`
+- `docs/ISSUE_TRIAGE_GUIDE.md`
+- `docs/phase-36.md`
+- `scripts/check-maintenance-baseline.sh`
+- `scripts/review_code.sh` の Phase 36 maintenance baseline checks
+- `scripts/make-review-archive.sh` の `checks/maintenance-baseline.txt`
+- `scripts/make-review-archive.sh` の `checks/github-issues-open.txt`
+- `scripts/make-review-archive.sh` の `checks/github-prs-open.txt`
+- README、CHANGELOG、post-release monitoring、bugfix intake、v1.0.1 candidates、release readiness の Phase 36 反映
+
+注意:
+
+- version bump は行わない。
+- `v1.0.1` tag は作成しない。
+- `v1.0.0` tag は移動しない。
+- GitHub Release asset は差し替えない。
+- GitHub Release は削除しない。
+- Discord bot token、Webhook URL、secret、session、cookie、password は要求、表示、保存しない。
+- DiscordSRV configured smoke 未実施は `NOT_RUN` / `HOLD_FOR_DISCORDSRV_CONFIGURED_SMOKE` のまま扱い、confirmed bug にはしない。
+- 新機能、DB schema 変更、runtime behavior 変更は行わない。
+
+## Phase 37以降: 外部連携・高度な悪用対策
 
 実装候補:
 

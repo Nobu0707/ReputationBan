@@ -4,7 +4,7 @@ ReputationBan は、通報とスタッフ操作をもとにプレイヤーの評
 
 現在のバージョン: `1.0.0`
 
-v1.0.0 は GitHub Release 公開済みです。`v1.0.0` annotated tag は Phase 30 commit `b422e72ec5a917cdc04dee902e96a0cef190026c` を指し、GitHub Release は `draft=false`、`prerelease=false` として公開されています。Release assets は `ReputationBan-1.0.0.jar`、JAR sha256、`ReputationBan-1.0.0-release.zip`、release zip sha256 の4件です。DiscordSRV は bot token 未設定時に WARN として扱い、ReputationBan 本体や他連携の release gate は止めません。Phase 34 では DiscordSRV token-configured runtime smoke を実施できる環境情報がないため `NOT_RUN` / `HOLD_FOR_DISCORDSRV_CONFIGURED_SMOKE` として記録しました。Phase 35 では GitHub issue templates、PR template、`SUPPORT.md`、`SECURITY.md`、`CONTRIBUTING.md` を追加し、公開後サポートと v1.0.1 intake の導線を整えました。
+v1.0.0 は GitHub Release 公開済みです。`v1.0.0` annotated tag は Phase 30 commit `b422e72ec5a917cdc04dee902e96a0cef190026c` を指し、GitHub Release は `draft=false`、`prerelease=false` として公開されています。Release assets は `ReputationBan-1.0.0.jar`、JAR sha256、`ReputationBan-1.0.0-release.zip`、release zip sha256 の4件です。DiscordSRV は bot token 未設定時に WARN として扱い、ReputationBan 本体や他連携の release gate は止めません。Phase 34 では DiscordSRV token-configured runtime smoke を実施できる環境情報がないため `NOT_RUN` / `HOLD_FOR_DISCORDSRV_CONFIGURED_SMOKE` として記録しました。Phase 35 では GitHub issue templates、PR template、`SUPPORT.md`、`SECURITY.md`、`CONTRIBUTING.md` を追加し、公開後サポートと v1.0.1 intake の導線を整えました。Phase 36 では maintenance baseline と issue/PR intake dry-run を追加し、open issues / open PRs は none、confirmed bug candidates は none として記録しました。
 
 ## 対象環境
 
@@ -34,10 +34,13 @@ v1.0.0 は GitHub Release 公開済みです。`v1.0.0` annotated tag は Phase 
 - [v1.0.0 release execution plan](docs/V1_RELEASE_EXECUTION_PLAN.md)
 - [Post-release monitoring](docs/POST_RELEASE_MONITORING.md)
 - [Bugfix intake](docs/BUGFIX_INTAKE.md)
+- [Maintenance baseline](docs/MAINTENANCE_BASELINE.md)
+- [Issue triage guide](docs/ISSUE_TRIAGE_GUIDE.md)
 - [v1.0.1 candidates](docs/V1_0_1_CANDIDATES.md)
 - [Support policy](SUPPORT.md)
 - [Security policy](SECURITY.md)
 - [Contribution guide](CONTRIBUTING.md)
+- [Phase 36 notes](docs/phase-36.md)
 - [Phase 35 notes](docs/phase-35.md)
 - [Phase 34 notes](docs/phase-34.md)
 - [Phase 33 notes](docs/phase-33.md)
@@ -153,7 +156,7 @@ v1.0.x は原則 bugfix と安全な docs/support 改善を中心に扱います
 
 v1.0.0 は first stable release として公開済みです。Release URL は <https://github.com/Nobu0707/ReputationBan/releases/tag/v1.0.0> です。Paper runtime smoke、integration runtime smoke、player report runtime smoke の主要 gate は PASS/READY で揃い、`scripts/check-runtime-smoke-consistency.sh` で整合確認済みです。
 
-Phase 31 では GitHub Release draft を確認し、`draft=false` へ変更して公開しました。Phase 31a では公開済み GitHub Release 本文と生成済み release notes / Go-No-Go report を `PUBLISHED` 状態へ揃えました。Phase 32 では v1.0.0 公開後監視、bugfix intake、v1.0.1 candidates docs を追加しました。Phase 33 では DiscordSRV token-configured runtime smoke の intake を追加しました。Phase 34 では token-configured smoke を実施できる環境情報がないため `NOT_RUN` として判断記録しました。Phase 35 では issue templates と support/security/contribution docs を追加しました。DiscordSRV は bot token 未設定時 WARN 扱いのため、本番で DiscordSRV 通知や account link を使う場合は token 設定済み環境で追加確認してください。
+Phase 31 では GitHub Release draft を確認し、`draft=false` へ変更して公開しました。Phase 31a では公開済み GitHub Release 本文と生成済み release notes / Go-No-Go report を `PUBLISHED` 状態へ揃えました。Phase 32 では v1.0.0 公開後監視、bugfix intake、v1.0.1 candidates docs を追加しました。Phase 33 では DiscordSRV token-configured runtime smoke の intake を追加しました。Phase 34 では token-configured smoke を実施できる環境情報がないため `NOT_RUN` として判断記録しました。Phase 35 では issue templates と support/security/contribution docs を追加しました。Phase 36 では v1.0.0 maintenance baseline、issue triage guide、issue/PR intake dry-run を追加し、open issues / open PRs / confirmed bug candidates が none であることを記録しました。DiscordSRV は bot token 未設定時 WARN 扱いのため、本番で DiscordSRV 通知や account link を使う場合は token 設定済み環境で追加確認してください。
 
 ## 現在の制限
 

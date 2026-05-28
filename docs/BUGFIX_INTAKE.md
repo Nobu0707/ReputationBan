@@ -2,7 +2,7 @@
 
 この文書は ReputationBan v1.0.0 公開後の bug report 受付、triage、v1.0.1 候補整理のための checklist です。新機能追加は原則 v1.1.0 以降で扱います。
 
-Phase 35 以降は GitHub issue templates を使って、bug report、integration issue、support request、feature request を分けて受け付けます。公開Issueでは Webhook URL、bot token、secret、password、session ID、cookie を貼らないでください。
+Phase 35 以降は GitHub issue templates を使って、bug report、integration issue、support request、feature request を分けて受け付けます。Phase 36 では issue/PR intake dry-run を行い、open issues / open PRs は none、confirmed bug candidates は none として baseline を作成しました。公開Issueでは Webhook URL、bot token、secret、password、session ID、cookie を貼らないでください。
 
 ## 受付時の確認項目
 
@@ -21,6 +21,7 @@ Phase 35 以降は GitHub issue templates を使って、bug report、integratio
 - Paper runtime smoke、integration runtime smoke、player report runtime smoke の結果
 - DiscordSRV token-configured runtime smoke の結果。未実施なら `NOT_RUN` として扱い、PASS にはしません。
 - 使用した GitHub issue template。bug report、integration issue、support request、feature request のどれかを記録します。
+- `docs/ISSUE_TRIAGE_GUIDE.md` の severity と label 候補。
 
 Webhook URL、bot token、secret、password、session ID、private database、server log 全体は共有しないでください。必要な情報だけを redacted して添付します。
 
@@ -42,6 +43,8 @@ Webhook URL、bot token、secret、password、session ID、private database、se
 - DiscordSRV token-configured smoke の結果から、実装不具合として再現した項目。単なる未実施は bugfix ではなく運用確認候補です。
 - Phase 34 の DiscordSRV token-configured smoke は `NOT_RUN` です。token-configured environment または production-use decision が提供されていないためであり、v1.0.1 bugfix には昇格しません。
 - docs-only で誤解や危険な運用を防げる項目。
+
+Phase 36 baseline 時点では v1.0.1 confirmed bug candidates は none です。open issue または open PR が追加された場合は、再現条件、影響範囲、回避策、support bundle の有無を確認してから `docs/V1_0_1_CANDIDATES.md` に追記します。
 
 ## Hotfixが必要な条件
 
