@@ -1,0 +1,650 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ReputationBan — PaperMC Moderation Plugin</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- ── Navigation ── -->
+<nav>
+  <a class="nav-logo" href="#top">Reputation<span>Ban</span></a>
+  <ul class="nav-links">
+    <li><a href="#features">機能</a></li>
+    <li><a href="#installation">導入</a></li>
+    <li><a href="#commands">コマンド</a></li>
+    <li><a href="#permissions">権限</a></li>
+    <li><a href="#config">設定</a></li>
+    <li><a href="#integrations">連携</a></li>
+    <li><a href="#security">セキュリティ</a></li>
+  </ul>
+  <span class="nav-badge">v1.0.1</span>
+</nav>
+
+<!-- ── Hero ── -->
+<div class="hero" id="top">
+  <div class="hero-eyebrow">PaperMC Moderation Plugin</div>
+  <h1>評判スコアで<br>サーバーを守る</h1>
+  <p class="hero-sub">
+    ReputationBan は、通報とスタッフ操作をもとにプレイヤーの評判スコアを管理する
+    PaperMC 向け Moderation プラグインです。SQLite によるデータ永続化、監査ログ、
+    自動BAN、外部連携に対応しています。
+  </p>
+  <div class="hero-actions">
+    <a class="btn btn-primary" href="https://github.com/Nobu0707/ReputationBan/releases/tag/v1.0.0">
+      ⬇ ダウンロード (v1.0.0)
+    </a>
+    <a class="btn btn-outline" href="#installation">導入手順を見る</a>
+  </div>
+  <div class="hero-meta">
+    <div class="meta-item">
+      <span class="meta-value">PaperMC</span>
+      <span class="meta-label">対象サーバー</span>
+    </div>
+    <div class="meta-item">
+      <span class="meta-value">Java 25</span>
+      <span class="meta-label">必須ランタイム</span>
+    </div>
+    <div class="meta-item">
+      <span class="meta-value">SQLite</span>
+      <span class="meta-label">ストレージ</span>
+    </div>
+    <div class="meta-item">
+      <span class="meta-value">6+</span>
+      <span class="meta-label">外部連携対応</span>
+    </div>
+  </div>
+</div>
+
+<!-- ── Features ── -->
+<section id="features">
+  <div class="container">
+    <div class="section-label">Features</div>
+    <h2 class="section-title">主な機能</h2>
+    <p class="section-desc">
+      プレイヤー通報から自動BAN、監査ログ、外部連携まで、運営に必要な Moderation 機能をひとつのプラグインで提供します。
+    </p>
+    <div class="feature-grid">
+
+      <div class="feature-card">
+        <div class="feature-icon icon-blue">📊</div>
+        <div class="feature-title">評判スコア管理</div>
+        <div class="feature-desc">プレイヤーごとに評判スコアを記録。通報承認で減点、良好な期間が続けばスコア回復。スコア履歴と変更理由を SQLite に保存します。</div>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon icon-green">🚨</div>
+        <div class="feature-title">プレイヤー通報システム</div>
+        <div class="feature-desc"><code>/reportbad</code> で通報。カテゴリ、クールダウン、最低プレイ時間条件、複数通報しきい値によるスタッフ審査フローを提供します。</div>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon icon-purple">🔨</div>
+        <div class="feature-title">自動 Profile BAN</div>
+        <div class="feature-desc">スコアがしきい値を下回ると Paper Profile BAN API を使って自動BAN。BAN回数に応じた期間設定、unban、pardon コマンドも完備しています。</div>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon icon-yellow">📋</div>
+        <div class="feature-title">監査ログ &amp; CSV エクスポート</div>
+        <div class="feature-desc">すべての重要操作を audit events として記録。プレイヤー別・イベント種別での絞り込みと CSV エクスポートで運営記録を管理します。</div>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon icon-orange">💾</div>
+        <div class="feature-title">バックアップ &amp; メンテナンス</div>
+        <div class="feature-desc">手動または自動 SQLite バックアップ、保持期間に基づくデータ cleanup、シークレットを除外した診断 ZIP（support bundle）を作成できます。</div>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon icon-red">🔔</div>
+        <div class="feature-title">Discord 通知</div>
+        <div class="feature-desc">任意の Webhook URL へ通報・BAN・unban などのイベントを通知。URL はログ・support bundle・監査 CSV に出力されない安全設計です。</div>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon icon-blue">🛡️</div>
+        <div class="feature-title">Bypass 保護</div>
+        <div class="feature-desc">OP・LuckPerms bypass グループを通報・自動BAN対象外に保護。offline プレイヤーへの lookup も設定で対応し、fail-close 運用が可能です。</div>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon icon-green">🩺</div>
+        <div class="feature-title">運用診断ツール</div>
+        <div class="feature-desc"><code>/rep doctor</code> で DB・設定・連携の状態を一括確認。<code>/rep integrations test</code> で外部プラグイン連携の詳細診断を安全に実行します。</div>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon icon-purple">🔌</div>
+        <div class="feature-title">柔軟な外部連携</div>
+        <div class="feature-desc">LuckPerms / CoreProtect / WorldGuard / GriefPrevention / PlaceholderAPI / DiscordSRV をすべて任意連携。未導入でも本体機能はフル稼働します。</div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ── Installation ── -->
+<section id="installation">
+  <div class="container">
+    <div class="section-label">Installation</div>
+    <h2 class="section-title">導入手順</h2>
+    <p class="section-desc">PaperMC 26.1.2 と Java 25 が必要です。SQLite JDBC は <code>plugin.yml</code> の <code>libraries</code> から自動ダウンロードされます。</p>
+
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-body">
+          <div class="step-title">サーバーを停止する</div>
+          <div class="step-desc">Paper サーバーを安全に停止してから作業します。</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-body">
+          <div class="step-title">JAR を配置する</div>
+          <div class="step-desc"><code>ReputationBan-1.0.0.jar</code> をサーバーの <code>plugins/</code> ディレクトリへ配置します。</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <div class="step-body">
+          <div class="step-title">一度起動して設定ファイルを生成する</div>
+          <div class="step-desc">サーバーを起動すると <code>plugins/ReputationBan/config.yml</code> と <code>reputationban.db</code> が自動生成されます。</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">4</div>
+        <div class="step-body">
+          <div class="step-title">設定を確認して再起動する</div>
+          <div class="step-desc"><code>config.yml</code> を確認・編集してからサーバーを再起動します。</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">5</div>
+        <div class="step-body">
+          <div class="step-title">動作確認コマンドを実行する</div>
+          <div class="step-desc">
+            ゲーム内または console で以下を実行して正常起動を確認します。<br>
+            <code>/rep version</code> → バージョン表示<br>
+            <code>/rep doctor</code> → 診断レポート表示
+          </div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">6</div>
+        <div class="step-body">
+          <div class="step-title">Smoke コマンドで動作検証する</div>
+          <div class="step-desc">
+            本番導入前に test サーバーで確認してください。<br>
+            <code>/rep backup before-smoke</code> &nbsp;/&nbsp;
+            <code>/rep support bundle</code> &nbsp;/&nbsp;
+            <code>/reports list all 10</code> &nbsp;/&nbsp;
+            <code>/rep audit recent 10</code> &nbsp;/&nbsp;
+            <code>/rep maintenance preview</code>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── Commands ── -->
+<section id="commands">
+  <div class="container">
+    <div class="section-label">Commands</div>
+    <h2 class="section-title">コマンドリファレンス</h2>
+    <p class="section-desc">権限によって利用可能なコマンドが変わります。</p>
+
+    <div class="cmd-tabs">
+      <button class="cmd-tab active" onclick="showTab('player')">プレイヤー</button>
+      <button class="cmd-tab" onclick="showTab('score')">スコア管理</button>
+      <button class="cmd-tab" onclick="showTab('ban')">BAN管理</button>
+      <button class="cmd-tab" onclick="showTab('reports')">通報審査</button>
+      <button class="cmd-tab" onclick="showTab('audit')">監査</button>
+      <button class="cmd-tab" onclick="showTab('maintenance')">メンテナンス</button>
+      <button class="cmd-tab" onclick="showTab('integrations')">連携確認</button>
+    </div>
+
+    <!-- Player -->
+    <div class="cmd-panel active" id="tab-player">
+      <div class="cmd-table-wrap">
+        <table>
+          <thead><tr><th>コマンド</th><th>説明</th><th>権限</th></tr></thead>
+          <tbody>
+            <tr><td><code>/rep</code></td><td>自分の評判スコアを表示します。</td><td><span class="perm-node">reputationban.score.self</span></td></tr>
+            <tr><td><code>/rep version</code></td><td>バージョンと対象ランタイムを表示します。</td><td>なし</td></tr>
+            <tr><td><code>/rep help</code></td><td>利用可能なコマンドを表示します。</td><td>なし</td></tr>
+            <tr><td><code>/reportbad &lt;player&gt; &lt;category&gt; &lt;reason&gt;</code></td><td>他のプレイヤーを通報します。</td><td><span class="perm-node">reputationban.report</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <br>
+      <p style="font-size:0.85rem;color:var(--text-muted)"><strong style="color:var(--text)">カテゴリ例：</strong>
+        <code>griefing</code> <code>abusive_chat</code> <code>spam</code> <code>scam</code> <code>harassment</code> <code>cheating</code> <code>other</code>
+      </p>
+    </div>
+
+    <!-- Score -->
+    <div class="cmd-panel" id="tab-score">
+      <div class="cmd-table-wrap">
+        <table>
+          <thead><tr><th>コマンド</th><th>説明</th><th>権限</th></tr></thead>
+          <tbody>
+            <tr><td><code>/rep check &lt;player&gt;</code></td><td>他プレイヤーのスコアを表示します。</td><td><span class="perm-node">reputationban.score.others</span></td></tr>
+            <tr><td><code>/rep history &lt;player&gt; [limit]</code></td><td>スコア履歴を表示します。</td><td><span class="perm-node">reputationban.score.others</span></td></tr>
+            <tr><td><code>/rep add &lt;player&gt; &lt;points&gt; [reason...]</code></td><td>スコアを加算します。</td><td><span class="perm-node">reputationban.admin.score</span></td></tr>
+            <tr><td><code>/rep remove &lt;player&gt; &lt;points&gt; [reason...]</code></td><td>スコアを減算します。</td><td><span class="perm-node">reputationban.admin.score</span></td></tr>
+            <tr><td><code>/rep set &lt;player&gt; &lt;score&gt; [reason...]</code></td><td>スコアを指定値に設定します。</td><td><span class="perm-node">reputationban.admin.score</span></td></tr>
+            <tr><td><code>/rep reload</code></td><td>設定を再読み込みします。</td><td><span class="perm-node">reputationban.admin</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- BAN -->
+    <div class="cmd-panel" id="tab-ban">
+      <div class="cmd-table-wrap">
+        <table>
+          <thead><tr><th>コマンド</th><th>説明</th><th>権限</th></tr></thead>
+          <tbody>
+            <tr><td><code>/rep baninfo &lt;player&gt;</code></td><td>Profile BAN と DB の BAN 状態を表示します。</td><td><span class="perm-node">reputationban.admin.ban</span></td></tr>
+            <tr><td><code>/rep banhistory &lt;player&gt; [limit]</code></td><td>BAN 履歴を表示します。</td><td><span class="perm-node">reputationban.admin.ban</span></td></tr>
+            <tr><td><code>/rep unban &lt;player&gt; [reason...]</code></td><td>Profile BAN を解除し、DB の BAN を解除済みにします。</td><td><span class="perm-node">reputationban.admin.ban</span></td></tr>
+            <tr><td><code>/rep pardon &lt;player&gt; [reason...]</code></td><td>unban・通報停止解除・スコア回復をまとめて実行します。</td><td><span class="perm-node">reputationban.admin.score</span> + <span class="perm-node">reputationban.admin.ban</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <br>
+      <p style="font-size:0.85rem;color:var(--text-muted)">
+        BAN は通報承認またはスコアがしきい値を下回ったときに自動実行されます。<code>/rep ban</code> コマンドは存在しません。
+      </p>
+    </div>
+
+    <!-- Reports -->
+    <div class="cmd-panel" id="tab-reports">
+      <div class="cmd-table-wrap">
+        <table>
+          <thead><tr><th>コマンド</th><th>説明</th><th>権限</th></tr></thead>
+          <tbody>
+            <tr><td><code>/reports</code></td><td>pending reports を表示します。</td><td><span class="perm-node">reputationban.admin.reports</span></td></tr>
+            <tr><td><code>/reports list [status] [limit]</code></td><td>ステータス別で通報一覧を表示します。</td><td><span class="perm-node">reputationban.admin.reports</span></td></tr>
+            <tr><td><code>/reports view &lt;id&gt;</code></td><td>通報の詳細を表示します。</td><td><span class="perm-node">reputationban.admin.reports</span></td></tr>
+            <tr><td><code>/reports evidence &lt;id&gt;</code></td><td>連携プラグインの証拠情報を表示します。</td><td><span class="perm-node">reputationban.admin.reports</span></td></tr>
+            <tr><td><code>/reports approve &lt;id&gt; [note...]</code></td><td>通報を承認し、減点を適用します。</td><td><span class="perm-node">reputationban.admin.reports</span></td></tr>
+            <tr><td><code>/reports reject &lt;id&gt; [note...]</code></td><td>通報を却下します。</td><td><span class="perm-node">reputationban.admin.reports</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <br>
+      <p style="font-size:0.85rem;color:var(--text-muted)">
+        <strong style="color:var(--text)">ステータス一覧：</strong>
+        <code>pending</code> <code>threshold_pending</code> <code>approved</code> <code>rejected</code> <code>auto_accepted</code> <code>cancelled</code> <code>all</code>
+      </p>
+    </div>
+
+    <!-- Audit -->
+    <div class="cmd-panel" id="tab-audit">
+      <div class="cmd-table-wrap">
+        <table>
+          <thead><tr><th>コマンド</th><th>説明</th><th>権限</th></tr></thead>
+          <tbody>
+            <tr><td><code>/rep audit recent [limit]</code></td><td>最近の audit events を表示します。</td><td><span class="perm-node">reputationban.admin.audit</span></td></tr>
+            <tr><td><code>/rep audit &lt;player&gt; [limit]</code></td><td>プレイヤー別で audit events を表示します。</td><td><span class="perm-node">reputationban.admin.audit</span></td></tr>
+            <tr><td><code>/rep audit type &lt;eventType&gt; [limit]</code></td><td>イベント種別で audit events を表示します。</td><td><span class="perm-node">reputationban.admin.audit</span></td></tr>
+            <tr><td><code>/rep audit export recent [limit]</code></td><td>最近の audit events を CSV でエクスポートします。</td><td><span class="perm-node">reputationban.admin.audit</span></td></tr>
+            <tr><td><code>/rep audit export &lt;player&gt; [limit]</code></td><td>プレイヤー別で audit events を CSV エクスポートします。</td><td><span class="perm-node">reputationban.admin.audit</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Maintenance -->
+    <div class="cmd-panel" id="tab-maintenance">
+      <div class="cmd-table-wrap">
+        <table>
+          <thead><tr><th>コマンド</th><th>説明</th><th>権限</th></tr></thead>
+          <tbody>
+            <tr><td><code>/rep maintenance preview</code></td><td>削除対象件数を表示（削除しない）。</td><td><span class="perm-node">reputationban.admin.maintenance</span></td></tr>
+            <tr><td><code>/rep maintenance run</code></td><td>confirm 手順を表示（削除しない）。</td><td><span class="perm-node">reputationban.admin.maintenance</span></td></tr>
+            <tr><td><code>/rep maintenance run confirm</code></td><td>SQLite バックアップ作成後に retention cleanup を実行します。</td><td><span class="perm-node">reputationban.admin.maintenance</span></td></tr>
+            <tr><td><code>/rep backup [reason...]</code></td><td>手動で SQLite バックアップを作成します。</td><td><span class="perm-node">reputationban.admin.maintenance</span></td></tr>
+            <tr><td><code>/rep doctor</code></td><td>Webhook URL を出さずに運用診断を表示します。</td><td><span class="perm-node">reputationban.admin.diagnostics</span></td></tr>
+            <tr><td><code>/rep support bundle</code></td><td>DB・server logs を含まない診断 ZIP を作成します。</td><td><span class="perm-node">reputationban.admin.diagnostics</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Integrations tab -->
+    <div class="cmd-panel" id="tab-integrations">
+      <div class="cmd-table-wrap">
+        <table>
+          <thead><tr><th>コマンド</th><th>説明</th><th>権限</th></tr></thead>
+          <tbody>
+            <tr><td><code>/rep integrations</code></td><td>外部連携の状態を表示します。</td><td><span class="perm-node">reputationban.admin.integrations</span></td></tr>
+            <tr><td><code>/rep integrations test</code></td><td>外部連携の詳細診断を安全に実行します。</td><td><span class="perm-node">reputationban.admin.integrations</span></td></tr>
+            <tr><td><code>/rep placeholders</code></td><td>PlaceholderAPI placeholders の一覧を表示します。</td><td><span class="perm-node">reputationban.admin.diagnostics</span></td></tr>
+            <tr><td><code>/rep diagnostics</code></td><td><code>/rep doctor</code> の alias です。</td><td><span class="perm-node">reputationban.admin.diagnostics</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ── Permissions ── -->
+<section id="permissions">
+  <div class="container">
+    <div class="section-label">Permissions</div>
+    <h2 class="section-title">権限ノード一覧</h2>
+    <p class="section-desc">LuckPerms 等の権限管理プラグインで設定します。</p>
+    <div class="perm-table-wrap">
+      <table>
+        <thead>
+          <tr><th>権限ノード</th><th>説明</th><th>既定</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><span class="perm-node">reputationban.report</span></td><td><code>/reportbad</code> を使えます。</td><td>true</td></tr>
+          <tr><td><span class="perm-node">reputationban.score.self</span></td><td>自分のスコアを確認できます。</td><td>true</td></tr>
+          <tr><td><span class="perm-node">reputationban.score.others</span></td><td>他プレイヤーのスコアと履歴を確認できます。</td><td>op</td></tr>
+          <tr><td><span class="perm-node">reputationban.notify</span></td><td>スタッフ通知を受け取れます。</td><td>op</td></tr>
+          <tr><td><span class="perm-node">reputationban.admin</span></td><td>主な admin 権限をまとめて付与します。</td><td>op</td></tr>
+          <tr><td><span class="perm-node">reputationban.admin.reports</span></td><td>通報の審査ができます。</td><td>op</td></tr>
+          <tr><td><span class="perm-node">reputationban.admin.score</span></td><td>スコア管理コマンドを使えます。</td><td>op</td></tr>
+          <tr><td><span class="perm-node">reputationban.admin.ban</span></td><td>BAN管理コマンドとBAN閾値を跨ぐ承認に使います。</td><td>op</td></tr>
+          <tr><td><span class="perm-node">reputationban.admin.audit</span></td><td>監査ログの表示と CSV エクスポートができます。</td><td>op</td></tr>
+          <tr><td><span class="perm-node">reputationban.admin.maintenance</span></td><td>retention cleanup と手動バックアップができます。</td><td>op</td></tr>
+          <tr><td><span class="perm-node">reputationban.admin.diagnostics</span></td><td><code>/rep doctor</code>・support bundle・placeholders を使えます。</td><td>op</td></tr>
+          <tr><td><span class="perm-node">reputationban.admin.integrations</span></td><td><code>/rep integrations</code> と <code>/rep integrations test</code> を使えます。</td><td>op</td></tr>
+          <tr><td><span class="perm-node">reputationban.bypass</span></td><td>通報・減点・自動BAN の対象から除外されます。</td><td>op</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- ── Configuration ── -->
+<section id="config">
+  <div class="container">
+    <div class="section-label">Configuration</div>
+    <h2 class="section-title">主な設定項目</h2>
+    <p class="section-desc"><code>plugins/ReputationBan/config.yml</code> で動作をカスタマイズします。</p>
+
+    <div class="config-grid">
+
+      <div class="config-card">
+        <h3>スコア設定 (score)</h3>
+        <div class="config-item">
+          <div class="config-key">initial-score</div>
+          <div class="config-val">新規プレイヤーの初期スコア</div>
+        </div>
+        <div class="config-item">
+          <div class="config-key">max-score</div>
+          <div class="config-val">スコアの上限値</div>
+        </div>
+      </div>
+
+      <div class="config-card">
+        <h3>評価・通報 (rating)</h3>
+        <div class="config-item">
+          <div class="config-key">rating.enabled</div>
+          <div class="config-val">通報によるスコア変更の有効化</div>
+        </div>
+        <div class="config-item">
+          <div class="config-key">rating.default-deduction</div>
+          <div class="config-val">標準減点値</div>
+        </div>
+        <div class="config-item">
+          <div class="config-key">rating.min-unique-reports-before-deduction</div>
+          <div class="config-val">自動減点に必要なユニーク通報者数</div>
+        </div>
+        <div class="config-item">
+          <div class="config-key">rating.report-window-days</div>
+          <div class="config-val">複数通報しきい値の集計期間（日）</div>
+        </div>
+      </div>
+
+      <div class="config-card">
+        <h3>クールダウン (cooldowns)</h3>
+        <div class="config-item">
+          <div class="config-key">cooldowns.global-report-seconds</div>
+          <div class="config-val">通報間の最短間隔（秒）</div>
+        </div>
+        <div class="config-item">
+          <div class="config-key">cooldowns.same-target-cooldown-days</div>
+          <div class="config-val">同一ターゲットへの再通報制限（日）</div>
+        </div>
+        <div class="config-item">
+          <div class="config-key">cooldowns.max-reports-per-day</div>
+          <div class="config-val">1日あたりの通報上限</div>
+        </div>
+      </div>
+
+      <div class="config-card">
+        <h3>スコア閾値 (score-thresholds)</h3>
+        <div class="config-item">
+          <div class="config-key">warning / watch / restricted / final-warning</div>
+          <div class="config-val">各閾値でスタッフ通知が送信されます</div>
+        </div>
+        <div class="config-item">
+          <div class="config-key">ban</div>
+          <div class="config-val">この閾値以下で自動BAN</div>
+        </div>
+      </div>
+
+      <div class="config-card">
+        <h3>スコア回復 (score-recovery)</h3>
+        <div class="config-item">
+          <div class="config-key">score-recovery.enabled</div>
+          <div class="config-val">定期回復の有効化</div>
+        </div>
+        <div class="config-item">
+          <div class="config-key">score-recovery.points-per-day</div>
+          <div class="config-val">1日あたりの回復量</div>
+        </div>
+        <div class="config-item">
+          <div class="config-key">score-recovery.no-report-days-required</div>
+          <div class="config-val">回復開始までに必要な通報なし期間（日）</div>
+        </div>
+      </div>
+
+      <div class="config-card">
+        <h3>BAN 設定 (ban)</h3>
+        <div class="config-item">
+          <div class="config-key">ban.enabled</div>
+          <div class="config-val">自動 Profile BAN の有効化</div>
+        </div>
+        <div class="config-item">
+          <div class="config-key">ban.threshold</div>
+          <div class="config-val">自動BAN発動スコア</div>
+        </div>
+        <div class="config-item">
+          <div class="config-key">ban.durations</div>
+          <div class="config-val">BAN 回数ごとの期間設定</div>
+        </div>
+      </div>
+
+      <div class="config-card">
+        <h3>保持期間 (retention)</h3>
+        <div class="config-item">
+          <div class="config-key">audit-events-days / rejected-reports-days / score-history-days / bans-days</div>
+          <div class="config-val">各データの保持日数（0 = 削除しない）</div>
+        </div>
+      </div>
+
+      <div class="config-card">
+        <h3>文字列長制限 (limits)</h3>
+        <div class="config-item">
+          <div class="config-key">limits.max-report-reason-length</div>
+          <div class="config-val">通報理由の最大文字数</div>
+        </div>
+        <div class="config-item">
+          <div class="config-key">limits.max-review-note-length</div>
+          <div class="config-val">審査ノートの最大文字数</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ── Integrations ── -->
+<section id="integrations">
+  <div class="container">
+    <div class="section-label">Integrations</div>
+    <h2 class="section-title">外部連携</h2>
+    <p class="section-desc">すべて <strong>任意（softdepend）</strong> です。未導入でも ReputationBan 本体は正常稼働します。各プラグインは reflection 経由でロードされるため、起動不能になりません。</p>
+
+    <div class="integration-grid">
+
+      <div class="integration-card">
+        <div class="integration-header">
+          <span class="integration-name">LuckPerms</span>
+          <span class="integration-badge badge-optional">任意</span>
+        </div>
+        <div class="integration-desc">
+          通報者の primary group を使って reporter weight を計算し通報補助情報として保存します。
+          <code>bypass-groups</code> に指定したグループのプレイヤーを保護対象に追加できます。
+          <code>offline-lookup.enabled</code> で未ロードのオフラインプレイヤーも保護可能。
+          PlaceholderAPI 向け placeholder にも使われます。
+        </div>
+      </div>
+
+      <div class="integration-card">
+        <div class="integration-header">
+          <span class="integration-name">CoreProtect</span>
+          <span class="integration-badge badge-optional">任意</span>
+        </div>
+        <div class="integration-desc">
+          荒らし通報の審査補助として、通報者の周辺ブロック操作ログの短いサマリーを保存します。
+          rollback・restore・purge は行いません。<code>/reports evidence</code> で参照できます。
+          <code>max-results: 0</code> にすると個別ログを保存しません。
+        </div>
+      </div>
+
+      <div class="integration-card">
+        <div class="integration-header">
+          <span class="integration-name">WorldGuard</span>
+          <span class="integration-badge badge-optional">任意</span>
+        </div>
+        <div class="integration-desc">
+          通報者の現在地に適用されている region context（ID・priority・flag）を審査補助として保存します。
+          WorldEdit も必要です。region・flag の作成・変更・削除は行いません。
+        </div>
+      </div>
+
+      <div class="integration-card">
+        <div class="integration-header">
+          <span class="integration-name">GriefPrevention</span>
+          <span class="integration-badge badge-optional">任意</span>
+        </div>
+        <div class="integration-desc">
+          通報者の現在地の claim 情報（有無・境界・admin claim かどうか）を審査補助として保存します。
+          claim・trust の作成・変更・削除は行いません。owner や trust count の記録は設定で制御します。
+        </div>
+      </div>
+
+      <div class="integration-card">
+        <div class="integration-header">
+          <span class="integration-name">PlaceholderAPI</span>
+          <span class="integration-badge badge-optional">任意</span>
+        </div>
+        <div class="integration-desc">
+          他プラグインやスコアボードから評判スコア情報を参照できる読み取り専用連携です。
+          提供する placeholder：<code>%reputationban_score%</code> <code>%reputationban_status%</code>
+          <code>%reputationban_ban_count%</code> など 10 種類。SQLite への同期問い合わせは行いません。
+        </div>
+      </div>
+
+      <div class="integration-card">
+        <div class="integration-header">
+          <span class="integration-name">DiscordSRV</span>
+          <span class="integration-badge badge-optional">任意</span>
+        </div>
+        <div class="integration-desc">
+          通報者・対象プレイヤーの Discord アカウント連携状態を審査補助として保存します。
+          DiscordSRV の game channel へ通知も可能（デフォルト無効）。Discord ロール変更・コマンド実行は行いません。
+        </div>
+      </div>
+
+    </div>
+
+    <br>
+    <h3 style="font-size:1rem;margin-bottom:1rem;color:var(--text-muted)">PlaceholderAPI で利用できる Placeholder</h3>
+    <div style="display:flex;flex-wrap:wrap;gap:0.5rem;">
+      <code>%reputationban_score%</code>
+      <code>%reputationban_max_score%</code>
+      <code>%reputationban_score_percent%</code>
+      <code>%reputationban_status%</code>
+      <code>%reputationban_ban_count%</code>
+      <code>%reputationban_false_report_count%</code>
+      <code>%reputationban_report_banned%</code>
+      <code>%reputationban_report_banned_until%</code>
+      <code>%reputationban_last_seen%</code>
+      <code>%reputationban_version%</code>
+    </div>
+  </div>
+</section>
+
+<!-- ── Security ── -->
+<section id="security">
+  <div class="container">
+    <div class="section-label">Security</div>
+    <h2 class="section-title">安全上の注意</h2>
+    <p class="section-desc">シークレット情報の取り扱いに注意してください。</p>
+
+    <div class="alert">
+      <span class="alert-icon">⚠️</span>
+      <div>
+        <strong>Discord Webhook URL はシークレットです。</strong><br>
+        config.yml 以外の場所（GitHub Issue、チャット、スクリーンショット、review archive）に実 URL を貼らないでください。
+        ReputationBan は URL ではなく「設定済みかどうか」のみを表示します。
+      </div>
+    </div>
+
+    <div class="feature-grid">
+      <div class="feature-card">
+        <div class="feature-icon icon-green">🔒</div>
+        <div class="feature-title">Support Bundle の安全設計</div>
+        <div class="feature-desc"><code>/rep support bundle</code> は <code>reputationban.db</code>・WAL/SHM・server logs・Webhook URL を含まない診断 ZIP を作成します。<code>url</code>・<code>token</code>・<code>secret</code>・<code>password</code> などを含むキーは <code>&lt;redacted&gt;</code> に置換されます。</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon icon-yellow">📋</div>
+        <div class="feature-title">Issue 報告時の注意</div>
+        <div class="feature-desc">GitHub Issue には Discord bot token・Webhook URL・password・session・cookie・secret を貼らないでください。<code>/rep doctor</code> と <code>/rep integrations</code> の出力は安全に共有できます。</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon icon-blue">🛡️</div>
+        <div class="feature-title">Redacted Config</div>
+        <div class="feature-desc">Support bundle には <code>config-redacted.yml</code> が含まれます。共有前に <code>&lt;redacted&gt;</code> になっていることを確認してください。</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── Footer ── -->
+<footer>
+  <p>
+    <strong>ReputationBan</strong> v1.0.1 &nbsp;|&nbsp;
+    PaperMC 26.1.2 &nbsp;|&nbsp; Java 25 &nbsp;|&nbsp;
+    <a href="https://github.com/Nobu0707/ReputationBan">GitHub</a> &nbsp;|&nbsp;
+    <a href="https://github.com/Nobu0707/ReputationBan/releases/tag/v1.0.0">v1.0.0 Release</a>
+  </p>
+  <p style="margin-top:0.5rem">現在の制限: GUI メニュー・Discord ボタン承認・Discord から MC コマンド実行は未実装。Folia 非対応。</p>
+</footer>
+
+<script>
+function showTab(name) {
+  document.querySelectorAll('.cmd-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.cmd-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+  event.currentTarget.classList.add('active');
+}
+</script>
+
+</body>
+</html>
