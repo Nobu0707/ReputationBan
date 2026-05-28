@@ -659,7 +659,36 @@
 - CoreProtect rollback、restore、purge、LuckPerms 書き込み、WorldGuard region/flag 変更、GriefPrevention claim/trust 変更は引き続き行わない。
 - Discord から Minecraft コマンドを実行する機能、Discord role 変更、Discord button 承認は行わない。
 
-## Phase 29以降: 外部連携・高度な悪用対策
+## Phase 29 / v1.0.0: v1.0.0 finalization / release artifact preparation
+
+目的: v1.0.0 として配布可能な final artifact、Go/No-Go report、release notes final candidate、release execution plan を準備し、次Phaseでユーザー承認後に tag 作成と GitHub Release 公開へ進める状態にする。
+
+実装範囲:
+
+- version 1.0.0
+- `ReputationBan-1.0.0.jar`
+- `ReputationBan-1.0.0-release.zip`
+- `scripts/generate-v1-release-notes.sh`
+- `build/release/ReputationBan-v1-go-no-go-report.md`
+- `build/release/ReputationBan-v1.0.0-release-notes.md`
+- `docs/phase-29.md`
+- `docs/V1_RELEASE_EXECUTION_PLAN.md`
+- Paper runtime smoke を 1.0.0 JAR で再実行して PASS 記録
+- Integration runtime smoke を 1.0.0 JAR で再実行して PASS 記録
+- Player report/evidence runtime smoke は Phase 27 の手動 PASS を `carriedForwardFrom=0.27.0` として carry-forward
+- v1 release gates judgment を `READY_FOR_V1_RELEASE_WITH_DISCORDSRV_WARNING` に更新
+- review/release archive scripts の v1.0.0 対応
+
+注意:
+
+- Phase 29 では `v1.0.0` tag を作成しない。
+- Phase 29 では GitHub Release を作成・公開しない。
+- DiscordSRV unavailable は WARN とし、ReputationBan 本体と他連携の release gate は止めない。
+- Java runtime behavior、DB schema、`/reportbad`、`/reports evidence`、`report_context` 生成は変更しない。
+- CoreProtect rollback、restore、purge、LuckPerms 書き込み、WorldGuard region/flag 変更、GriefPrevention claim/trust 変更は引き続き行わない。
+- Discord から Minecraft コマンドを実行する機能、Discord role 変更、Discord button 承認は行わない。
+
+## Phase 30以降: 外部連携・高度な悪用対策
 
 実装候補:
 

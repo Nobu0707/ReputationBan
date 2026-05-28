@@ -1,6 +1,6 @@
-# v0.28.0 リリース候補チェックリスト
+# v1.0.0 リリース候補チェックリスト
 
-v0.28.0 の v1.0.0 release candidate final checklist として次を確認します。
+v1.0.0 の v1.0.0 release candidate final checklist として次を確認します。
 
 ## Build / Test / Review
 
@@ -15,12 +15,12 @@ v0.28.0 の v1.0.0 release candidate final checklist として次を確認しま
 - `./scripts/check-runtime-smoke-consistency.sh` が成功します。
 - `./scripts/check-v1-release-gates.sh` が成功します。
 - `./scripts/generate-v1-go-no-go-report.sh` が成功します。
-- `./scripts/generate-v1-release-notes-draft.sh` が成功します。
+- `./scripts/generate-v1-release-notes.sh` が成功します。
 - `./scripts/run-local-smoke-check.sh` が成功します。
-- JAR 名が `ReputationBan-0.28.0.jar` です。
+- JAR 名が `ReputationBan-1.0.0.jar` です。
 - Paper runtime smoke、Integration runtime smoke、Player report/evidence runtime smoke は PASS 済みです。
-- Player report/evidence runtime smoke は `manualConfirmed=true` で Phase 26 のユーザー手動確認結果を記録済みです。
-- v1 release gates の既定 judgment は `READY_FOR_V1_RELEASE_REVIEW_WITH_DISCORDSRV_WARNING` です。
+- Player report/evidence runtime smoke は `manualConfirmed=true`、`carriedForwardFrom=0.27.0` で Phase 27 のユーザー手動確認結果を carry-forward 記録済みです。
+- v1 release gates の既定 judgment は `READY_FOR_V1_RELEASE_WITH_DISCORDSRV_WARNING` です。
 
 ## Docs Localization
 
@@ -37,7 +37,8 @@ v0.28.0 の v1.0.0 release candidate final checklist として次を確認しま
 - release ZIP に `docs/INTEGRATION_RUNTIME_SMOKE_CHECKLIST.md` が含まれます。
 - release ZIP に `docs/PLAYER_REPORT_RUNTIME_SMOKE_CHECKLIST.md` が含まれます。
 - release ZIP に `docs/V1_RELEASE_PLAN.md` が含まれます。
-- Go/No-Go report と release notes draft は review archive の `release-prep/` に収集します。
+- release ZIP に `docs/V1_RELEASE_EXECUTION_PLAN.md` が含まれます。
+- Go/No-Go report、release notes final candidate、release execution plan は review archive の `release-prep/` に収集します。
 - release ZIP に live `config.yml`、`reputationban.db`、WAL/SHM、logs は含まれません。
 
 ## Secret Scan
@@ -105,7 +106,7 @@ v0.28.0 の v1.0.0 release candidate final checklist として次を確認しま
 - LuckPerms / CoreProtect / WorldGuard / GriefPrevention / DiscordSRV の未導入や未設定で ReputationBan 本体が落ちないことを確認します。
 - 必要に応じて `/rep pardon <target> runtime-smoke-cleanup` で cleanup します。
 - support bundle に DB files、server logs、secret が含まれないことを確認します。
-- Phase 26 の手動確認結果は PASS 済みとして、`./scripts/record-player-report-runtime-smoke-result.sh --result PASS --manual-confirmed --note "User manually confirmed all Phase 26 player report runtime smoke checklist items passed."` で記録します。
+- Phase 27 の手動確認結果は PASS 済みとして、`./scripts/record-player-report-runtime-smoke-result.sh --result PASS --manual-confirmed --carried-forward-from 0.27.0 --note "Carried forward from Phase 27 manual player report runtime smoke; Phase 29 changes version/docs/scripts/release artifacts only."` で記録します。
 - 公開用レビューには reporter、target、report id を残さず、`manual-checklist.txt` に確認項目の要約を保存します。
 - v1.0.0 直前 gate では `./scripts/check-player-report-runtime-readiness.sh --strict` が成功する状態にしてください。
 
@@ -123,6 +124,6 @@ v0.28.0 の v1.0.0 release candidate final checklist として次を確認しま
 - Player report/evidence runtime smoke: PASS です。
 - Runtime smoke consistency: PASS です。
 - Optional dependency safety、docs localization、release artifact verification、secret scan が PASS です。
-- Go/No-Go report と release notes draft が生成済みです。
+- Go/No-Go report と release notes final candidate が生成済みです。
 - DiscordSRV unavailable は WARN として明記済みです。
 - 既知の未解決事項が v1.0.0 を妨げないことを確認します。

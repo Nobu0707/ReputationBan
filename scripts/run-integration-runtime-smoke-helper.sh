@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-EXPECTED_VERSION="0.28.0"
+EXPECTED_VERSION="1.0.0"
 PLUGIN_JAR="build/libs/ReputationBan-${EXPECTED_VERSION}.jar"
 
 usage() {
@@ -26,7 +26,7 @@ print_plan() {
 
 JAR copy steps:
   1. Build with ./gradlew clean test build --warning-mode all
-  2. Copy build/libs/ReputationBan-0.28.0.jar into the Paper server plugins directory
+  2. Copy build/libs/ReputationBan-1.0.0.jar into the Paper server plugins directory
   3. Start PaperMC 26.1.2 with Java 25
 
 Optional plugin combinations:

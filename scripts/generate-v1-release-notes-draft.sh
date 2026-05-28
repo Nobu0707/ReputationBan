@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-VERSION="0.28.0"
+VERSION="1.0.0"
 PROJECT_NAME="ReputationBan"
 RELEASE_DIR="build/release"
 DRAFT="${RELEASE_DIR}/ReputationBan-v1.0.0-release-notes-draft.md"
@@ -33,7 +33,7 @@ cat > "$DRAFT" <<DRAFT
 
 ## 概要
 
-評判スコア制BAN・通報・審査・監査・外部連携プラグインです。
+評判スコア制BAN・通報・審査・監査・外部連携プラグインです。Phase 29 では final candidate として `scripts/generate-v1-release-notes.sh` が `ReputationBan-v1.0.0-release-notes.md` を生成します。
 
 ## 対応環境
 
@@ -86,7 +86,7 @@ cat > "$DRAFT" <<DRAFT
 
 ## Draft Note
 
-Phase 28では \`v1.0.0\` tag 作成と GitHub Release 公開はまだ行っていません。この下書きは、Phase 28レビュー後にユーザー承認を得てから次Phaseで確定します。
+Phase 29では \`v1.0.0\` tag 作成と GitHub Release 公開はまだ行っていません。この draft は互換目的で残し、レビューアーカイブには final candidate の \`ReputationBan-v1.0.0-release-notes.md\` を含めます。
 DRAFT
 
 echo "Generated $DRAFT"

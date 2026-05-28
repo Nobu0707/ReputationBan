@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.0.0
+
+- Phase 29 は first stable release candidate final artifact preparation フェーズです。version を 1.0.0 に更新し、`ReputationBan-1.0.0.jar` と `ReputationBan-1.0.0-release.zip` を配布候補として準備します。
+- Paper runtime smoke、Integration runtime smoke、Player report/evidence runtime smoke、Runtime smoke consistency の release gates は PASS として再確認します。
+- LuckPerms、CoreProtect、WorldGuard、GriefPrevention、PlaceholderAPI、DiscordSRV の任意連携を v1.0.0 の外部連携対象として記録します。
+- DiscordSRV は bot token 未設定時 WARN 扱いです。DiscordSRV 通知はデフォルト無効であり、ReputationBan 本体や他連携の release gate は止めません。
+- `scripts/generate-v1-release-notes.sh` と `docs/V1_RELEASE_EXECUTION_PLAN.md` を追加し、Go/No-Go report と release notes final candidate をレビューアーカイブに含められるようにしました。
+- `v1.0.0` tag 作成と GitHub Release 公開はまだ行っていません。次Phaseでユーザー承認後に実施します。
+
 ## 0.28.0
 
 - Phase 28 は v1.0.0 release candidate readiness review フェーズです。新機能追加ではなく、v1.0.0 公開前の最終 Go/No-Go 判定、release gates、release notes draft を整備しました。

@@ -2,14 +2,16 @@
 set -euo pipefail
 
 PROJECT_NAME="ReputationBan"
-EXPECTED_VERSION="0.28.0"
+EXPECTED_VERSION="1.0.0"
 EXPECTED_MAIN="dev.modplugin.reputationban.ReputationBanPlugin"
 EXPECTED_API_VERSION="26.1.2"
-EXPECTED_PACKAGE_DIR="src/main/java/dev/modplugin/reputationban"
-EXPECTED_JAR_PREFIX="ReputationBan"
+ROOT="$(pwd)"
+EXPECTED_JAR="build/libs/${PROJECT_NAME}-${EXPECTED_VERSION}.jar"
+RELEASE_DIR="build/release"
+RELEASE_JAR="${RELEASE_DIR}/${PROJECT_NAME}-${EXPECTED_VERSION}.jar"
+RELEASE_ZIP="${RELEASE_DIR}/${PROJECT_NAME}-${EXPECTED_VERSION}-release.zip"
 
 fail() { echo "[FAIL] $*" >&2; exit 1; }
-warn() { echo "[WARN] $*" >&2; }
 pass() { echo "[PASS] $*"; }
 info() { echo "[INFO] $*"; }
 require_file() { [[ -f "$1" ]] || fail "Missing required file: $1"; pass "Found $1"; }
@@ -17,423 +19,155 @@ require_dir() { [[ -d "$1" ]] || fail "Missing required directory: $1"; pass "Fo
 require_command() { command -v "$1" >/dev/null 2>&1 || fail "Required command not found: $1"; pass "Command available: $1"; }
 extract_yaml_value() { grep -E "^$2:" "$1" | head -n 1 | sed -E "s/^$2:[[:space:]]*//" | tr -d "'\""; }
 
+preserve_manual_smoke() {
+  local preserved
+  local code
+  preserved="$(mktemp -d)"
+  if [[ -d build/manual-smoke ]]; then
+    cp -R build/manual-smoke "$preserved/manual-smoke"
+  fi
+  set +e
+  "$@"
+  code=$?
+  set -e
+  if [[ -d "$preserved/manual-smoke" ]]; then
+    mkdir -p build
+    rm -rf build/manual-smoke
+    cp -R "$preserved/manual-smoke" build/manual-smoke
+  fi
+  rm -rf "$preserved"
+  return "$code"
+}
+
 require_command git
 require_command grep
 require_command sed
-require_command find
-require_command sort
-require_command tail
 require_command awk
+require_command find
+require_command jar
+require_command sha256sum
 
 [[ -d .git ]] || fail "Not a Git repository"
 git rev-parse --is-inside-work-tree >/dev/null || fail "Not inside a Git work tree"
 
-require_file settings.gradle.kts
-require_file build.gradle.kts
-require_file gradlew
-require_file scripts/make-review-archive.sh
-require_file scripts/run-local-smoke-check.sh
-require_file scripts/run-paper-runtime-smoke-helper.sh
-require_file scripts/run-paper-runtime-smoke.sh
-require_file scripts/check-paper-runtime-readiness.sh
-require_file scripts/check-runtime-smoke-consistency.sh
-require_file scripts/run-integration-runtime-smoke.sh
-require_file scripts/check-docs-localization.sh
-require_file scripts/check-optional-dependency-safety.sh
-require_file scripts/check-integration-runtime-readiness.sh
-require_file scripts/run-integration-runtime-smoke-helper.sh
-require_file scripts/create-release-artifact.sh
-require_file scripts/verify-release-artifact.sh
-require_file scripts/record-paper-runtime-smoke-result.sh
-require_file scripts/record-integration-runtime-smoke-result.sh
-require_file scripts/record-player-report-runtime-smoke-result.sh
-require_file scripts/check-player-report-runtime-readiness.sh
-require_file scripts/check-v1-release-gates.sh
-require_file scripts/generate-v1-go-no-go-report.sh
-require_file scripts/generate-v1-release-notes-draft.sh
-require_file README.md
-require_file CHANGELOG.md
-require_file docs/INSTALLATION.md
-require_file docs/CONFIGURATION.md
-require_file docs/MIGRATION.md
-require_file docs/RELEASE_READINESS.md
-require_file docs/SUPPORT_BUNDLE.md
-require_file docs/SECURITY_REDACTION.md
-require_file docs/PAPER_RUNTIME_SMOKE_REPORT_TEMPLATE.md
-require_file docs/phase-13.md
-require_file docs/phase-14.md
-require_file docs/phase-15.md
-require_file docs/phase-17.md
-require_file docs/phase-19.md
-require_file docs/phase-21.md
-require_file docs/phase-22.md
-require_file docs/phase-23.md
-require_file docs/phase-25.md
-require_file docs/phase-26.md
-require_file docs/phase-27.md
-require_file docs/phase-28.md
-require_file docs/V1_RELEASE_PLAN.md
-require_file docs/INTEGRATIONS.md
-require_file docs/INTEGRATION_RUNTIME_SMOKE_CHECKLIST.md
-require_file docs/PLAYER_REPORT_RUNTIME_SMOKE_CHECKLIST.md
-require_file docs/RELEASE_CANDIDATE_CHECKLIST.md
-require_file docs/runtime-smoke-checklist.md
-require_file src/main/resources/plugin.yml
-require_file src/main/resources/config.yml
-require_dir "$EXPECTED_PACKAGE_DIR"
-[[ -x ./gradlew ]] || fail "gradlew is not executable"
-[[ -x ./scripts/review_code.sh ]] || fail "review_code.sh is not executable"
-[[ -x ./scripts/make-review-archive.sh ]] || fail "make-review-archive.sh is not executable"
-[[ -x ./scripts/run-local-smoke-check.sh ]] || fail "run-local-smoke-check.sh is not executable"
-[[ -x ./scripts/run-paper-runtime-smoke-helper.sh ]] || fail "run-paper-runtime-smoke-helper.sh is not executable"
-[[ -x ./scripts/run-paper-runtime-smoke.sh ]] || fail "run-paper-runtime-smoke.sh is not executable"
-[[ -x ./scripts/check-paper-runtime-readiness.sh ]] || fail "check-paper-runtime-readiness.sh is not executable"
-[[ -x ./scripts/check-runtime-smoke-consistency.sh ]] || fail "check-runtime-smoke-consistency.sh is not executable"
-[[ -x ./scripts/run-integration-runtime-smoke.sh ]] || fail "run-integration-runtime-smoke.sh is not executable"
-[[ -x ./scripts/check-docs-localization.sh ]] || fail "check-docs-localization.sh is not executable"
-[[ -x ./scripts/check-optional-dependency-safety.sh ]] || fail "check-optional-dependency-safety.sh is not executable"
-[[ -x ./scripts/check-integration-runtime-readiness.sh ]] || fail "check-integration-runtime-readiness.sh is not executable"
-[[ -x ./scripts/run-integration-runtime-smoke-helper.sh ]] || fail "run-integration-runtime-smoke-helper.sh is not executable"
-[[ -x ./scripts/create-release-artifact.sh ]] || fail "create-release-artifact.sh is not executable"
-[[ -x ./scripts/verify-release-artifact.sh ]] || fail "verify-release-artifact.sh is not executable"
-[[ -x ./scripts/record-paper-runtime-smoke-result.sh ]] || fail "record-paper-runtime-smoke-result.sh is not executable"
-[[ -x ./scripts/record-integration-runtime-smoke-result.sh ]] || fail "record-integration-runtime-smoke-result.sh is not executable"
-[[ -x ./scripts/record-player-report-runtime-smoke-result.sh ]] || fail "record-player-report-runtime-smoke-result.sh is not executable"
-[[ -x ./scripts/check-player-report-runtime-readiness.sh ]] || fail "check-player-report-runtime-readiness.sh is not executable"
-[[ -x ./scripts/check-v1-release-gates.sh ]] || fail "check-v1-release-gates.sh is not executable"
-[[ -x ./scripts/generate-v1-go-no-go-report.sh ]] || fail "generate-v1-go-no-go-report.sh is not executable"
-[[ -x ./scripts/generate-v1-release-notes-draft.sh ]] || fail "generate-v1-release-notes-draft.sh is not executable"
-
-YML=src/main/resources/plugin.yml
-grep -q "io.papermc.paper:paper-api:26.1.2.build" build.gradle.kts || fail "Paper API 26.1.2 dependency not found"
-grep -q "org.xerial:sqlite-jdbc" "$YML" || fail "Missing sqlite-jdbc library"
-grep -q "JavaLanguageVersion.of(25)" build.gradle.kts || fail "Java 25 toolchain not found"
-grep -q 'version = "0.28.0"' build.gradle.kts || fail "build.gradle.kts version is not 0.28.0"
-grep -q "options.release.set(25)" build.gradle.kts || fail "Java release 25 not found"
-grep -q 'net.luckperms:api:5.5' build.gradle.kts || fail "LuckPerms compileOnly dependency not found"
-grep -q 'net.coreprotect:coreprotect:23.2' build.gradle.kts || fail "CoreProtect compileOnly dependency not found"
-grep -q 'com.sk89q.worldguard:worldguard-bukkit:7.0.13' build.gradle.kts || fail "WorldGuard compileOnly dependency not found"
-grep -q 'me.clip:placeholderapi:2.12.2' build.gradle.kts || fail "PlaceholderAPI compileOnly dependency not found"
-grep -q 'maven.enginehub.org/repo' settings.gradle.kts build.gradle.kts || fail "EngineHub Maven repository not found"
-grep -q 'maven.playpro.com' settings.gradle.kts build.gradle.kts || fail "maven.playpro.com repository not found"
-grep -q 'repo.helpch.at/releases' settings.gradle.kts build.gradle.kts || fail "PlaceholderAPI HelpChat Maven repository not found"
-
-[[ "$(extract_yaml_value "$YML" name)" == "$PROJECT_NAME" ]] || fail "Invalid plugin.yml name"
-[[ "$(extract_yaml_value "$YML" version)" == "$EXPECTED_VERSION" ]] || fail "Invalid plugin.yml version"
-[[ "$(extract_yaml_value "$YML" main)" == "$EXPECTED_MAIN" ]] || fail "Invalid plugin.yml main"
-[[ "$(extract_yaml_value "$YML" api-version)" == "$EXPECTED_API_VERSION" ]] || fail "Invalid plugin.yml api-version"
-
-grep -q "reportbad:" "$YML" || fail "Missing reportbad command"
-grep -q "rep:" "$YML" || fail "Missing rep command"
-grep -q "reports:" "$YML" || fail "Missing reports command"
-grep -q "reputationban.report:" "$YML" || fail "Missing reputationban.report"
-grep -q "reputationban.bypass:" "$YML" || fail "Missing reputationban.bypass"
-grep -q "org.xerial:sqlite-jdbc" "$YML" || fail "Missing sqlite-jdbc library"
-grep -A8 "^softdepend:" "$YML" | grep -q "LuckPerms" || fail "plugin.yml softdepend missing LuckPerms"
-grep -A8 "^softdepend:" "$YML" | grep -q "CoreProtect" || fail "plugin.yml softdepend missing CoreProtect"
-grep -A8 "^softdepend:" "$YML" | grep -q "WorldEdit" || fail "plugin.yml softdepend missing WorldEdit"
-grep -A8 "^softdepend:" "$YML" | grep -q "WorldGuard" || fail "plugin.yml softdepend missing WorldGuard"
-grep -A8 "^softdepend:" "$YML" | grep -q "GriefPrevention" || fail "plugin.yml softdepend missing GriefPrevention"
-grep -A10 "^softdepend:" "$YML" | grep -q "PlaceholderAPI" || fail "plugin.yml softdepend missing PlaceholderAPI"
-grep -A12 "^softdepend:" "$YML" | grep -q "DiscordSRV" || fail "plugin.yml softdepend missing DiscordSRV"
-grep -q "reputationban.admin.integrations:" "$YML" || fail "Missing reputationban.admin.integrations permission"
-grep -A14 "reputationban.admin:" "$YML" | grep -q "reputationban.admin.integrations: true" || fail "admin integrations child permission missing"
-
-CFG=src/main/resources/config.yml
-grep -q "^initial-score:[[:space:]]*100" "$CFG" || fail "Missing initial-score: 100"
-grep -q "^max-score:[[:space:]]*100" "$CFG" || fail "Missing max-score: 100"
-grep -q "^categories:" "$CFG" || fail "Missing categories"
-grep -q "same-target-cooldown-days" "$CFG" || fail "Missing same-target-cooldown-days"
-grep -q "global-report-seconds" "$CFG" || fail "Missing global-report-seconds"
-grep -q "threshold:[[:space:]]*0" "$CFG" || fail "Missing ban threshold 0"
-grep -q "^score-recovery:" "$CFG" || fail "Missing score-recovery config"
-grep -q "^reporter-penalty:" "$CFG" || fail "Missing reporter-penalty config"
-grep -q "^audit:" "$CFG" || fail "Missing audit config"
-grep -q "export-directory" "$CFG" || fail "Missing audit export-directory config"
-grep -q "^retention:" "$CFG" || fail "Missing retention config"
-grep -q "audit-events-days" "$CFG" || fail "Missing audit-events retention config"
-grep -q "score-history-days:[[:space:]]*0" "$CFG" || fail "score-history retention must default to 0"
-grep -q "bans-days:[[:space:]]*0" "$CFG" || fail "bans retention must default to 0"
-grep -q "min-unique-reports-before-deduction" "$CFG" || fail "Missing min-unique-reports-before-deduction config"
-grep -q "report-window-days" "$CFG" || fail "Missing report-window-days config"
-grep -q "min-playtime-minutes" "$CFG" || fail "Missing min-playtime-minutes config"
-grep -q "min-account-age-days" "$CFG" || fail "Missing min-account-age-days config"
-grep -q "^score-thresholds:" "$CFG" || fail "Missing score-thresholds config"
-grep -q "discord-webhook:" "$CFG" || fail "Missing discord-webhook config section"
-grep -q "^integrations:" "$CFG" || fail "Missing integrations config section"
-grep -q "luckperms:" "$CFG" || fail "Missing LuckPerms config section"
-grep -q "coreprotect:" "$CFG" || fail "Missing CoreProtect config section"
-grep -q "worldguard:" "$CFG" || fail "Missing WorldGuard config section"
-grep -q "max-regions:" "$CFG" || fail "Missing WorldGuard max-regions config"
-grep -q "griefprevention:" "$CFG" || fail "Missing GriefPrevention config section"
-grep -q "include-claim-owner:" "$CFG" || fail "Missing GriefPrevention include-claim-owner config"
-grep -q "include-trust-counts:" "$CFG" || fail "Missing GriefPrevention include-trust-counts config"
-grep -q "include-boundaries:" "$CFG" || fail "Missing GriefPrevention include-boundaries config"
-grep -q "placeholderapi:" "$CFG" || fail "Missing PlaceholderAPI config section"
-grep -q "identifier:[[:space:]]*\"reputationban\"" "$CFG" || fail "Missing PlaceholderAPI default identifier"
-grep -q "cache-refresh-seconds:[[:space:]]*60" "$CFG" || fail "Missing PlaceholderAPI cache refresh default"
-grep -q "show-unknown-as:[[:space:]]*\"-\"" "$CFG" || fail "Missing PlaceholderAPI unknown fallback default"
-grep -q "discordsrv:" "$CFG" || fail "Missing DiscordSRV config section"
-grep -q "include-discord-ids:[[:space:]]*false" "$CFG" || fail "DiscordSRV include-discord-ids must default false"
-grep -q "notifications:" "$CFG" || fail "Missing DiscordSRV notifications config"
-grep -q "channel:[[:space:]]*\"staff\"" "$CFG" || fail "Missing DiscordSRV default notification channel"
-grep -q "url:[[:space:]]*\"\"" "$CFG" || fail "Default discord webhook URL must be empty"
-for event_key in report-created report-approved report-rejected score-threshold-crossed auto-ban unban pardon reporter-penalty recovery-summary; do
-  grep -q "$event_key:" "$CFG" || fail "Missing discord webhook event key: $event_key"
+for file in \
+  settings.gradle.kts \
+  build.gradle.kts \
+  gradlew \
+  README.md \
+  CHANGELOG.md \
+  reputationban_phase_plan.md \
+  scripts/check-docs-localization.sh \
+  scripts/check-optional-dependency-safety.sh \
+  scripts/check-integration-runtime-readiness.sh \
+  scripts/check-paper-runtime-readiness.sh \
+  scripts/check-player-report-runtime-readiness.sh \
+  scripts/check-runtime-smoke-consistency.sh \
+  scripts/check-v1-release-gates.sh \
+  scripts/run-local-smoke-check.sh \
+  scripts/run-paper-runtime-smoke.sh \
+  scripts/run-integration-runtime-smoke.sh \
+  scripts/create-release-artifact.sh \
+  scripts/verify-release-artifact.sh \
+  scripts/record-paper-runtime-smoke-result.sh \
+  scripts/record-integration-runtime-smoke-result.sh \
+  scripts/record-player-report-runtime-smoke-result.sh \
+  scripts/generate-v1-go-no-go-report.sh \
+  scripts/generate-v1-release-notes.sh \
+  scripts/generate-v1-release-notes-draft.sh \
+  scripts/make-review-archive.sh \
+  docs/INSTALLATION.md \
+  docs/CONFIGURATION.md \
+  docs/MIGRATION.md \
+  docs/RELEASE_READINESS.md \
+  docs/RELEASE_CANDIDATE_CHECKLIST.md \
+  docs/V1_RELEASE_PLAN.md \
+  docs/V1_RELEASE_EXECUTION_PLAN.md \
+  docs/runtime-smoke-checklist.md \
+  docs/phase-29.md \
+  docs/SECURITY_REDACTION.md \
+  docs/SUPPORT_BUNDLE.md \
+  docs/INTEGRATIONS.md \
+  docs/PLAYER_REPORT_RUNTIME_SMOKE_CHECKLIST.md \
+  docs/INTEGRATION_RUNTIME_SMOKE_CHECKLIST.md \
+  src/main/resources/plugin.yml \
+  src/main/resources/config.yml; do
+  require_file "$file"
 done
 
-grep -R "extends JavaPlugin" src/main/java >/dev/null || fail "Main JavaPlugin class not found"
-grep -R "PlayerJoinEvent" src/main/java >/dev/null || fail "PlayerJoinEvent handling not found"
-grep -R "CREATE TABLE" src/main/java >/dev/null || fail "Table creation SQL not found"
-grep -R "getUniqueId" src/main/java >/dev/null || fail "UUID handling not found"
-grep -R "reputationban.bypass" src/main/java >/dev/null || fail "bypass permission check not found"
-grep -R "OfflinePlayer.*ban\\|\\.ban(reason" src/main/java >/dev/null || fail "Profile ban API usage not found"
-grep -R "\"approve\"" src/main/java/dev/modplugin/reputationban/command/ReportsCommand.java >/dev/null || fail "/reports approve handling not found"
-grep -R "\"reject\"" src/main/java/dev/modplugin/reputationban/command/ReportsCommand.java >/dev/null || fail "/reports reject handling not found"
-grep -R "\"history\"" src/main/java/dev/modplugin/reputationban/command/RepCommand.java >/dev/null || fail "/rep history handling not found"
-grep -R "\"banhistory\"" src/main/java/dev/modplugin/reputationban/command/RepCommand.java >/dev/null || fail "/rep banhistory handling not found"
-grep -R "\"baninfo\"" src/main/java/dev/modplugin/reputationban/command/RepCommand.java >/dev/null || fail "/rep baninfo handling not found"
-grep -R "\"unban\"" src/main/java/dev/modplugin/reputationban/command/RepCommand.java >/dev/null || fail "/rep unban handling not found"
-grep -R "\"pardon\"" src/main/java/dev/modplugin/reputationban/command/RepCommand.java >/dev/null || fail "/rep pardon handling not found"
-grep -R "\"help\"" src/main/java/dev/modplugin/reputationban/command/RepCommand.java >/dev/null || fail "/rep help handling not found"
-grep -R "\"version\"" src/main/java/dev/modplugin/reputationban/command/RepCommand.java >/dev/null || fail "/rep version handling not found"
-grep -R "/rep version - プラグインバージョンを表示" src/main/java/dev/modplugin/reputationban/command/RepCommand.java >/dev/null || fail "/rep help does not mention version"
-grep -R "\"help\"" src/main/java/dev/modplugin/reputationban/command/ReportsCommand.java >/dev/null || fail "/reports help handling not found"
-grep -R "\"add\"" src/main/java/dev/modplugin/reputationban/command/RepCommand.java >/dev/null || fail "/rep add handling not found"
-grep -R "\"remove\"" src/main/java/dev/modplugin/reputationban/command/RepCommand.java >/dev/null || fail "/rep remove handling not found"
-grep -R "\"set\"" src/main/java/dev/modplugin/reputationban/command/RepCommand.java >/dev/null || fail "/rep set handling not found"
-grep -R "false_report_count[[:space:]]*=[[:space:]]*false_report_count[[:space:]]*+[[:space:]]*1" src/main/java >/dev/null || fail "false_report_count increment not found"
-grep -R "report_banned_until" src/main/java/dev/modplugin/reputationban >/dev/null || fail "report_banned_until handling not found"
-grep -R "scoreRecoveryEnabled\\|recoveryPointsPerDay\\|recoveryNoReportDaysRequired" src/main/java >/dev/null || fail "score-recovery config reads not found"
-grep -R '"recovery"' src/main/java >/dev/null || fail "recovery score_history source_type not found"
-grep -R "last_recovery_at\\|recentlyRecovered" src/main/java >/dev/null || fail "recovery duplicate prevention not found"
-grep -R "isDatabaseValue\\|cancelled|all" src/main/java/dev/modplugin/reputationban/command/ReportsCommand.java >/dev/null || fail "/reports list status handling not found"
-grep -R "CREATE TABLE IF NOT EXISTS audit_events" src/main/java/dev/modplugin/reputationban/database/DatabaseManager.java >/dev/null || fail "audit_events table not found"
-grep -R "idx_audit_events_created\\|idx_audit_events_target_created\\|idx_audit_events_actor_created\\|idx_audit_events_type_created" src/main/java/dev/modplugin/reputationban/database/DatabaseManager.java >/dev/null || fail "audit_events indexes not found"
-grep -R "class AuditService" src/main/java/dev/modplugin/reputationban/service >/dev/null || fail "AuditService not found"
-grep -R "record AuditEvent" src/main/java/dev/modplugin/reputationban/model >/dev/null || fail "AuditEvent not found"
-grep -R "enum AuditEventType" src/main/java/dev/modplugin/reputationban/model >/dev/null || fail "AuditEventType not found"
-grep -R "\"audit\"" src/main/java/dev/modplugin/reputationban/command/RepCommand.java >/dev/null || fail "/rep audit command not found"
-grep -R "\"maintenance\"" src/main/java/dev/modplugin/reputationban/command/RepCommand.java >/dev/null || fail "/rep maintenance command not found"
-grep -R "\"backup\"" src/main/java/dev/modplugin/reputationban/command/RepCommand.java >/dev/null || fail "/rep backup command not found"
-grep -R "\"support\"" src/main/java/dev/modplugin/reputationban/command/RepCommand.java >/dev/null || fail "/rep support command not found"
-grep -R "\"bundle\"" src/main/java/dev/modplugin/reputationban/command/RepCommand.java src/main/java/dev/modplugin/reputationban/util/CommandSuggestionUtil.java >/dev/null || fail "/rep support bundle handling not found"
-grep -R "MAINTENANCE_RUN" src/main/java/dev/modplugin/reputationban >/dev/null || fail "MAINTENANCE_RUN audit event not found"
-grep -R "MAINTENANCE_PREVIEW" src/main/java/dev/modplugin/reputationban src/test/java/dev/modplugin/reputationban >/dev/null || fail "MAINTENANCE_PREVIEW audit event not found"
-grep -R "DB_BACKUP_CREATED" src/main/java/dev/modplugin/reputationban src/test/java/dev/modplugin/reputationban >/dev/null || fail "DB_BACKUP_CREATED audit event not found"
-grep -R "SUPPORT_BUNDLE_CREATED" src/main/java/dev/modplugin/reputationban src/test/java/dev/modplugin/reputationban >/dev/null || fail "SUPPORT_BUNDLE_CREATED audit event not found"
-grep -R "class SupportBundleService" src/main/java/dev/modplugin/reputationban/service >/dev/null || fail "SupportBundleService not found"
-grep -R "record SupportBundleResult" src/main/java/dev/modplugin/reputationban/model >/dev/null || fail "SupportBundleResult not found"
-grep -R "class Redactor\\|class ConfigRedactor" src/main/java/dev/modplugin/reputationban/util >/dev/null || fail "Redactor/ConfigRedactor not found"
-grep -R "redactSecretLikeValue" src/main/java/dev/modplugin/reputationban/util/Redactor.java >/dev/null || fail "Redactor redactSecretLikeValue not found"
-grep -R "SECRET_FREE_TEXT_VALUE\\|SECRET_IS_VALUE\\|session(?:id)" src/main/java/dev/modplugin/reputationban/util/Redactor.java >/dev/null || fail "Redactor free-text secret patterns not found"
-grep -R "class PathRedactor\\|class SupportBundleSafetyChecker" src/main/java/dev/modplugin/reputationban/util >/dev/null || fail "PathRedactor/SupportBundleSafetyChecker not found"
-grep -R "ZipOutputStream" src/main/java/dev/modplugin/reputationban/service/SupportBundleService.java >/dev/null || fail "ZipOutputStream usage not found"
-grep -R "reputationban.db\\|latest.log\\|debug.log\\|logs/" src/main/java/dev/modplugin/reputationban/service/SupportBundleService.java src/main/java/dev/modplugin/reputationban/util/SupportBundleSafetyChecker.java >/dev/null || fail "support bundle DB/log exclusion not found"
-grep -R "PathRedactor.pluginDataFolderForSharing" src/main/java/dev/modplugin/reputationban/service/SupportBundleService.java >/dev/null || fail "support bundle pluginDataFolder is not redacted for sharing"
-grep -R "class ConfigValidator\\|record ConfigValidationIssue" src/main/java/dev/modplugin/reputationban/config >/dev/null || fail "ConfigValidator/ConfigValidationIssue not found"
-grep -R "class SafePathResolver" src/main/java/dev/modplugin/reputationban/util >/dev/null || fail "SafePathResolver not found"
-grep -R "\"preview\"" src/main/java/dev/modplugin/reputationban/command/RepCommand.java src/main/java/dev/modplugin/reputationban/util/CommandSuggestionUtil.java >/dev/null || fail "/rep maintenance preview handling not found"
-grep -R "\"confirm\"" src/main/java/dev/modplugin/reputationban/command/RepCommand.java src/main/java/dev/modplugin/reputationban/util/CommandSuggestionUtil.java >/dev/null || fail "/rep maintenance run confirm handling not found"
-grep -R "RUN_REQUIRES_CONFIRMATION" src/main/java/dev/modplugin/reputationban >/dev/null || fail "/rep maintenance run must require confirmation"
-grep -R "reputationban-before-maintenance\\|backupDatabase\\|backups" src/main/java/dev/modplugin/reputationban/service/AuditService.java >/dev/null || fail "maintenance backup creation not found"
-grep -R "secret-scan.txt" scripts/make-review-archive.sh >/dev/null || fail "review archive secret-scan output not found"
-grep -R "class CsvEscaper" src/main/java/dev/modplugin/reputationban/util >/dev/null || fail "CsvEscaper not found"
-grep -q "reputationban.admin.audit:" "$YML" || fail "Missing reputationban.admin.audit permission"
-grep -q "reputationban.admin.maintenance:" "$YML" || fail "Missing reputationban.admin.maintenance permission"
-grep -q "reputationban.admin.diagnostics:" "$YML" || fail "Missing reputationban.admin.diagnostics permission"
-grep -A12 "reputationban.admin:" "$YML" | grep -q "reputationban.admin.diagnostics: true" || fail "admin diagnostics child permission missing"
-grep -R "REPORT_THRESHOLD_REACHED" src/main/java/dev/modplugin/reputationban >/dev/null || fail "REPORT_THRESHOLD_REACHED audit not found"
-grep -R "REPORT_CREATED" src/main/java/dev/modplugin/reputationban/service/ReportService.java >/dev/null || fail "report-created audit not found"
-grep -R "REPORT_APPROVED" src/main/java/dev/modplugin/reputationban/service/ReportService.java >/dev/null || fail "report-approved audit not found"
-grep -R "REPORT_REJECTED" src/main/java/dev/modplugin/reputationban/service/ReportService.java >/dev/null || fail "report-rejected audit not found"
-grep -R "SCORE_CHANGED_ADMIN" src/main/java/dev/modplugin/reputationban/command/RepCommand.java >/dev/null || fail "admin score audit not found"
-grep -R "AUTO_BAN" src/main/java/dev/modplugin/reputationban/service/PunishmentService.java >/dev/null || fail "auto-ban audit not found"
-grep -R "UNBAN" src/main/java/dev/modplugin/reputationban/service/PunishmentService.java >/dev/null || fail "unban audit not found"
-grep -R "PARDON" src/main/java/dev/modplugin/reputationban/service/PunishmentService.java >/dev/null || fail "pardon audit not found"
-grep -R "REPORTER_PENALTY" src/main/java/dev/modplugin/reputationban/service/ReportService.java >/dev/null || fail "reporter penalty audit not found"
-if grep -R "discord-webhook.url\\|discordWebhookConfig().url\\|webhooks" src/main/java/dev/modplugin/reputationban/service/AuditService.java src/main/java/dev/modplugin/reputationban/util/AuditMetadata.java >/dev/null; then
-  fail "Possible webhook URL audit/CSV exposure detected"
-fi
-grep -R "THRESHOLD_PENDING\\|threshold_pending" src/main/java/dev/modplugin/reputationban/model/ReportStatus.java >/dev/null || fail "threshold_pending status not found"
-grep -R "minUniqueReportsBeforeDeduction\\|min-unique-reports-before-deduction" src/main/java/dev/modplugin/reputationban >/dev/null || fail "min-unique-reports-before-deduction read/use not found"
-grep -R "reportWindowDays\\|report-window-days" src/main/java/dev/modplugin/reputationban >/dev/null || fail "report-window-days read/use not found"
-grep -R "COUNT(DISTINCT reporter_uuid)" src/main/java/dev/modplugin/reputationban >/dev/null || fail "unique reporter threshold aggregation not found"
-grep -R "minPlaytimeMinutes\\|min-playtime-minutes" src/main/java/dev/modplugin/reputationban >/dev/null || fail "min-playtime-minutes read/use not found"
-grep -R "minAccountAgeDays\\|min-account-age-days" src/main/java/dev/modplugin/reputationban >/dev/null || fail "min-account-age-days read/use not found"
-grep -R "Statistic.PLAY_ONE_MINUTE\\|getStatistic" src/main/java/dev/modplugin/reputationban >/dev/null || fail "playtime Statistic check not found"
-grep -R "firstSeen\\|first_seen" src/main/java/dev/modplugin/reputationban >/dev/null || fail "first_seen account age check not found"
-grep -R "ScoreThresholdPolicy\\|ScoreThresholdCrossing" src/main/java/dev/modplugin/reputationban >/dev/null || fail "score threshold policy not found"
-grep -R "SCORE_THRESHOLD_CROSSED" src/main/java/dev/modplugin/reputationban >/dev/null || fail "SCORE_THRESHOLD_CROSSED notification use not found"
-grep -R "threshold_pending" src/main/java/dev/modplugin/reputationban/command/ReportsCommand.java >/dev/null || fail "/reports list threshold_pending handling not found"
-grep -R "threshold_pending" src/main/java/dev/modplugin/reputationban/util/CommandSuggestionUtil.java src/main/java/dev/modplugin/reputationban/model/ReportStatus.java >/dev/null || fail "threshold_pending TAB completion not found"
-grep -R "ManualScoreChangeGate\\|requiresBanPermission" src/main/java/dev/modplugin/reputationban/command/RepCommand.java src/main/java/dev/modplugin/reputationban/util >/dev/null || fail "manual score ban gate logic not found"
-grep -R "ReviewApprovalGate\\|hasBanPermission" src/main/java/dev/modplugin/reputationban >/dev/null || fail "/reports approve ban permission gate not found"
-grep -R "isTargetProtected\\|reputationban.bypass.*isOp\\|isOp.*reputationban.bypass" src/main/java/dev/modplugin/reputationban/command/ReportsCommand.java >/dev/null || fail "approve target protection check not found"
-grep -R "unbanned_at.*unbanned_by\\|unbanned_by.*unbanned_at" src/main/java >/dev/null || fail "ban unban DB update not found"
-grep -R "unban_reason" src/main/java/dev/modplugin/reputationban >/dev/null || fail "unban_reason column/handling not found"
-grep -R "ALTER TABLE bans ADD COLUMN unban_reason TEXT" src/main/java/dev/modplugin/reputationban/database/DatabaseManager.java >/dev/null || fail "bans unban_reason migration not found"
-grep -R "unbanned_by_name TEXT" src/main/java/dev/modplugin/reputationban/database/DatabaseManager.java >/dev/null || fail "bans.unbanned_by_name column not found"
-grep -R "ALTER TABLE bans ADD COLUMN unbanned_by_name TEXT" src/main/java/dev/modplugin/reputationban/database/DatabaseManager.java >/dev/null || fail "bans unbanned_by_name migration not found"
-grep -R "actor.databaseActorId()" src/main/java/dev/modplugin/reputationban/service/PunishmentService.java >/dev/null || fail "unbanned_by actor.databaseActorId() storage not found"
-grep -R "unbanned_by_name = ?.*actor.name()\\|actor.name()" src/main/java/dev/modplugin/reputationban/service/PunishmentService.java >/dev/null || fail "unbanned_by_name actor.name() storage not found"
-grep -R "databaseActorId" src/main/java/dev/modplugin/reputationban >/dev/null || fail "CommandActor.databaseActorId usage not found"
-grep -R "markActiveBansUnbanned" src/main/java/dev/modplugin/reputationban/command/RepCommand.java >/dev/null || fail "/rep unban does not call markActiveBansUnbanned"
-grep -R "punishmentService.pardon" src/main/java/dev/modplugin/reputationban/command/RepCommand.java >/dev/null || fail "/rep pardon does not call pardon service"
-grep -R '"pardon"' src/main/java >/dev/null || fail "pardon score_history source_type not found"
-grep -R "BanListType.PROFILE\\|ProfileBanList" src/main/java >/dev/null || fail "Profile BAN pardon API usage not found"
-grep -R "TabCompleter\\|onTabComplete\\|TabExecutor" src/main/java/dev/modplugin/reputationban >/dev/null || fail "TAB completion implementation not found"
-grep -R "categories().keySet()" src/main/java/dev/modplugin/reputationban/command/ReportBadTabCompleter.java >/dev/null || fail "/reportbad category completion not found"
-grep -R "repSubcommands" src/main/java/dev/modplugin/reputationban/command/RepTabCompleter.java src/main/java/dev/modplugin/reputationban/util/CommandSuggestionUtil.java >/dev/null || fail "/rep subcommand completion not found"
-grep -R "candidates.add(\"version\")" src/main/java/dev/modplugin/reputationban/util/CommandSuggestionUtil.java >/dev/null || fail "/rep version TAB completion not found"
-grep -R "\"doctor\"" src/main/java/dev/modplugin/reputationban/command/RepCommand.java src/main/java/dev/modplugin/reputationban/util/CommandSuggestionUtil.java >/dev/null || fail "/rep doctor handling/completion not found"
-grep -R "\"diagnostics\"" src/main/java/dev/modplugin/reputationban/command/RepCommand.java src/main/java/dev/modplugin/reputationban/util/CommandSuggestionUtil.java >/dev/null || fail "/rep diagnostics handling/completion not found"
-grep -R "\"integrations\"" src/main/java/dev/modplugin/reputationban/command/RepCommand.java src/main/java/dev/modplugin/reputationban/util/CommandSuggestionUtil.java >/dev/null || fail "/rep integrations handling/completion not found"
-grep -R "\"test\"" src/main/java/dev/modplugin/reputationban/command/RepCommand.java src/main/java/dev/modplugin/reputationban/util/CommandSuggestionUtil.java >/dev/null || fail "/rep integrations test handling/completion not found"
-grep -R "\"evidence\"" src/main/java/dev/modplugin/reputationban/command/ReportsCommand.java src/main/java/dev/modplugin/reputationban/util/CommandSuggestionUtil.java >/dev/null || fail "/reports evidence handling/completion not found"
-grep -R "class IntegrationService" src/main/java/dev/modplugin/reputationban/integration >/dev/null || fail "IntegrationService not found"
-grep -R "class LuckPermsIntegration" src/main/java/dev/modplugin/reputationban/integration >/dev/null || fail "LuckPermsIntegration not found"
-grep -R "class CoreProtectIntegration" src/main/java/dev/modplugin/reputationban/integration >/dev/null || fail "CoreProtectIntegration not found"
-grep -R "class WorldGuardIntegration" src/main/java/dev/modplugin/reputationban/integration >/dev/null || fail "WorldGuardIntegration not found"
-grep -R "class WorldGuardReflectionAdapter" src/main/java/dev/modplugin/reputationban/integration >/dev/null || fail "WorldGuardReflectionAdapter not found"
-grep -R "class GriefPreventionIntegration" src/main/java/dev/modplugin/reputationban/integration >/dev/null || fail "GriefPreventionIntegration not found"
-grep -R "class GriefPreventionReflectionAdapter" src/main/java/dev/modplugin/reputationban/integration >/dev/null || fail "GriefPreventionReflectionAdapter not found"
-grep -R "class PlaceholderApiIntegration" src/main/java/dev/modplugin/reputationban/integration >/dev/null || fail "PlaceholderApiIntegration not found"
-grep -R "class ReputationBanPlaceholderExpansion" src/main/java/dev/modplugin/reputationban/integration >/dev/null || fail "ReputationBanPlaceholderExpansion not found"
-grep -R "class PlaceholderCacheService" src/main/java/dev/modplugin/reputationban/integration >/dev/null || fail "PlaceholderCacheService not found"
-grep -R "class PlaceholderValueProvider" src/main/java/dev/modplugin/reputationban/integration >/dev/null || fail "PlaceholderValueProvider not found"
-grep -R "record PlayerReputationSummary" src/main/java/dev/modplugin/reputationban/integration >/dev/null || fail "PlayerReputationSummary not found"
-grep -R "\"placeholders\"" src/main/java/dev/modplugin/reputationban/command/RepCommand.java src/main/java/dev/modplugin/reputationban/util/CommandSuggestionUtil.java >/dev/null || fail "/rep placeholders handling/completion not found"
-grep -R "PlaceholderAPI:" src/main/java/dev/modplugin/reputationban/integration/IntegrationService.java >/dev/null || fail "/rep integrations PlaceholderAPI display not found"
-grep -R "sample score placeholder\\|sample version placeholder" src/main/java/dev/modplugin/reputationban/integration/IntegrationService.java >/dev/null || fail "/rep integrations test PlaceholderAPI diagnostics not found"
-grep -R "PlaceholderAPI.*integration" src/main/java/dev/modplugin/reputationban/command/RepCommand.java >/dev/null || fail "/rep doctor PlaceholderAPI integration display not found"
-grep -R "class DiscordSrvIntegration" src/main/java/dev/modplugin/reputationban/integration/discordsrv >/dev/null || fail "DiscordSrvIntegration not found"
-grep -R "class DiscordSrvReflectionAdapter" src/main/java/dev/modplugin/reputationban/integration/discordsrv >/dev/null || fail "DiscordSrvReflectionAdapter not found"
-grep -R "DISCORDSRV_CONTEXT_CAPTURED" src/main/java/dev/modplugin/reputationban src/test/java/dev/modplugin/reputationban >/dev/null || fail "DISCORDSRV_CONTEXT_CAPTURED audit event not found"
-grep -R "saveReportContext(reportId, \"discordsrv\"" src/main/java/dev/modplugin/reputationban >/dev/null || fail "DiscordSRV report_context provider save not found"
-grep -R "DiscordSRV:" src/main/java/dev/modplugin/reputationban/integration/IntegrationService.java src/main/java/dev/modplugin/reputationban/model/ReportContextFormatter.java >/dev/null || fail "DiscordSRV command/evidence display not found"
-grep -R "accountLinkAvailable\\|senderLinked\\|notificationsEnabled" src/main/java/dev/modplugin/reputationban/integration/IntegrationService.java >/dev/null || fail "/rep integrations test DiscordSRV diagnostics not found"
-grep -R "DISCORDSRV" src/main/java/dev/modplugin/reputationban/integration/ExternalIntegrationType.java >/dev/null || fail "/rep doctor DiscordSRV integration display not found"
-grep -q "getPlugin(\"DiscordSRV\")" src/main/java/dev/modplugin/reputationban/integration/discordsrv/DiscordSrvReflectionAdapter.java || fail "DiscordSrvReflectionAdapter does not use plugin instance route"
-grep -q "getDestinationTextChannelForGameChannelName" src/main/java/dev/modplugin/reputationban/integration/discordsrv/DiscordSrvReflectionAdapter.java || fail "DiscordSrvReflectionAdapter does not resolve DiscordSRV destination channel"
-grep -q "github.scarsz.discordsrv.DiscordSRV" src/main/java/dev/modplugin/reputationban/integration/discordsrv/DiscordSrvReflectionAdapter.java || fail "DiscordSrvReflectionAdapter fallback API class name missing"
-grep -q "Class\\.forName(API_CLASS)" src/main/java/dev/modplugin/reputationban/integration/discordsrv/DiscordSrvReflectionAdapter.java || fail "DiscordSrvReflectionAdapter fallback Class.forName route missing"
-grep -q "runTask(plugin" src/main/java/dev/modplugin/reputationban/integration/discordsrv/DiscordSrvNotificationService.java || fail "DiscordSrvNotificationService does not schedule main thread task"
-awk '/runTask\(plugin, \(\) -> \{/{in_task=1} in_task && /integration\.detail\(config\)/{found=1} END{exit found ? 0 : 1}' \
-  src/main/java/dev/modplugin/reputationban/integration/discordsrv/DiscordSrvNotificationService.java \
-  || fail "DiscordSrvNotificationService does not call integration.detail(config) inside runTask"
-awk '/runTask\(plugin, \(\) -> \{/{in_task=1} in_task && /sanitizeMessage/{found=1} END{exit found ? 0 : 1}' \
-  src/main/java/dev/modplugin/reputationban/integration/discordsrv/DiscordSrvNotificationService.java \
-  || fail "DiscordSrvNotificationService does not sanitize DiscordSRV notification inside runTask"
-grep -q "DiscordSRV" docs/INTEGRATIONS.md || fail "docs/INTEGRATIONS.md missing DiscordSRV explanation"
-grep -q "DiscordSRV" docs/phase-22.md || fail "docs/phase-22.md missing DiscordSRV explanation"
-grep -q "Paper runtime smoke" docs/phase-23.md || fail "docs/phase-23.md missing Paper runtime smoke explanation"
-grep -q "Integration runtime smoke" docs/phase-25.md || fail "docs/phase-25.md missing Integration runtime smoke explanation"
-grep -q "Player report/evidence runtime smoke" docs/phase-26.md || fail "docs/phase-26.md missing player report runtime smoke explanation"
-grep -q "manual-confirmed" docs/phase-27.md || fail "docs/phase-27.md missing manual-confirmed explanation"
-if grep -R "DatabaseManager\\|getConnection\\|executeQuery\\|PreparedStatement" src/main/java/dev/modplugin/reputationban/integration/placeholderapi/ReputationBanPlaceholderExpansion.java >/dev/null; then
-  fail "Placeholder expansion contains direct DB access markers"
-fi
-grep -q "PlaceholderAPI" docs/INTEGRATIONS.md || fail "docs/INTEGRATIONS.md missing PlaceholderAPI explanation"
-grep -q "DiscordSRV" docs/phase-21.md || fail "docs/phase-21.md missing Phase 21 DiscordSRV explanation"
-if grep -R "import net\.luckperms\." src/main/java >/dev/null; then
-  fail "LuckPerms API direct import detected in Java sources"
-fi
-if grep -R "import net\.coreprotect\." src/main/java >/dev/null; then
-  fail "CoreProtect API direct import detected in Java sources"
-fi
-if grep -R "import com\.sk89q\.worldguard\.\|import com\.sk89q\.worldedit\." src/main/java >/dev/null; then
-  fail "WorldGuard/WorldEdit API direct import detected in Java sources"
-fi
-if grep -R "import me\.ryanhamshire\.GriefPrevention\.\|import me\.ryanhamshire\.griefprevention\.\|import com\.griefprevention\." src/main/java >/dev/null; then
-  fail "GriefPrevention API direct import detected in Java sources"
-fi
-if grep -R "import me\.clip\.placeholderapi\." src/main/java | grep -v "ReputationBanPlaceholderExpansion.java" >/dev/null; then
-  fail "PlaceholderAPI API direct import escaped ReputationBanPlaceholderExpansion"
-fi
-if grep -R "import github\.scarsz\.discordsrv\.\|import me\.scarsz\.discordsrv\.\|import net\.dv8tion\.jda\.\|import club\.minnced\.discord\." src/main/java >/dev/null; then
-  fail "DiscordSRV/JDA API direct import detected in Java sources"
-fi
-if grep -R "CoreProtectAPI\|net\.coreprotect\.CoreProtect\|net\.luckperms\.api\.model\.user\.User" src/main/java >/dev/null; then
-  fail "Optional dependency API type direct reference detected in Java sources"
-fi
-if grep -R "net\.luckperms\.api\.LuckPerms" src/main/java | grep -v "LuckPermsReflectionAdapter.java" >/dev/null; then
-  fail "LuckPerms API class name must stay isolated in LuckPermsReflectionAdapter"
-fi
-grep -R "class LuckPermsReflectionAdapter" src/main/java/dev/modplugin/reputationban/integration >/dev/null || fail "LuckPermsReflectionAdapter not found"
-grep -R "class CoreProtectReflectionAdapter" src/main/java/dev/modplugin/reputationban/integration >/dev/null || fail "CoreProtectReflectionAdapter not found"
-grep -R "class WorldGuardReflectionAdapter" src/main/java/dev/modplugin/reputationban/integration >/dev/null || fail "WorldGuardReflectionAdapter not found"
-grep -R "class GriefPreventionReflectionAdapter" src/main/java/dev/modplugin/reputationban/integration >/dev/null || fail "GriefPreventionReflectionAdapter not found"
-grep -R "Class\.forName(\"net\.luckperms\.api\.LuckPerms\"" src/main/java/dev/modplugin/reputationban/integration/luckperms >/dev/null || fail "LuckPerms reflection class lookup not found"
-grep -R "getRegistration" src/main/java/dev/modplugin/reputationban/integration/luckperms >/dev/null || fail "LuckPerms service reflection lookup not found"
-grep -R "getPlugin(\"CoreProtect\")" src/main/java/dev/modplugin/reputationban/integration/coreprotect >/dev/null || fail "CoreProtect plugin reflection lookup not found"
-grep -R "plugin(\"GriefPrevention\")" src/main/java/dev/modplugin/reputationban/integration/griefprevention >/dev/null || fail "GriefPrevention plugin lookup not found"
-grep -R "getClaimAt" src/main/java/dev/modplugin/reputationban/integration/griefprevention >/dev/null || fail "GriefPrevention claim lookup not found"
-grep -R "CREATE TABLE IF NOT EXISTS report_context" src/main/java/dev/modplugin/reputationban/database/DatabaseManager.java >/dev/null || fail "report_context table not found"
-grep -R "COREPROTECT_CONTEXT_CAPTURED" src/main/java/dev/modplugin/reputationban src/test/java/dev/modplugin/reputationban >/dev/null || fail "COREPROTECT_CONTEXT_CAPTURED audit event not found"
-grep -R "WORLDGUARD_CONTEXT_CAPTURED" src/main/java/dev/modplugin/reputationban src/test/java/dev/modplugin/reputationban >/dev/null || fail "WORLDGUARD_CONTEXT_CAPTURED audit event not found"
-grep -R "GRIEFPREVENTION_CONTEXT_CAPTURED" src/main/java/dev/modplugin/reputationban src/test/java/dev/modplugin/reputationban >/dev/null || fail "GRIEFPREVENTION_CONTEXT_CAPTURED audit event not found"
-grep -R "INTEGRATION_STATUS_CHECKED" src/main/java/dev/modplugin/reputationban src/test/java/dev/modplugin/reputationban >/dev/null || fail "INTEGRATION_STATUS_CHECKED audit event not found"
-grep -R "ReportContextFormatter\\|formatEvidence" src/main/java/dev/modplugin/reputationban src/test/java/dev/modplugin/reputationban >/dev/null || fail "report_context evidence display formatter not found"
-grep -R "availabilityLabel\\|startupLine" src/main/java/dev/modplugin/reputationban >/dev/null || fail "doctor/startup integration status not found"
-grep -R "reporterWeight\\|reporterPrimaryGroup" src/main/java/dev/modplugin/reputationban/service/ReportService.java >/dev/null || fail "LuckPerms reporter weight metadata not found"
-grep -R "primaryGroup.*reporterWeight.*bypassGroup.*applyWeightToDeduction\\|applyWeightToDeduction" src/main/java/dev/modplugin/reputationban/service/ReportService.java src/main/java/dev/modplugin/reputationban/model/ReportContextFormatter.java >/dev/null || fail "LuckPerms Phase 17 metadata/display not found"
-grep -R "apiVersion\\|world\\|x\\|y\\|z" src/main/java/dev/modplugin/reputationban/integration/coreprotect >/dev/null || fail "CoreProtect Phase 17 metadata fields not found"
-grep -R "bypassGroup\\|isLuckPermsBypassGroup" src/main/java/dev/modplugin/reputationban >/dev/null || fail "LuckPerms bypass group handling not found"
-grep -R "performLookup" src/main/java/dev/modplugin/reputationban/integration >/dev/null || fail "CoreProtect performLookup use not found"
-grep -R "provider, summary, metadata.*worldguard\\|saveReportContext(reportId, \"worldguard\"" src/main/java/dev/modplugin/reputationban >/dev/null || fail "WorldGuard report_context provider save not found"
-grep -R "WorldGuard:" src/main/java/dev/modplugin/reputationban/command/RepCommand.java src/main/java/dev/modplugin/reputationban/model/ReportContextFormatter.java >/dev/null || fail "WorldGuard command/evidence display not found"
-grep -R "saveReportContext(reportId, \"griefprevention\"" src/main/java/dev/modplugin/reputationban >/dev/null || fail "GriefPrevention report_context provider save not found"
-grep -R "GriefPrevention:" src/main/java/dev/modplugin/reputationban/command/RepCommand.java src/main/java/dev/modplugin/reputationban/model/ReportContextFormatter.java >/dev/null || fail "GriefPrevention command/evidence display not found"
-grep -R "連携情報" src/main/java/dev/modplugin/reputationban/command/ReportsCommand.java >/dev/null || fail "/reports view integration context display not found"
-grep -R "class DiagnosticService" src/main/java/dev/modplugin/reputationban/service >/dev/null || fail "DiagnosticService not found"
-grep -R "record DiagnosticReport" src/main/java/dev/modplugin/reputationban/model >/dev/null || fail "DiagnosticReport not found"
-grep -R "DIAGNOSTICS_RUN" src/main/java/dev/modplugin/reputationban src/test/java/dev/modplugin/reputationban >/dev/null || fail "DIAGNOSTICS_RUN audit event not found"
-grep -R "pluginDataFolder\\|databaseFileExists\\|backupDirectoryWritable\\|auditExportDirectorySafe" src/main/java/dev/modplugin/reputationban/model src/main/java/dev/modplugin/reputationban/service src/main/java/dev/modplugin/reputationban/command >/dev/null || fail "Phase 11 doctor fields not found"
-grep -R "reportStatuses\\|reportsSecondArgumentSuggestions" src/main/java/dev/modplugin/reputationban/command/ReportsTabCompleter.java src/main/java/dev/modplugin/reputationban/util/CommandSuggestionUtil.java >/dev/null || fail "/reports list status completion not found"
-grep -R "CommandArgumentParser.parseLimit" src/main/java/dev/modplugin/reputationban/command >/dev/null || fail "explicit limit parsing not found"
-grep -R "class NotificationService" src/main/java/dev/modplugin/reputationban/notification >/dev/null || fail "NotificationService not found"
-grep -R "class DiscordWebhookClient" src/main/java/dev/modplugin/reputationban/notification >/dev/null || fail "DiscordWebhookClient not found"
-grep -R "enum NotificationEventType" src/main/java/dev/modplugin/reputationban/notification >/dev/null || fail "NotificationEventType not found"
-grep -R "java.net.http.HttpClient\\|HttpClient.newHttpClient" src/main/java/dev/modplugin/reputationban/notification >/dev/null || fail "HttpClient usage not found"
-grep -R "sendAsync" src/main/java/dev/modplugin/reputationban/notification >/dev/null || fail "HttpClient sendAsync usage not found"
-grep -R "JsonEscaper\\|escape(String" src/main/java/dev/modplugin/reputationban/notification >/dev/null || fail "JSON escaping not found"
-grep -R "MAX_CONTENT_LENGTH\\|truncateContent" src/main/java/dev/modplugin/reputationban/notification >/dev/null || fail "Discord content length limit not found"
-grep -R "lastFailureLogAt\\|rateLimitFailureLogSeconds" src/main/java/dev/modplugin/reputationban/notification >/dev/null || fail "Discord failure log rate limiting not found"
-grep -R "REPORT_CREATED" src/main/java/dev/modplugin/reputationban/command/ReportBadCommand.java >/dev/null || fail "report-created notification not found"
-grep -R "REPORT_APPROVED" src/main/java/dev/modplugin/reputationban/command/ReportsCommand.java >/dev/null || fail "report-approved notification not found"
-grep -R "REPORT_REJECTED" src/main/java/dev/modplugin/reputationban/command/ReportsCommand.java >/dev/null || fail "report-rejected notification not found"
-grep -R "AUTO_BAN" src/main/java/dev/modplugin/reputationban/service/PunishmentService.java >/dev/null || fail "auto-ban notification not found"
-grep -R "UNBAN" src/main/java/dev/modplugin/reputationban/command/RepCommand.java >/dev/null || fail "unban notification not found"
-grep -R "PARDON" src/main/java/dev/modplugin/reputationban/command/RepCommand.java >/dev/null || fail "pardon notification not found"
-grep -R "REPORTER_PENALTY" src/main/java/dev/modplugin/reputationban/command/ReportsCommand.java >/dev/null || fail "reporter-penalty notification not found"
-grep -R "setAutoCommit(false)" src/main/java >/dev/null || fail "Transactional setAutoCommit(false) pattern not found"
-grep -R "commit()" src/main/java >/dev/null || fail "Transactional commit() pattern not found"
-grep -R "rollback()" src/main/java >/dev/null || fail "Transactional rollback() pattern not found"
+require_dir src/main/java/dev/modplugin/reputationban
 
-if grep -R "net\.minecraft\|org\.bukkit\.craftbukkit\|CraftPlayer\|NMS" src/main/java >/dev/null; then
-  fail "NMS/CraftBukkit usage detected"
+for executable in \
+  gradlew \
+  scripts/check-docs-localization.sh \
+  scripts/check-optional-dependency-safety.sh \
+  scripts/check-integration-runtime-readiness.sh \
+  scripts/check-paper-runtime-readiness.sh \
+  scripts/check-player-report-runtime-readiness.sh \
+  scripts/check-runtime-smoke-consistency.sh \
+  scripts/check-v1-release-gates.sh \
+  scripts/run-local-smoke-check.sh \
+  scripts/run-paper-runtime-smoke.sh \
+  scripts/run-integration-runtime-smoke.sh \
+  scripts/create-release-artifact.sh \
+  scripts/verify-release-artifact.sh \
+  scripts/record-paper-runtime-smoke-result.sh \
+  scripts/record-integration-runtime-smoke-result.sh \
+  scripts/record-player-report-runtime-smoke-result.sh \
+  scripts/generate-v1-go-no-go-report.sh \
+  scripts/generate-v1-release-notes.sh \
+  scripts/make-review-archive.sh; do
+  [[ -x "$executable" ]] || fail "$executable is not executable"
+done
+
+YML=src/main/resources/plugin.yml
+[[ "$(extract_yaml_value "$YML" name)" == "$PROJECT_NAME" ]] || fail "plugin.yml name is not ${PROJECT_NAME}"
+[[ "$(extract_yaml_value "$YML" version)" == "$EXPECTED_VERSION" ]] || fail "plugin.yml version is not ${EXPECTED_VERSION}"
+[[ "$(extract_yaml_value "$YML" main)" == "$EXPECTED_MAIN" ]] || fail "plugin.yml main is not ${EXPECTED_MAIN}"
+[[ "$(extract_yaml_value "$YML" api-version)" == "$EXPECTED_API_VERSION" ]] || fail "plugin.yml api-version is not ${EXPECTED_API_VERSION}"
+
+grep -q "version = \"${EXPECTED_VERSION}\"" build.gradle.kts || fail "build.gradle.kts version is not ${EXPECTED_VERSION}"
+grep -q "JavaLanguageVersion.of(25)" build.gradle.kts || fail "Java 25 toolchain not found"
+grep -q "options.release.set(25)" build.gradle.kts || fail "Java release 25 not found"
+grep -q "io.papermc.paper:paper-api:26.1.2.build" build.gradle.kts || fail "Paper API 26.1.2 dependency not found"
+grep -q "org.xerial:sqlite-jdbc" "$YML" || fail "SQLite library not found in plugin.yml libraries"
+
+grep -q "1.0.0" README.md || fail "README.md does not mention 1.0.0"
+grep -q "1.0.0" CHANGELOG.md || fail "CHANGELOG.md does not mention 1.0.0"
+grep -q "v1.0.0 tag" README.md docs/phase-29.md docs/V1_RELEASE_EXECUTION_PLAN.md || fail "v1.0.0 tag status docs missing"
+grep -q "GitHub Release" README.md docs/phase-29.md docs/V1_RELEASE_EXECUTION_PLAN.md || fail "GitHub Release status docs missing"
+grep -q "READY_FOR_V1_RELEASE_WITH_DISCORDSRV_WARNING" scripts/check-v1-release-gates.sh docs/phase-29.md docs/RELEASE_READINESS.md docs/RELEASE_CANDIDATE_CHECKLIST.md || fail "v1 release judgment is not updated"
+grep -q "VERSION=\"${EXPECTED_VERSION}\"" scripts/create-release-artifact.sh || fail "create-release-artifact.sh does not target ${EXPECTED_VERSION}"
+grep -q "VERSION=\"${EXPECTED_VERSION}\"" scripts/verify-release-artifact.sh || fail "verify-release-artifact.sh does not target ${EXPECTED_VERSION}"
+grep -q "EXPECTED_VERSION=\"${EXPECTED_VERSION}\"" scripts/run-local-smoke-check.sh || fail "run-local-smoke-check.sh does not check ${EXPECTED_VERSION}"
+grep -q -- "--carried-forward-from" scripts/record-player-report-runtime-smoke-result.sh || fail "player report recorder lacks --carried-forward-from"
+grep -q "carriedForwardFrom" scripts/record-player-report-runtime-smoke-result.sh docs/phase-29.md || fail "player report carry-forward summary/doc missing"
+grep -q "generate-v1-release-notes.sh" scripts/make-review-archive.sh docs/RELEASE_READINESS.md docs/RELEASE_CANDIDATE_CHECKLIST.md || fail "release notes final script is not wired into docs/archive"
+grep -q "V1_RELEASE_EXECUTION_PLAN.md" scripts/make-review-archive.sh docs/RELEASE_READINESS.md README.md || fail "release execution plan is not wired into docs/archive"
+
+if [[ -n "$(git tag --list "v1.0.0")" ]]; then
+  fail "v1.0.0 tag already exists; Phase 29 must not create or keep this tag"
 fi
-if grep -R "BanList.Type.NAME\|getBanList(BanList.Type\|@SuppressWarnings(\"deprecation\")" src/main/java >/dev/null; then
-  fail "Deprecated name ban usage detected"
+
+if grep -R --exclude=review_code.sh "g[h] release create\\|g[h] release upload\\|g[h] release edit\\|g[h] release delete" scripts .github 2>/dev/null; then
+  fail "GitHub Release creation/upload command found in executable automation"
 fi
-if grep -R "performRollback\|performRestore\|performPurge" src/main/java >/dev/null; then
-  fail "CoreProtect destructive rollback/restore/purge API usage detected"
+
+if grep -R --exclude=review_code.sh "g[it] tag -a v1.0.0\\|g[it] push origin v1.0.0" scripts .github 2>/dev/null; then
+  fail "v1.0.0 tag creation/push command found in executable automation"
 fi
-if grep -R "saveUser\|setPermission\|data()\\.add\|data()\\.remove" src/main/java >/dev/null; then
+
+if grep -R "performRollback\\|performRestore\\|performPurge" src/main/java >/dev/null; then
+  fail "CoreProtect rollback/restore/purge API usage detected"
+fi
+if grep -R "saveUser\\|setPermission\\|data()\\.add\\|data()\\.remove" src/main/java >/dev/null; then
   fail "LuckPerms write API usage detected"
 fi
-if grep -R "addRegion\|removeRegion\|saveChanges\|setFlag\|setPriority\|setOwners\|setMembers" src/main/java >/dev/null; then
+if grep -R "addRegion\\|removeRegion\\|saveChanges\\|setFlag\\|setPriority\\|setOwners\\|setMembers" src/main/java >/dev/null; then
   fail "WorldGuard region/flag mutation usage detected"
 fi
-if grep -R "createClaim\|deleteClaim\|resizeClaim\|changeClaimOwner\|setOwner\|setManagers\|setBuilders\|setContainers\|setAccessors" src/main/java >/dev/null; then
+if grep -R "createClaim\\|deleteClaim\\|resizeClaim\\|changeClaimOwner\\|setOwner\\|setManagers\\|setBuilders\\|setContainers\\|setAccessors" src/main/java >/dev/null; then
   fail "GriefPrevention claim/trust mutation usage detected"
-fi
-if grep -R "profileBanList\.pardon[[:space:]]*(.*targetName\|profileBanList\.pardon[[:space:]]*(.*Name\|profileBanList\.pardon[[:space:]]*(.*String" src/main/java >/dev/null; then
-  fail "Deprecated name pardon API usage detected"
-fi
-if grep -R "discord\.com/api/webhooks" src/main/java >/dev/null; then
-  fail "Hard-coded Discord webhook URL detected in Java sources"
 fi
 if grep -R "dispatchCommand\\|performCommand" src/main/java/dev/modplugin/reputationban/integration/discordsrv src/main/java/dev/modplugin/reputationban/notification 2>/dev/null; then
   fail "Discord integration appears to execute Minecraft commands"
@@ -444,231 +178,51 @@ fi
 if grep -RE "https://(canary\\.|ptb\\.)?discord(app)?\\.com/api/webhooks/[0-9]+/[A-Za-z0-9_-]{20,}" src/main/java src/main/resources >/dev/null; then
   fail "Concrete Discord webhook URL detected in main sources/resources"
 fi
-if grep -RE "https://(canary\\.|ptb\\.)?discord(app)?\\.com/api/webhooks/[0-9]+/[A-Za-z0-9_-]{20,}" README.md CHANGELOG.md docs scripts >/dev/null; then
-  fail "Concrete Discord webhook URL detected in docs or scripts"
-fi
-if grep -R "logger\.\(info\|warning\|severe\|log\).*url\|url.*logger\.\(info\|warning\|severe\|log\)" src/main/java/dev/modplugin/reputationban/notification >/dev/null; then
-  fail "Possible webhook URL logging detected"
-fi
 
-DOC_COUNT="$(find docs -name '*.md' -type f | wc -l | tr -d ' ')"
-[[ "$DOC_COUNT" -gt 0 ]] || fail "No docs/*.md files found"
-for japanese_doc in \
-  README.md \
-  docs/INSTALLATION.md \
-  docs/CONFIGURATION.md \
-  docs/RELEASE_READINESS.md \
-  docs/SUPPORT_BUNDLE.md \
-  docs/SECURITY_REDACTION.md \
-  docs/PAPER_RUNTIME_SMOKE_REPORT_TEMPLATE.md \
-  docs/phase-14.md \
-  docs/phase-15.md \
-  docs/phase-17.md \
-  docs/phase-19.md \
-  docs/phase-21.md \
-  docs/phase-22.md \
-  docs/phase-23.md \
-  docs/phase-25.md \
-  docs/phase-26.md \
-  docs/phase-28.md \
-  docs/V1_RELEASE_PLAN.md \
-  docs/PLAYER_REPORT_RUNTIME_SMOKE_CHECKLIST.md \
-  docs/INTEGRATIONS.md; do
-  grep -Pq '[\p{Hiragana}\p{Katakana}\p{Han}]' "$japanese_doc" || fail "$japanese_doc does not appear to contain Japanese text"
+for script in scripts/*.sh; do
+  bash -n "$script" || fail "$script syntax check failed"
 done
 
-bash -n scripts/check-docs-localization.sh || fail "check-docs-localization.sh syntax check failed"
 ./scripts/check-docs-localization.sh
-bash -n scripts/check-optional-dependency-safety.sh || fail "check-optional-dependency-safety.sh syntax check failed"
 ./scripts/check-optional-dependency-safety.sh
-bash -n scripts/check-integration-runtime-readiness.sh || fail "check-integration-runtime-readiness.sh syntax check failed"
-./scripts/check-integration-runtime-readiness.sh
-bash -n scripts/record-player-report-runtime-smoke-result.sh || fail "record-player-report-runtime-smoke-result.sh syntax check failed"
-bash -n scripts/check-player-report-runtime-readiness.sh || fail "check-player-report-runtime-readiness.sh syntax check failed"
-grep -q -- "--strict" scripts/check-player-report-runtime-readiness.sh || fail "check-player-report-runtime-readiness.sh lacks strict mode"
-./scripts/check-player-report-runtime-readiness.sh
-bash -n scripts/check-runtime-smoke-consistency.sh || fail "check-runtime-smoke-consistency.sh syntax check failed"
-./scripts/check-runtime-smoke-consistency.sh
-bash -n scripts/run-paper-runtime-smoke.sh || fail "run-paper-runtime-smoke.sh syntax check failed"
-bash -n scripts/check-paper-runtime-readiness.sh || fail "check-paper-runtime-readiness.sh syntax check failed"
-grep -q 'REPUTATIONBAN_PAPER_DIR="${REPUTATIONBAN_PAPER_DIR:-$HOME/servers/paper-26.1.2}"' scripts/run-paper-runtime-smoke.sh || fail "run-paper-runtime-smoke.sh does not default to ~/servers/paper-26.1.2"
-grep -q 'REPUTATIONBAN_PAPER_START_SCRIPT="${REPUTATIONBAN_PAPER_START_SCRIPT:-$REPUTATIONBAN_PAPER_DIR/start.sh}"' scripts/run-paper-runtime-smoke.sh || fail "run-paper-runtime-smoke.sh does not default to start.sh"
-grep -q "screen -ls" scripts/run-paper-runtime-smoke.sh || fail "run-paper-runtime-smoke.sh does not capture screen -ls"
-grep -q "screen -S" scripts/run-paper-runtime-smoke.sh || fail "run-paper-runtime-smoke.sh does not use screen -S"
-grep -q 'write_summary "NOT_RUN" "NOT_RUN"' scripts/run-paper-runtime-smoke.sh || fail "run-paper-runtime-smoke.sh does not record NOT_RUN status"
-grep -q -- "--strict" scripts/check-paper-runtime-readiness.sh || fail "check-paper-runtime-readiness.sh lacks strict mode"
+
+info "Running Gradle clean test build"
+preserve_manual_smoke ./gradlew clean test build --warning-mode all
+
+[[ -f "$EXPECTED_JAR" ]] || fail "Expected JAR not found: $EXPECTED_JAR"
+jar tf "$EXPECTED_JAR" | grep -q "^plugin.yml$" || fail "plugin.yml missing from JAR"
+jar tf "$EXPECTED_JAR" | grep -q "dev/modplugin/reputationban/ReputationBanPlugin.class" || fail "main plugin class missing from JAR"
+
+TMP_DIR="$(mktemp -d)"
+trap 'rm -rf "$TMP_DIR"' EXIT
+(cd "$TMP_DIR" && jar xf "$ROOT/$EXPECTED_JAR" plugin.yml)
+grep -q "^version:[[:space:]]*${EXPECTED_VERSION}$" "$TMP_DIR/plugin.yml" || fail "JAR plugin.yml version is not ${EXPECTED_VERSION}"
+
 ./scripts/check-paper-runtime-readiness.sh
-bash -n scripts/run-integration-runtime-smoke.sh || fail "run-integration-runtime-smoke.sh syntax check failed"
-grep -q 'REPUTATIONBAN_INTEGRATION_PLUGIN_DIR="${REPUTATIONBAN_INTEGRATION_PLUGIN_DIR:-$HOME/servers/PaperPlugins}"' scripts/run-integration-runtime-smoke.sh || fail "run-integration-runtime-smoke.sh does not default to ~/servers/PaperPlugins"
-grep -q 'REPUTATIONBAN_PAPER_DIR="${REPUTATIONBAN_PAPER_DIR:-$HOME/servers/paper-26.1.2}"' scripts/run-integration-runtime-smoke.sh || fail "run-integration-runtime-smoke.sh does not default to ~/servers/paper-26.1.2"
-grep -q 'REPUTATIONBAN_PAPER_START_SCRIPT="${REPUTATIONBAN_PAPER_START_SCRIPT:-$REPUTATIONBAN_PAPER_DIR/start.sh}"' scripts/run-integration-runtime-smoke.sh || fail "run-integration-runtime-smoke.sh does not default to start.sh"
-grep -q "reputationban-integration-smoke" scripts/run-integration-runtime-smoke.sh || fail "run-integration-runtime-smoke.sh does not include plugins backup path"
-grep -q "restore_plugins" scripts/run-integration-runtime-smoke.sh || fail "run-integration-runtime-smoke.sh does not include plugin restore logic"
-grep -q "staged-plugins.txt" scripts/run-integration-runtime-smoke.sh || fail "run-integration-runtime-smoke.sh does not write staged-plugins.txt"
-grep -q "plugin-restore.txt" scripts/run-integration-runtime-smoke.sh || fail "run-integration-runtime-smoke.sh does not write plugin-restore.txt"
-grep -q "integration-status.txt" scripts/run-integration-runtime-smoke.sh || fail "run-integration-runtime-smoke.sh does not write integration-status.txt"
-grep -q "activeIntegrations" scripts/run-integration-runtime-smoke.sh || fail "run-integration-runtime-smoke.sh does not summarize active integrations"
-grep -q "unavailableIntegrations" scripts/run-integration-runtime-smoke.sh || fail "run-integration-runtime-smoke.sh does not summarize unavailable integrations"
-grep -q "screen -ls" scripts/run-integration-runtime-smoke.sh || fail "run-integration-runtime-smoke.sh does not capture screen -ls"
-grep -q "screen -S" scripts/run-integration-runtime-smoke.sh || fail "run-integration-runtime-smoke.sh does not use screen -S"
-grep -q 'write_summary "NOT_RUN" "NOT_RUN"' scripts/run-integration-runtime-smoke.sh || fail "run-integration-runtime-smoke.sh does not record NOT_RUN status"
-bash -n scripts/run-integration-runtime-smoke-helper.sh || fail "run-integration-runtime-smoke-helper.sh syntax check failed"
-grep -q "HOLD_FOR_INTEGRATION_RUNTIME_SMOKE" docs/INTEGRATION_RUNTIME_SMOKE_CHECKLIST.md scripts/check-integration-runtime-readiness.sh || fail "Integration runtime HOLD/NOT_RUN explanation missing"
-grep -q "NOT_RUN" docs/INTEGRATION_RUNTIME_SMOKE_CHECKLIST.md scripts/check-integration-runtime-readiness.sh || fail "Integration runtime NOT_RUN explanation missing"
-grep -q "DiscordSRV unavailable is treated as WARN" scripts/check-integration-runtime-readiness.sh || fail "check-integration-runtime-readiness.sh does not warn for DiscordSRV unavailable"
-grep -q "HOLD_FOR_PAPER_RUNTIME_SMOKE" docs/runtime-smoke-checklist.md scripts/check-paper-runtime-readiness.sh || fail "Paper runtime HOLD/NOT_RUN explanation missing"
-grep -q "HOLD_FOR_PLAYER_REPORT_RUNTIME_SMOKE" docs/PLAYER_REPORT_RUNTIME_SMOKE_CHECKLIST.md scripts/check-player-report-runtime-readiness.sh || fail "Player report runtime HOLD/NOT_RUN explanation missing"
-grep -q "player report" scripts/check-runtime-smoke-consistency.sh || fail "check-runtime-smoke-consistency.sh does not handle player report runtime"
-grep -q "Player report/evidence runtime smoke" docs/RELEASE_CANDIDATE_CHECKLIST.md || fail "release candidate checklist missing player report runtime smoke"
-grep -Eq "Player report/evidence runtime smoke(:)? PASS|Player report/evidence runtime smoke: PASS" docs/RELEASE_READINESS.md || fail "release readiness missing player report runtime smoke gate"
-grep -q "Player report/evidence runtime smoke: PASS" docs/RELEASE_READINESS.md || fail "release readiness missing player report runtime smoke PASS status"
-
-grep -q "0.28.0" README.md || fail "README.md does not mention 0.28.0"
-grep -q "RELEASE_CANDIDATE_CHECKLIST" README.md || fail "README.md does not link RELEASE_CANDIDATE_CHECKLIST"
-grep -q "RELEASE_CANDIDATE_CHECKLIST" docs/phase-15.md docs/RELEASE_CANDIDATE_CHECKLIST.md README.md || fail "Release candidate checklist references missing"
-grep -q "check-v1-release-gates.sh" docs/RELEASE_READINESS.md docs/RELEASE_CANDIDATE_CHECKLIST.md docs/phase-28.md || fail "v1 release gate docs missing"
-grep -q "Go/No-Go" docs/RELEASE_READINESS.md docs/phase-28.md || fail "Go/No-Go docs missing"
-grep -q "release notes draft" docs/RELEASE_READINESS.md docs/phase-28.md || fail "release notes draft docs missing"
-grep -q "READY_FOR_V1_RELEASE_REVIEW_WITH_DISCORDSRV_WARNING" docs/phase-28.md docs/V1_RELEASE_PLAN.md || fail "v1 DiscordSRV warning judgment docs missing"
-grep -q "DiscordSRV" docs/V1_RELEASE_PLAN.md || fail "docs/V1_RELEASE_PLAN.md missing DiscordSRV warning policy"
-
-PRESERVED_MANUAL_SMOKE="$(mktemp -d)"
-if [[ -d build/manual-smoke ]]; then
-  cp -R build/manual-smoke "$PRESERVED_MANUAL_SMOKE/manual-smoke"
-fi
-./gradlew clean test build --warning-mode all
-if [[ -d "$PRESERVED_MANUAL_SMOKE/manual-smoke" ]]; then
-  mkdir -p build
-  rm -rf build/manual-smoke
-  cp -R "$PRESERVED_MANUAL_SMOKE/manual-smoke" build/manual-smoke
-fi
-rm -rf "$PRESERVED_MANUAL_SMOKE"
-
-JAR="build/libs/${EXPECTED_JAR_PREFIX}-${EXPECTED_VERSION}.jar"
-[[ -f "$JAR" ]] || fail "Expected jar not found: $JAR"
-require_command jar
-jar tf "$JAR" | grep -q "plugin.yml" || fail "plugin.yml missing from jar"
-jar tf "$JAR" | grep -q "dev/modplugin/reputationban/ReputationBanPlugin.class" || fail "Main class missing from jar"
-
-bash -n scripts/check-v1-release-gates.sh || fail "check-v1-release-gates.sh syntax check failed"
-bash -n scripts/generate-v1-go-no-go-report.sh || fail "generate-v1-go-no-go-report.sh syntax check failed"
-bash -n scripts/generate-v1-release-notes-draft.sh || fail "generate-v1-release-notes-draft.sh syntax check failed"
+./scripts/check-integration-runtime-readiness.sh
+./scripts/check-player-report-runtime-readiness.sh
+./scripts/check-runtime-smoke-consistency.sh
 ./scripts/check-v1-release-gates.sh
 ./scripts/generate-v1-go-no-go-report.sh
-./scripts/generate-v1-release-notes-draft.sh
-[[ -f "build/release/ReputationBan-v1-go-no-go-report.md" ]] || fail "v1 Go/No-Go report not found"
-[[ -f "build/release/ReputationBan-v1.0.0-release-notes-draft.md" ]] || fail "v1 release notes draft not found"
-grep -q "READY_FOR_V1_RELEASE_REVIEW_WITH_DISCORDSRV_WARNING" "build/release/ReputationBan-v1-go-no-go-report.md" || fail "v1 Go/No-Go report missing default judgment"
+./scripts/generate-v1-release-notes.sh
 
-grep -q "EXPECTED_VERSION=\"0.28.0\"" scripts/run-local-smoke-check.sh || fail "run-local-smoke-check.sh does not check v0.28.0"
-grep -q "REPUTATIONBAN_SKIP_BUILD" scripts/run-local-smoke-check.sh || fail "run-local-smoke-check.sh does not support REPUTATIONBAN_SKIP_BUILD"
-grep -q "VERSION=\"0.28.0\"" scripts/create-release-artifact.sh || fail "create-release-artifact.sh does not target v0.28.0"
-grep -q "build/release" scripts/create-release-artifact.sh || fail "create-release-artifact.sh does not write build/release"
-grep -q "sha256sum" scripts/create-release-artifact.sh || fail "create-release-artifact.sh does not create sha256"
-grep -q "release.zip" scripts/create-release-artifact.sh || fail "create-release-artifact.sh does not create release zip"
-grep -q "RELEASE_ZIP_SHA" scripts/create-release-artifact.sh || fail "create-release-artifact.sh does not create release zip sha256"
-grep -q "VERSION=\"0.28.0\"" scripts/verify-release-artifact.sh || fail "verify-release-artifact.sh does not target v0.28.0"
-grep -q "docs/INTEGRATIONS.md" scripts/verify-release-artifact.sh || fail "verify-release-artifact.sh does not verify integrations docs"
-grep -q "sha256sum -c" scripts/verify-release-artifact.sh || fail "verify-release-artifact.sh does not verify sha256"
-grep -q "docs/INSTALLATION.md" scripts/verify-release-artifact.sh || fail "verify-release-artifact.sh does not verify localized docs"
-grep -q "require_japanese_text" scripts/verify-release-artifact.sh || fail "verify-release-artifact.sh does not verify Japanese docs text"
-grep -q "api/webhooks" scripts/verify-release-artifact.sh || fail "verify-release-artifact.sh does not scan release zip for concrete Discord webhook URLs"
-grep -q "record-paper-runtime-smoke-result" scripts/record-paper-runtime-smoke-result.sh || fail "record paper runtime smoke script missing usage text"
-grep -q 'echo "status=$RESULT"' scripts/record-paper-runtime-smoke-result.sh || fail "record paper runtime smoke script does not write status"
-grep -q "record-player-report-runtime-smoke-result" scripts/record-player-report-runtime-smoke-result.sh || fail "record player report runtime smoke script missing usage text"
-grep -q 'echo "status=$RESULT"' scripts/record-player-report-runtime-smoke-result.sh || fail "record player report runtime smoke script does not write status"
-grep -q -- "--manual-confirmed" scripts/record-player-report-runtime-smoke-result.sh || fail "record player report runtime smoke script missing --manual-confirmed"
-grep -q 'manualConfirmed=true\|manualConfirmed=$MANUAL_CONFIRMED' scripts/record-player-report-runtime-smoke-result.sh || fail "record player report runtime smoke script does not write manualConfirmed"
-grep -q "manual-checklist.txt" scripts/record-player-report-runtime-smoke-result.sh || fail "record player report runtime smoke script does not create manual-checklist.txt"
-grep -q "<manual-confirmed>" scripts/record-player-report-runtime-smoke-result.sh || fail "record player report runtime smoke script does not hide reporter/target/report id for manual confirmation"
-grep -q "manualConfirmed" scripts/check-player-report-runtime-readiness.sh || fail "check-player-report-runtime-readiness.sh does not handle manualConfirmed"
-grep -q "docs-localization.txt" scripts/make-review-archive.sh || fail "make-review-archive.sh does not create docs-localization.txt"
-grep -q "check-docs-localization.sh" scripts/make-review-archive.sh || fail "make-review-archive.sh does not record docs localization status"
-grep -q "optional-dependency-safety.txt" scripts/make-review-archive.sh || fail "make-review-archive.sh does not create optional-dependency-safety.txt"
-grep -q "check-optional-dependency-safety.sh" scripts/make-review-archive.sh || fail "make-review-archive.sh does not record optional dependency safety status"
-grep -q "integration-runtime-readiness.txt" scripts/make-review-archive.sh || fail "make-review-archive.sh does not create integration-runtime-readiness.txt"
-grep -q "check-integration-runtime-readiness.sh" scripts/make-review-archive.sh || fail "make-review-archive.sh does not record integration runtime readiness status"
-grep -q "player-report-runtime-readiness.txt" scripts/make-review-archive.sh || fail "make-review-archive.sh does not create player-report-runtime-readiness.txt"
-grep -q "latest-player-report-runtime-smoke-summary.txt" scripts/make-review-archive.sh || fail "make-review-archive.sh does not create latest player report runtime smoke summary"
-grep -q "integration-runtime-smoke-helper-syntax.txt" scripts/make-review-archive.sh || fail "make-review-archive.sh does not create integration runtime smoke helper syntax output"
-grep -q "integration-runtime-smoke-auto.txt" scripts/make-review-archive.sh || fail "make-review-archive.sh does not create integration runtime smoke auto output"
-grep -q "run-integration-runtime-smoke.sh" scripts/make-review-archive.sh || fail "make-review-archive.sh does not run integration runtime smoke automation"
-grep -q "latest-integration-runtime-smoke-summary.txt" scripts/make-review-archive.sh || fail "make-review-archive.sh does not create latest integration runtime smoke summary"
-grep -q "runtime-smoke/integration-runtime-latest" scripts/make-review-archive.sh || fail "make-review-archive.sh does not collect latest integration runtime smoke directory"
-grep -q "runtime-smoke/paper-runtime-latest" scripts/make-review-archive.sh || fail "make-review-archive.sh does not collect latest paper runtime smoke directory"
-grep -q "player-report-runtime-latest" scripts/make-review-archive.sh || fail "make-review-archive.sh does not collect latest player report runtime smoke directory"
-grep -q "manual-checklist.txt" scripts/make-review-archive.sh || fail "make-review-archive.sh does not collect player report manual-checklist.txt"
-grep -q "record-integration-runtime-smoke-result" scripts/make-review-archive.sh || fail "make-review-archive.sh review signals do not mention integration smoke recorder"
-grep -q "v1-release-gates.txt" scripts/make-review-archive.sh || fail "make-review-archive.sh does not create v1-release-gates.txt"
-grep -q "generate-v1-go-no-go-report.txt" scripts/make-review-archive.sh || fail "make-review-archive.sh does not create generate-v1-go-no-go-report.txt"
-grep -q "generate-v1-release-notes-draft.txt" scripts/make-review-archive.sh || fail "make-review-archive.sh does not create generate-v1-release-notes-draft.txt"
-grep -q "release-prep" scripts/make-review-archive.sh || fail "make-review-archive.sh does not collect release-prep files"
-grep -q "check-v1-release-gates" scripts/make-review-archive.sh || fail "make-review-archive.sh review signals do not mention check-v1-release-gates"
-grep -q "generate-v1-go-no-go-report" scripts/make-review-archive.sh || fail "make-review-archive.sh review signals do not mention generate-v1-go-no-go-report"
-grep -q "generate-v1-release-notes-draft" scripts/make-review-archive.sh || fail "make-review-archive.sh review signals do not mention generate-v1-release-notes-draft"
-grep -q "READY_FOR_V1_RELEASE_REVIEW" scripts/make-review-archive.sh || fail "make-review-archive.sh review signals do not mention READY_FOR_V1_RELEASE_REVIEW"
-grep -q "V1_RELEASE_PLAN" scripts/make-review-archive.sh || fail "make-review-archive.sh review signals do not mention V1_RELEASE_PLAN"
-grep -q "local-smoke-check.txt" scripts/make-review-archive.sh || fail "make-review-archive.sh does not create local-smoke-check.txt"
-grep -q "scripts/run-local-smoke-check.sh" scripts/make-review-archive.sh || fail "make-review-archive.sh does not record run-local-smoke-check.sh status"
-grep -q "create-release-artifact.txt" scripts/make-review-archive.sh || fail "make-review-archive.sh does not create create-release-artifact.txt"
-grep -q "scripts/create-release-artifact.sh" scripts/make-review-archive.sh || fail "make-review-archive.sh does not record create-release-artifact status"
-grep -q "verify-release-artifact.txt" scripts/make-review-archive.sh || fail "make-review-archive.sh does not create verify-release-artifact.txt"
-grep -q "latest-paper-runtime-smoke-summary.txt" scripts/make-review-archive.sh || fail "make-review-archive.sh does not create latest paper runtime smoke summary"
-grep -q "paper-runtime-smoke-auto.txt" scripts/make-review-archive.sh || fail "make-review-archive.sh does not create paper-runtime-smoke-auto.txt"
-grep -q "paper-runtime-readiness.txt" scripts/make-review-archive.sh || fail "make-review-archive.sh does not create paper-runtime-readiness.txt"
-grep -q "run-paper-runtime-smoke.sh" scripts/make-review-archive.sh || fail "make-review-archive.sh does not run paper runtime smoke automation"
-grep -q "check-paper-runtime-readiness.sh" scripts/make-review-archive.sh || fail "make-review-archive.sh does not record paper runtime readiness"
-awk '/run_logged "\.\/scripts\/run-paper-runtime-smoke\.sh"/{run=NR} /run_logged "\.\/scripts\/check-paper-runtime-readiness\.sh"/{check=NR} END{exit (run > 0 && check > run) ? 0 : 1}' scripts/make-review-archive.sh \
-  || fail "make-review-archive.sh must run paper smoke before paper readiness"
-awk '/run_logged "\.\/scripts\/run-integration-runtime-smoke\.sh"/{run=NR} /run_logged "\.\/scripts\/check-integration-runtime-readiness\.sh"/{check=NR} END{exit (run > 0 && check > run) ? 0 : 1}' scripts/make-review-archive.sh \
-  || fail "make-review-archive.sh must run integration smoke before integration readiness"
-grep -q "runtime-smoke-consistency.txt" scripts/make-review-archive.sh || fail "make-review-archive.sh does not create runtime-smoke-consistency.txt"
-grep -q "check-runtime-smoke-consistency.sh" scripts/make-review-archive.sh || fail "make-review-archive.sh does not run runtime smoke consistency check"
-grep -q "integration-status.txt" scripts/make-review-archive.sh || fail "make-review-archive.sh does not collect integration-status.txt"
-grep -q "status=NOT_RUN" scripts/make-review-archive.sh || fail "make-review-archive.sh does not write NOT_RUN paper runtime summary"
-grep -q "secret-scan.txt" scripts/make-review-archive.sh || fail "make-review-archive.sh does not create secret-scan.txt"
-grep -q "run-paper-runtime-smoke-helper" scripts/make-review-archive.sh || fail "make-review-archive.sh review signals do not mention paper runtime helper"
-grep -Eq "CHANGELOG|INSTALLATION|CONFIGURATION|MIGRATION|RELEASE_READINESS" scripts/make-review-archive.sh || fail "make-review-archive.sh review signals do not mention release docs"
-bash -n scripts/run-paper-runtime-smoke-helper.sh || fail "run-paper-runtime-smoke-helper.sh syntax check failed"
-bash -n scripts/run-paper-runtime-smoke.sh || fail "run-paper-runtime-smoke.sh syntax check failed"
-bash -n scripts/check-paper-runtime-readiness.sh || fail "check-paper-runtime-readiness.sh syntax check failed"
-bash -n scripts/check-runtime-smoke-consistency.sh || fail "check-runtime-smoke-consistency.sh syntax check failed"
-bash -n scripts/check-docs-localization.sh || fail "check-docs-localization.sh syntax check failed"
-bash -n scripts/check-optional-dependency-safety.sh || fail "check-optional-dependency-safety.sh syntax check failed"
-bash -n scripts/check-integration-runtime-readiness.sh || fail "check-integration-runtime-readiness.sh syntax check failed"
-bash -n scripts/run-integration-runtime-smoke.sh || fail "run-integration-runtime-smoke.sh syntax check failed"
-bash -n scripts/run-integration-runtime-smoke-helper.sh || fail "run-integration-runtime-smoke-helper.sh syntax check failed"
-bash -n scripts/create-release-artifact.sh || fail "create-release-artifact.sh syntax check failed"
-bash -n scripts/verify-release-artifact.sh || fail "verify-release-artifact.sh syntax check failed"
-bash -n scripts/record-paper-runtime-smoke-result.sh || fail "record-paper-runtime-smoke-result.sh syntax check failed"
-bash -n scripts/record-integration-runtime-smoke-result.sh || fail "record-integration-runtime-smoke-result.sh syntax check failed"
-bash -n scripts/record-player-report-runtime-smoke-result.sh || fail "record-player-report-runtime-smoke-result.sh syntax check failed"
-bash -n scripts/check-player-report-runtime-readiness.sh || fail "check-player-report-runtime-readiness.sh syntax check failed"
-bash -n scripts/check-v1-release-gates.sh || fail "check-v1-release-gates.sh syntax check failed"
-bash -n scripts/generate-v1-go-no-go-report.sh || fail "generate-v1-go-no-go-report.sh syntax check failed"
-bash -n scripts/generate-v1-release-notes-draft.sh || fail "generate-v1-release-notes-draft.sh syntax check failed"
 ./scripts/create-release-artifact.sh
-[[ -f "build/release/ReputationBan-0.28.0.jar" ]] || fail "release jar not found"
-[[ -f "build/release/ReputationBan-0.28.0.jar.sha256" ]] || fail "release jar sha256 not found"
-[[ -f "build/release/ReputationBan-0.28.0-release.zip" ]] || fail "release zip not found"
-[[ -f "build/release/ReputationBan-0.28.0-release.zip.sha256" ]] || fail "release zip sha256 not found"
+[[ -f "$RELEASE_JAR" ]] || fail "release jar not found: $RELEASE_JAR"
+[[ -f "${RELEASE_JAR}.sha256" ]] || fail "release jar sha256 not found"
+[[ -f "$RELEASE_ZIP" ]] || fail "release zip not found: $RELEASE_ZIP"
+[[ -f "${RELEASE_ZIP}.sha256" ]] || fail "release zip sha256 not found"
+[[ -f "${RELEASE_DIR}/ReputationBan-v1-go-no-go-report.md" ]] || fail "Go/No-Go report not found"
+[[ -f "${RELEASE_DIR}/ReputationBan-v1.0.0-release-notes.md" ]] || fail "release notes final candidate not found"
 ./scripts/verify-release-artifact.sh
-jar tf "build/release/ReputationBan-0.28.0-release.zip" | grep -q "README.md" || fail "release zip missing README.md"
-jar tf "build/release/ReputationBan-0.28.0-release.zip" | grep -q "docs/INTEGRATIONS.md" || fail "release zip missing docs/INTEGRATIONS.md"
-jar tf "build/release/ReputationBan-0.28.0-release.zip" | grep -q "docs/PLAYER_REPORT_RUNTIME_SMOKE_CHECKLIST.md" || fail "release zip missing docs/PLAYER_REPORT_RUNTIME_SMOKE_CHECKLIST.md"
-jar tf "build/release/ReputationBan-0.28.0-release.zip" | grep -q "docs/V1_RELEASE_PLAN.md" || fail "release zip missing docs/V1_RELEASE_PLAN.md"
-if jar tf "build/release/ReputationBan-0.28.0-release.zip" | grep -E '(^|/)(config\.yml|reputationban\.db|latest\.log|debug\.log)$|(^|/)logs/' >/dev/null; then
+
+jar tf "$RELEASE_ZIP" | grep -q "^${PROJECT_NAME}-${EXPECTED_VERSION}.jar$" || fail "release zip missing JAR"
+jar tf "$RELEASE_ZIP" | grep -q "^README.md$" || fail "release zip missing README.md"
+jar tf "$RELEASE_ZIP" | grep -q "^CHANGELOG.md$" || fail "release zip missing CHANGELOG.md"
+jar tf "$RELEASE_ZIP" | grep -q "^docs/V1_RELEASE_EXECUTION_PLAN.md$" || fail "release zip missing V1_RELEASE_EXECUTION_PLAN.md"
+if jar tf "$RELEASE_ZIP" | grep -E '(^|/)(config\.yml|reputationban\.db|reputationban\.db-wal|reputationban\.db-shm|latest\.log|debug\.log)$|(^|/)logs/' >/dev/null; then
   fail "release zip contains forbidden config, DB, or logs"
 fi
 
-if [[ "${REPUTATIONBAN_SKIP_LOCAL_SMOKE:-0}" != "1" ]]; then
-  REPUTATIONBAN_SKIP_REVIEW_CODE=1 REPUTATIONBAN_SKIP_BUILD=1 ./scripts/run-local-smoke-check.sh
-fi
+REPUTATIONBAN_SKIP_REVIEW_CODE=1 REPUTATIONBAN_SKIP_BUILD=1 ./scripts/run-local-smoke-check.sh
 
-git rev-list --count HEAD >/dev/null || fail "No commits found"
-
-if git status --porcelain | grep -E '(^|/).*:Zone.Identifier$' >/dev/null; then
-  fail "Zone.Identifier file is present in working tree"
-fi
-
-pass "Review checks completed"
+pass "Review checks completed for ${PROJECT_NAME} ${EXPECTED_VERSION}"

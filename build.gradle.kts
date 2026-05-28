@@ -3,7 +3,7 @@ plugins {
 }
 
 group = "dev.modplugin"
-version = "0.28.0"
+version = "1.0.0"
 
 java {
     toolchain {

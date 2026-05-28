@@ -1,6 +1,6 @@
 # Configuration
 
-このドキュメントでは ReputationBan 0.27.0 の主な `config.yml` セクションを説明します。YAML key は変更しないでください。
+このドキュメントでは ReputationBan 1.0.0 の主な `config.yml` セクションを説明します。YAML key は変更しないでください。
 
 ## Score
 

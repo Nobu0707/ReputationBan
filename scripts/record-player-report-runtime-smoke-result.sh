@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-VERSION="0.28.0"
+VERSION="1.0.0"
 JAR="build/libs/ReputationBan-${VERSION}.jar"
 MANUAL_CONFIRMED_NOTE="User manually confirmed all Phase 26 player report runtime smoke checklist items passed."
 
@@ -10,6 +10,7 @@ usage() {
 Usage:
   ./scripts/record-player-report-runtime-smoke-result.sh --result PASS --reporter TestReporter --target TestTarget --report-id 123 --note "reportbad and reports evidence passed"
   ./scripts/record-player-report-runtime-smoke-result.sh --result PASS --manual-confirmed --note "User manually confirmed all Phase 26 player report runtime smoke checklist items passed."
+  ./scripts/record-player-report-runtime-smoke-result.sh --result PASS --manual-confirmed --carried-forward-from 0.27.0 --note "Carried forward from Phase 27 manual player report runtime smoke; Phase 29 changes version/docs/scripts/release artifacts only."
   ./scripts/record-player-report-runtime-smoke-result.sh --result FAIL --reporter TestReporter --target TestTarget --note "reports evidence threw exception"
   ./scripts/record-player-report-runtime-smoke-result.sh --result NOT_RUN --note "no two players available"
 
@@ -25,6 +26,8 @@ TARGET=""
 REPORT_ID=""
 NOTE=""
 MANUAL_CONFIRMED="false"
+CARRIED_FORWARD_FROM=""
+CARRY_FORWARD_REASON="Phase 29 changes version/docs/scripts/release artifacts only."
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -47,6 +50,10 @@ while [[ $# -gt 0 ]]; do
     --manual-confirmed)
       MANUAL_CONFIRMED="true"
       shift
+      ;;
+    --carried-forward-from)
+      CARRIED_FORWARD_FROM="${2:-}"
+      shift 2
       ;;
     --note)
       NOTE="${2:-}"
@@ -87,6 +94,16 @@ if [[ "$MANUAL_CONFIRMED" == "true" && "$RESULT" != "PASS" ]]; then
   exit 1
 fi
 
+if [[ -n "$CARRIED_FORWARD_FROM" && "$MANUAL_CONFIRMED" != "true" ]]; then
+  echo "[FAIL] --carried-forward-from requires --manual-confirmed" >&2
+  exit 1
+fi
+
+if [[ -n "$CARRIED_FORWARD_FROM" && "$RESULT" != "PASS" ]]; then
+  echo "[FAIL] --carried-forward-from is only valid with --result PASS" >&2
+  exit 1
+fi
+
 if [[ "$MANUAL_CONFIRMED" == "true" ]]; then
   REPORTER="${REPORTER:-<manual-confirmed>}"
   TARGET="${TARGET:-<manual-confirmed>}"
@@ -114,6 +131,10 @@ fi
   echo "target=$TARGET"
   echo "reportId=$REPORT_ID"
   echo "manualConfirmed=$MANUAL_CONFIRMED"
+  if [[ -n "$CARRIED_FORWARD_FROM" ]]; then
+    echo "carriedForwardFrom=$CARRIED_FORWARD_FROM"
+    echo "carryForwardReason=$CARRY_FORWARD_REASON"
+  fi
   echo "note=$NOTE"
   echo "createdAt=$(date -Iseconds)"
 } > "$SUMMARY"

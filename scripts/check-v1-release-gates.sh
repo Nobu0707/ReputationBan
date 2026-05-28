@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-VERSION="0.28.0"
+VERSION="1.0.0"
 PROJECT_NAME="ReputationBan"
 RELEASE_DIR="build/release"
 JAR_PATH="${RELEASE_DIR}/${PROJECT_NAME}-${VERSION}.jar"
@@ -100,6 +100,10 @@ destructive_integration_scan() {
   fi
 }
 
+v1_tag_not_created() {
+  [[ -z "$(git tag --list "v1.0.0")" ]]
+}
+
 discordsrv_state() {
   local summary status_file
   summary="$(latest_summary integration-runtime || true)"
@@ -130,6 +134,14 @@ ensure_release_artifact() {
 
 FAILED=0
 echo "v1 release gates:"
+echo "version=$VERSION"
+
+if v1_tag_not_created; then
+  echo "v1Tag=NOT_CREATED"
+else
+  echo "v1Tag=FAIL_ALREADY_EXISTS"
+  FAILED=1
+fi
 
 mark_gate "paperRuntime" "$TMP_DIR/paper-runtime.txt" ./scripts/check-paper-runtime-readiness.sh --strict || FAILED=1
 mark_gate "integrationRuntime" "$TMP_DIR/integration-runtime.txt" ./scripts/check-integration-runtime-readiness.sh --strict || FAILED=1
@@ -162,14 +174,14 @@ if [[ "$REQUIRE_DISCORDSRV" == "1" && "$DISCORDSRV" != "PASS" ]]; then
 fi
 
 if [[ "$FAILED" != "0" ]]; then
-  echo "judgment=HOLD_FOR_V1_RELEASE_REVIEW"
+  echo "judgment=HOLD_FOR_V1_RELEASE"
   exit 1
 fi
 
 if [[ "$DISCORDSRV" == WARNING_* ]]; then
-  echo "judgment=READY_FOR_V1_RELEASE_REVIEW_WITH_DISCORDSRV_WARNING"
+  echo "judgment=READY_FOR_V1_RELEASE_WITH_DISCORDSRV_WARNING"
 else
-  echo "judgment=READY_FOR_V1_RELEASE_REVIEW"
+  echo "judgment=READY_FOR_V1_RELEASE"
 fi
 
 exit 0

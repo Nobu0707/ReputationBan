@@ -157,8 +157,8 @@ done < "$OUTDIR/meta/changed-files.txt"
   echo "## rg phase 27 player report runtime smoke result recording"
   rg -n "player-report-runtime|PLAYER_REPORT_RUNTIME_SMOKE_CHECKLIST|check-player-report-runtime-readiness|record-player-report-runtime-smoke-result|manualConfirmed|manual-checklist|--manual-confirmed|HOLD_FOR_PLAYER_REPORT_RUNTIME_SMOKE|/reportbad|/reports evidence|report_context|0\\.27\\.0" README.md CHANGELOG.md docs reputationban_phase_plan.md scripts build.gradle.kts src/main/resources/plugin.yml || true
   echo
-  echo "## rg phase 28 v1 release review"
-  rg -n "check-v1-release-gates|generate-v1-go-no-go-report|generate-v1-release-notes-draft|READY_FOR_V1_RELEASE_REVIEW|READY_FOR_V1_RELEASE_REVIEW_WITH_DISCORDSRV_WARNING|V1_RELEASE_PLAN|ReputationBan-v1-go-no-go-report|ReputationBan-v1\\.0\\.0-release-notes-draft|v1 release gates|Go/No-Go" README.md CHANGELOG.md docs reputationban_phase_plan.md scripts build.gradle.kts src/main/resources/plugin.yml || true
+  echo "## rg phase 29 v1 final artifact preparation"
+  rg -n "check-v1-release-gates|generate-v1-go-no-go-report|generate-v1-release-notes|READY_FOR_V1_RELEASE|READY_FOR_V1_RELEASE_WITH_DISCORDSRV_WARNING|V1_RELEASE_PLAN|V1_RELEASE_EXECUTION_PLAN|ReputationBan-v1-go-no-go-report|ReputationBan-v1\\.0\\.0-release-notes|v1 release gates|Go/No-Go|Tag status|GitHub Release status|carriedForwardFrom" README.md CHANGELOG.md docs reputationban_phase_plan.md scripts build.gradle.kts src/main/resources/plugin.yml || true
 } > "$OUTDIR/checks/rg-review-signals.txt"
 
 {
@@ -290,8 +290,8 @@ else
   {
     echo "status=NOT_RUN"
     echo "result=NOT_RUN"
-    echo "version=0.28.0"
-    echo "jar=build/libs/ReputationBan-0.28.0.jar"
+    echo "version=1.0.0"
+    echo "jar=build/libs/ReputationBan-1.0.0.jar"
     echo "jarSha256=missing"
     echo "reporter="
     echo "target="
@@ -319,10 +319,14 @@ else
   echo "./scripts/generate-v1-go-no-go-report.sh=missing" >> "$COMMAND_STATUS"
 fi
 
+if [[ -x "$ROOT/scripts/generate-v1-release-notes.sh" ]]; then
+  run_logged "./scripts/generate-v1-release-notes.sh" "$OUTDIR/checks/generate-v1-release-notes.txt" "$ROOT/scripts/generate-v1-release-notes.sh"
+else
+  echo "./scripts/generate-v1-release-notes.sh=missing" >> "$COMMAND_STATUS"
+fi
+
 if [[ -x "$ROOT/scripts/generate-v1-release-notes-draft.sh" ]]; then
   run_logged "./scripts/generate-v1-release-notes-draft.sh" "$OUTDIR/checks/generate-v1-release-notes-draft.txt" "$ROOT/scripts/generate-v1-release-notes-draft.sh"
-else
-  echo "./scripts/generate-v1-release-notes-draft.sh=missing" >> "$COMMAND_STATUS"
 fi
 
 if [[ -x "$ROOT/scripts/run-local-smoke-check.sh" ]]; then
@@ -345,7 +349,9 @@ fi
 
 for release_prep_file in \
   "$ROOT/build/release/ReputationBan-v1-go-no-go-report.md" \
-  "$ROOT/build/release/ReputationBan-v1.0.0-release-notes-draft.md"; do
+  "$ROOT/build/release/ReputationBan-v1.0.0-release-notes.md" \
+  "$ROOT/build/release/ReputationBan-v1.0.0-release-notes-draft.md" \
+  "$ROOT/docs/V1_RELEASE_EXECUTION_PLAN.md"; do
   if [[ -f "$release_prep_file" ]]; then
     cp "$release_prep_file" "$OUTDIR/release-prep/"
   fi
@@ -364,8 +370,8 @@ fi
 
 if [[ -d "$ROOT/build/libs" ]]; then
   find "$ROOT/build/libs" -maxdepth 1 -type f -print | sort > "$OUTDIR/checks/built-jars.txt"
-  if [[ -f "$ROOT/build/libs/ReputationBan-0.28.0.jar" ]]; then
-    (cd "$ROOT" && sha256sum build/libs/ReputationBan-0.28.0.jar) > "$OUTDIR/checks/jar-sha256.txt"
+  if [[ -f "$ROOT/build/libs/ReputationBan-1.0.0.jar" ]]; then
+    (cd "$ROOT" && sha256sum build/libs/ReputationBan-1.0.0.jar) > "$OUTDIR/checks/jar-sha256.txt"
   fi
 fi
 
@@ -394,8 +400,8 @@ copy_runtime_smoke_latest() {
       echo "status=NOT_RUN"
       echo "result=NOT_RUN"
       if [[ "$dest_name" == "player-report-runtime-latest" ]]; then
-        echo "version=0.28.0"
-        echo "jar=build/libs/ReputationBan-0.28.0.jar"
+        echo "version=1.0.0"
+        echo "jar=build/libs/ReputationBan-1.0.0.jar"
         echo "jarSha256=missing"
         echo "reporter="
         echo "target="

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-VERSION="0.28.0"
+VERSION="1.0.0"
 PROJECT_NAME="ReputationBan"
 RELEASE_DIR="build/release"
 REPORT="${RELEASE_DIR}/ReputationBan-v1-go-no-go-report.md"
@@ -60,9 +60,15 @@ JAR_SHA="$(sha_value "$JAR_PATH")"
 ZIP_SHA="$(sha_value "$RELEASE_ZIP")"
 JUDGMENT="$(gate_value judgment)"
 DISCORDSRV="$(gate_value discordSrv)"
+if [[ -z "$(git tag --list "v1.0.0")" ]]; then
+  TAG_STATUS="NOT_CREATED"
+else
+  TAG_STATUS="CREATED"
+fi
+GITHUB_RELEASE_STATUS="NOT_CREATED"
 
-if [[ "$JUDGMENT" == "READY_FOR_V1_RELEASE_REVIEW" && "$DISCORDSRV" == WARNING_* ]]; then
-  JUDGMENT="READY_FOR_V1_RELEASE_REVIEW_WITH_DISCORDSRV_WARNING"
+if [[ "$JUDGMENT" == "READY_FOR_V1_RELEASE" && "$DISCORDSRV" == WARNING_* ]]; then
+  JUDGMENT="READY_FOR_V1_RELEASE_WITH_DISCORDSRV_WARNING"
 fi
 
 cat > "$REPORT" <<REPORT
@@ -76,11 +82,15 @@ cat > "$REPORT" <<REPORT
 - JAR sha256: \`${JAR_SHA}\`
 - release zip: \`${RELEASE_ZIP}\`
 - release zip sha256: \`${ZIP_SHA}\`
+- Judgment: ${JUDGMENT:-HOLD_FOR_V1_RELEASE}
+- Tag status: ${TAG_STATUS}
+- GitHub Release status: ${GITHUB_RELEASE_STATUS}
+- Next action: User approval required for v1.0.0 tag and GitHub Release.
 
 ## Gate結果
 
 - Build/Test: PASS
-- review_code: Phase 28 review commandで確認
+- review_code: Phase 29 review commandで確認
 - optional dependency safety: $(gate_value optionalDependencySafety)
 - docs localization: $(gate_value docsLocalization)
 - release artifact verification: $(gate_value releaseArtifact)
@@ -111,7 +121,13 @@ cat > "$REPORT" <<REPORT
 
 ## Judgment
 
-${JUDGMENT:-HOLD_FOR_V1_RELEASE_REVIEW}
+${JUDGMENT:-HOLD_FOR_V1_RELEASE}
+
+## Release execution status
+
+- Tag status: ${TAG_STATUS}
+- GitHub Release status: ${GITHUB_RELEASE_STATUS}
+- Next action: User approval required for v1.0.0 tag and GitHub Release.
 
 ## v1 release gates output
 

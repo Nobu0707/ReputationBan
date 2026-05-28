@@ -1,6 +1,6 @@
 # 外部連携
 
-ReputationBan 0.28.0 では LuckPerms、CoreProtect、WorldGuard、GriefPrevention、PlaceholderAPI、DiscordSRV を任意連携として扱います。いずれも `softdepend` であり、未導入、未ロード、API unavailable の場合でも ReputationBan 単体の通報、監査、BAN、backup、support bundle は継続します。
+ReputationBan 1.0.0 では LuckPerms、CoreProtect、WorldGuard、GriefPrevention、PlaceholderAPI、DiscordSRV を任意連携として扱います。いずれも `softdepend` であり、未導入、未ロード、API unavailable の場合でも ReputationBan 単体の通報、監査、BAN、backup、support bundle は継続します。
 
 Phase 16a 以降、optional dependency class loading を安全化するため、LuckPerms / CoreProtect / WorldGuard / GriefPrevention / DiscordSRV API 型を起動時に無条件ロードされるクラスから外し、reflection adapter 経由で必要な時だけ参照します。PlaceholderAPI は `PlaceholderExpansion` 継承が必要なため、直接 import を `ReputationBanPlaceholderExpansion` だけに隔離し、PlaceholderAPI が存在する場合だけ reflection でロードします。外部プラグインが一部またはすべて未導入の構成でも、外部 API 欠落による `NoClassDefFoundError` で ReputationBan 本体が起動不能にならない設計です。
 

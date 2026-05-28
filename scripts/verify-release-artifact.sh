@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-VERSION="0.28.0"
+VERSION="1.0.0"
 PROJECT_NAME="ReputationBan"
 JAR_NAME="${PROJECT_NAME}-${VERSION}.jar"
 RELEASE_DIR="build/release"
@@ -50,8 +50,10 @@ zip_contains "^docs/MIGRATION.md$"
 zip_contains "^docs/RELEASE_READINESS.md$"
 zip_contains "^docs/RELEASE_CANDIDATE_CHECKLIST.md$"
 zip_contains "^docs/V1_RELEASE_PLAN.md$"
+zip_contains "^docs/V1_RELEASE_EXECUTION_PLAN.md$"
 zip_contains "^docs/SUPPORT_BUNDLE.md$"
 zip_contains "^docs/SECURITY_REDACTION.md$"
+zip_contains "^docs/runtime-smoke-checklist.md$"
 zip_contains "^docs/PAPER_RUNTIME_SMOKE_REPORT_TEMPLATE.md$"
 
 zip_forbids '(^|/)(config\.yml|reputationban\.db|reputationban\.db-wal|reputationban\.db-shm|latest\.log|debug\.log)$|(^|/)logs/'
