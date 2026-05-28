@@ -168,6 +168,9 @@ done < "$OUTDIR/meta/changed-files.txt"
   echo
   echo "## rg phase 31a published release notes consistency"
   rg -n "phase-31a|Phase 31a|release-notes-body-check|GitHub Release status: PUBLISHED|RELEASED_WITH_DISCORDSRV_WARNING|Post-release monitoring / bugfix intake" README.md CHANGELOG.md docs reputationban_phase_plan.md scripts build.gradle.kts src/main/resources/plugin.yml || true
+  echo
+  echo "## rg phase 32 post-release monitoring"
+  rg -n "phase-32|Phase 32|POST_RELEASE_MONITORING|BUGFIX_INTAKE|V1_0_1_CANDIDATES|post-release monitoring|bugfix intake|v1\\.0\\.1 candidates|Post-release documentation updates" README.md CHANGELOG.md docs reputationban_phase_plan.md scripts build.gradle.kts src/main/resources/plugin.yml || true
 } > "$OUTDIR/checks/rg-review-signals.txt"
 
 {
@@ -366,6 +369,27 @@ fi
     echo "releaseStatus=unknown"
   fi
 } > "$OUTDIR/checks/release-notes-body-check.txt"
+
+{
+  for file in \
+    "docs/POST_RELEASE_MONITORING.md" \
+    "docs/BUGFIX_INTAKE.md" \
+    "docs/V1_0_1_CANDIDATES.md" \
+    "docs/phase-32.md"; do
+    if [[ -f "$ROOT/$file" ]]; then
+      echo "$file=present"
+    else
+      echo "$file=missing"
+    fi
+  done
+  if grep -q "POST_RELEASE_MONITORING.md" "$ROOT/README.md" \
+    && grep -q "BUGFIX_INTAKE.md" "$ROOT/README.md" \
+    && grep -q "V1_0_1_CANDIDATES.md" "$ROOT/README.md"; then
+    echo "README-post-release-docs=present"
+  else
+    echo "README-post-release-docs=missing"
+  fi
+} > "$OUTDIR/checks/post-release-monitoring-docs.txt"
 
 {
   local_tag="$(git tag --list "v1.0.0" || true)"

@@ -1,0 +1,22 @@
+# v1.0.1 Candidates
+
+この文書は ReputationBan v1.0.0 公開後に確認された bugfix 候補を整理するための一覧です。現時点では v1.0.1 の内容、tag、Release は未確定です。
+
+## 現時点の候補
+
+- 未確定。実ユーザー報告または追加 runtime smoke の結果が入ったら追記します。
+- DiscordSRV token-configured smoke が未実施の場合、本番で DiscordSRV 通知や account link context を使う前の確認候補として残します。
+
+## 追記ルール
+
+- bug report の発生環境、再現手順、影響範囲、回避策、support bundle の有無を記録します。
+- `blocker`、`high`、`medium`、`low`、`docs` の重大度を付けます。
+- v1.0.1 に入れる場合は、DB schema 変更なし、既存 behavior の bugfix、docs correction の範囲に収めます。
+- 新機能、UI追加、Discord command execution、Discord role mutation、Folia support、appeal workflow は原則 v1.1.0 以降で扱います。
+
+## v1.0.0から変更しないもの
+
+- `v1.0.0` tag は移動しません。
+- v1.0.0 GitHub Release assets は差し替えません。
+- v1.0.0 の version 表記は変更しません。
+- DB schema は Phase 32 では変更しません。

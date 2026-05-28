@@ -2,6 +2,8 @@
 
 ## 1.0.0
 
+- Post-release documentation updates after v1.0.0 publication.
+- Phase 32 で `docs/POST_RELEASE_MONITORING.md`、`docs/BUGFIX_INTAKE.md`、`docs/V1_0_1_CANDIDATES.md`、`docs/phase-32.md` を追加し、公開後監視、bugfix intake、v1.0.1 candidates の扱いを記録しました。
 - Phase 31a で公開済み GitHub Release 本文と生成レポートの整合性を修正しました。`GitHub Release status: PUBLISHED`、Release URL、`Tag status: CREATED`、`Next action: Post-release monitoring / bugfix intake` を release notes / Go-No-Go report に反映しています。
 - Go/No-Go report の公開後判定は `RELEASED_WITH_DISCORDSRV_WARNING` です。DiscordSRV は引き続き WARN 扱いで、tag と Release assets は変更していません。
 - Phase 31 で GitHub Release `v1.0.0` を公開しました。Release URL は <https://github.com/Nobu0707/ReputationBan/releases/tag/v1.0.0> です。

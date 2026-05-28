@@ -46,6 +46,7 @@ require_command awk
 require_command find
 require_command jar
 require_command sha256sum
+require_command gh
 
 [[ -d .git ]] || fail "Not a Git repository"
 git rev-parse --is-inside-work-tree >/dev/null || fail "Not inside a Git work tree"
@@ -76,6 +77,10 @@ for file in \
   scripts/generate-v1-release-notes.sh \
   scripts/generate-v1-release-notes-draft.sh \
   scripts/make-review-archive.sh \
+  docs/POST_RELEASE_MONITORING.md \
+  docs/BUGFIX_INTAKE.md \
+  docs/V1_0_1_CANDIDATES.md \
+  docs/phase-32.md \
   docs/INSTALLATION.md \
   docs/CONFIGURATION.md \
   docs/MIGRATION.md \
@@ -136,6 +141,9 @@ grep -q "org.xerial:sqlite-jdbc" "$YML" || fail "SQLite library not found in plu
 
 grep -q "1.0.0" README.md || fail "README.md does not mention 1.0.0"
 grep -q "1.0.0" CHANGELOG.md || fail "CHANGELOG.md does not mention 1.0.0"
+grep -q "POST_RELEASE_MONITORING.md" README.md || fail "README.md does not mention post-release monitoring docs"
+grep -q "BUGFIX_INTAKE.md" README.md || fail "README.md does not mention bugfix intake docs"
+grep -q "V1_0_1_CANDIDATES.md" README.md || fail "README.md does not mention v1.0.1 candidates docs"
 grep -q "v1.0.0 tag" README.md docs/phase-30.md docs/phase-29.md docs/V1_RELEASE_EXECUTION_PLAN.md || fail "v1.0.0 tag status docs missing"
 grep -q "GitHub Release" README.md docs/phase-30.md docs/phase-29.md docs/V1_RELEASE_EXECUTION_PLAN.md || fail "GitHub Release status docs missing"
 grep -q "Tag 作成前チェック" docs/V1_RELEASE_EXECUTION_PLAN.md || fail "v1.0.0 tag preflight check docs missing"
@@ -164,6 +172,26 @@ if [[ -n "$(git tag --list "v1.0.0")" ]]; then
     fi
   fi
 fi
+
+set +e
+RELEASE_JSON="$(gh release view v1.0.0 --json tagName,isDraft,isPrerelease,url,assets,body 2>&1)"
+RELEASE_CODE=$?
+set -e
+[[ "$RELEASE_CODE" == "0" ]] || fail "Unable to confirm GitHub Release v1.0.0 status: ${RELEASE_JSON//$'\n'/ }"
+[[ "$RELEASE_JSON" == *'"tagName":"v1.0.0"'* ]] || fail "GitHub Release tagName is not v1.0.0"
+[[ "$RELEASE_JSON" == *'"isDraft":false'* ]] || fail "GitHub Release v1.0.0 is not published"
+[[ "$RELEASE_JSON" == *'"isPrerelease":false'* ]] || fail "GitHub Release v1.0.0 is prerelease"
+for asset in \
+  "ReputationBan-1.0.0.jar" \
+  "ReputationBan-1.0.0.jar.sha256" \
+  "ReputationBan-1.0.0-release.zip" \
+  "ReputationBan-1.0.0-release.zip.sha256"; do
+  [[ "$RELEASE_JSON" == *"\"name\":\"$asset\""* ]] || fail "GitHub Release v1.0.0 missing asset: $asset"
+done
+if printf '%s\n' "$RELEASE_JSON" | grep -E "DRAFT_TO_CREATE|公開はまだ|draft 作成まで" >/dev/null; then
+  fail "Published GitHub Release notes still contain pre-publish wording"
+fi
+pass "GitHub Release v1.0.0 is published and release notes do not contain old draft wording"
 
 SCAN_PATHS=(scripts)
 if [[ -d .github ]]; then
