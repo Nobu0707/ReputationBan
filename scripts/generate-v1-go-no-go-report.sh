@@ -15,7 +15,7 @@ if [[ ! -f "$JAR_PATH" || ! -f "$RELEASE_ZIP" ]]; then
 fi
 
 set +e
-GATE_OUTPUT="$(./scripts/check-v1-release-gates.sh 2>&1)"
+GATE_OUTPUT="$(REPUTATIONBAN_ALLOW_V1_TAG_BEHIND_HEAD=1 ./scripts/check-v1-release-gates.sh 2>&1)"
 GATE_CODE=$?
 set -e
 

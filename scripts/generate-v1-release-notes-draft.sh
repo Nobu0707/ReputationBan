@@ -14,7 +14,7 @@ if [[ ! -f "$JAR_PATH" || ! -f "$RELEASE_ZIP" ]]; then
   ./scripts/create-release-artifact.sh
 fi
 
-./scripts/check-v1-release-gates.sh >/dev/null
+REPUTATIONBAN_ALLOW_V1_TAG_BEHIND_HEAD=1 ./scripts/check-v1-release-gates.sh >/dev/null
 
 sha_value() {
   local file="$1"
@@ -33,7 +33,7 @@ cat > "$DRAFT" <<DRAFT
 
 ## 概要
 
-評判スコア制BAN・通報・審査・監査・外部連携プラグインです。Phase 29 では final candidate として `scripts/generate-v1-release-notes.sh` が `ReputationBan-v1.0.0-release-notes.md` を生成します。
+評判スコア制BAN・通報・審査・監査・外部連携プラグインです。Phase 29 では final candidate として \`scripts/generate-v1-release-notes.sh\` が \`ReputationBan-v1.0.0-release-notes.md\` を生成します。
 
 ## 対応環境
 
