@@ -46,6 +46,8 @@ Webhook URL、bot token、secret、password、session ID、private database、se
 
 Phase 37 では、issue 起因ではなく production hardening review 起因の v1.0.1 hotfix candidate を実装しました。以後 open issue または open PR が追加された場合は、再現条件、影響範囲、回避策、support bundle の有無を確認してから `docs/V1_0_1_CANDIDATES.md` に追記します。
 
+Phase 38 では `docs/PLAYER_GUIDE.md`、`docs/OPERATOR_GUIDE.md`、`docs/COMMAND_REFERENCE.md` を追加しました。問い合わせが使い方や運用手順の誤解に由来する場合は、まず該当ガイドへのリンクで解決できるか確認してください。
+
 ## Hotfixが必要な条件
 
 - secret が log、audit、CSV、support bundle、review archive に露出する。

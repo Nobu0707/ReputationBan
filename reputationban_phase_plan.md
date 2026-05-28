@@ -914,7 +914,31 @@
 - v1.0.0 tag と公開済み assets は変更しない。
 - Player report runtime smoke は実プレイヤー2名以上が必要なため、Codex 環境で実施できない場合は `NOT_RUN` / `HOLD` とし、次Phaseで手動確認する。
 
-## Phase 38以降: 外部連携・高度な悪用対策
+## Phase 38 / v1.0.1: Player / Operator documentation
+
+目的: v1.0.1 production hardening candidate の状態を維持しながら、プレイヤー向け・運営向けの使い方ドキュメントを追加する。
+
+実装範囲:
+
+- `docs/PLAYER_GUIDE.md`
+- `docs/OPERATOR_GUIDE.md`
+- `docs/COMMAND_REFERENCE.md`
+- `docs/phase-38.md`
+- README、SUPPORT、post-release monitoring、bugfix intake、CHANGELOG からのリンク整理
+- review_code.sh の user docs checks
+- make-review-archive.sh の `checks/user-docs.txt`
+
+注意:
+
+- Javaコード変更なし。
+- DBスキーマ変更なし。
+- config key変更なし。
+- version は `1.0.1` のまま維持する。
+- `v1.0.1` tag は作成しない。
+- GitHub Release `v1.0.1` は作成しない。
+- GitHub Release asset は差し替えない。
+
+## Phase 39以降: 外部連携・高度な悪用対策
 
 実装候補:
 

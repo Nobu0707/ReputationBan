@@ -18,6 +18,9 @@ v1.0.0 は GitHub Release 公開済みです。Phase 37 では v1.0.1 hotfix can
 
 ## ドキュメント
 
+- [プレイヤー向けガイド](docs/PLAYER_GUIDE.md)
+- [運営向けガイド](docs/OPERATOR_GUIDE.md)
+- [コマンドリファレンス](docs/COMMAND_REFERENCE.md)
 - [導入手順](docs/INSTALLATION.md)
 - [設定説明](docs/CONFIGURATION.md)
 - [移行手順](docs/MIGRATION.md)
@@ -40,6 +43,7 @@ v1.0.0 は GitHub Release 公開済みです。Phase 37 では v1.0.1 hotfix can
 - [Support policy](SUPPORT.md)
 - [Security policy](SECURITY.md)
 - [Contribution guide](CONTRIBUTING.md)
+- [Phase 38 notes](docs/phase-38.md)
 - [Phase 37 notes](docs/phase-37.md)
 - [Phase 36 notes](docs/phase-36.md)
 - [Phase 35 notes](docs/phase-35.md)
@@ -63,6 +67,7 @@ v1.0.0 は GitHub Release 公開済みです。Phase 37 では v1.0.1 hotfix can
 
 ## 主な機能
 
+- プレイヤー向けの `/reportbad` / `/rep` 利用ガイドと、運営向けの通報対応・外部連携・トラブル対応ガイドを用意しています。
 - SQLite による評判スコア、通報、score history、BAN履歴、audit events の保存。
 - `/reportbad` による通報、カテゴリ、クールダウン、通報条件、複数通報しきい値、スタッフ審査。
 - `/reports` による pending report の一覧、詳細表示、承認、却下。

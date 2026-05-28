@@ -4,6 +4,8 @@
 
 Phase 35 では GitHub issue templates、PR template、`SUPPORT.md`、`SECURITY.md`、`CONTRIBUTING.md` を追加し、公開後サポートと v1.0.1 intake の導線を整えました。Phase 36 では `docs/MAINTENANCE_BASELINE.md` と `docs/ISSUE_TRIAGE_GUIDE.md` を追加し、GitHub Issues / PRs の intake dry-run を実施しました。
 
+Phase 38 では `docs/PLAYER_GUIDE.md`、`docs/OPERATOR_GUIDE.md`、`docs/COMMAND_REFERENCE.md` を追加し、プレイヤー説明、運営手順、コマンド確認の入口を分けました。運用問い合わせでは、必要に応じて該当ガイドへ案内してください。
+
 ## 公開状態
 
 - GitHub Release URL: <https://github.com/Nobu0707/ReputationBan/releases/tag/v1.0.0>

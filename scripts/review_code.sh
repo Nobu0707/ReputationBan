@@ -51,6 +51,9 @@ for file in \
   reputationban_phase_plan.md \
   docs/CONFIGURATION.md \
   docs/INTEGRATIONS.md \
+  docs/PLAYER_GUIDE.md \
+  docs/OPERATOR_GUIDE.md \
+  docs/phase-38.md \
   docs/RELEASE_READINESS.md \
   docs/V1_0_1_CANDIDATES.md \
   docs/BUGFIX_INTAKE.md \
@@ -132,6 +135,24 @@ grep -q "v1.0.1 tag/releaseはまだ未実施" docs/phase-37.md || fail "docs/ph
 grep -q "1.0.1" README.md CHANGELOG.md reputationban_phase_plan.md || fail "v1.0.1 docs not updated"
 grep -q "offline-lookup" docs/CONFIGURATION.md docs/INTEGRATIONS.md || fail "offline lookup docs missing"
 grep -q "max-report-reason-length" docs/CONFIGURATION.md || fail "limits docs missing"
+grep -q "docs/PLAYER_GUIDE.md" README.md || fail "README.md does not link docs/PLAYER_GUIDE.md"
+grep -q "docs/OPERATOR_GUIDE.md" README.md || fail "README.md does not link docs/OPERATOR_GUIDE.md"
+grep -q "docs/phase-38.md" README.md || fail "README.md does not link docs/phase-38.md"
+grep -q "/reportbad" docs/PLAYER_GUIDE.md || fail "PLAYER_GUIDE.md missing /reportbad"
+grep -q "/rep" docs/PLAYER_GUIDE.md || fail "PLAYER_GUIDE.md missing /rep"
+grep -q "/rep doctor" docs/OPERATOR_GUIDE.md || fail "OPERATOR_GUIDE.md missing /rep doctor"
+grep -q "/reports evidence" docs/OPERATOR_GUIDE.md || fail "OPERATOR_GUIDE.md missing /reports evidence"
+grep -q "100人規模運用" docs/OPERATOR_GUIDE.md || fail "OPERATOR_GUIDE.md missing 100人規模運用の推奨設定"
+grep -q "Javaコード変更なし" docs/phase-38.md || fail "docs/phase-38.md missing Java no-change note"
+grep -q "version変更なし" docs/phase-38.md || fail "docs/phase-38.md missing version no-change note"
+
+if grep -RE "https://(canary\\.|ptb\\.)?discord(app)?\\.com/api/webhooks/[0-9]+/[A-Za-z0-9_-]{20,}" docs README.md SUPPORT.md CHANGELOG.md >/dev/null; then
+  fail "Concrete Discord webhook URL-like value found in docs"
+fi
+if grep -REi "(password|token|secret|session|cookie)[[:space:]]*[:=][[:space:]]*['\"]?[^[:space:]'\"<>]+['\"]?" docs README.md SUPPORT.md CHANGELOG.md \
+  | grep -Ev "<redacted>|\\[REDACTED\\]|your-|example|例|貼らない|含めない|伏せ|未設定|configured|設定済み|確認|secret scan|Secret取り扱い|secret-like|secret が" >/dev/null; then
+  fail "Secret-like concrete value found in docs"
+fi
 
 if [[ -n "$(git tag --list "v1.0.1")" ]]; then
   fail "v1.0.1 tag exists; Phase 37 must not create it"

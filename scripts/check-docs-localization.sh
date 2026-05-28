@@ -46,6 +46,9 @@ pass "README.md and docs/*.md are present"
 require_japanese_text README.md
 require_japanese_text docs/INSTALLATION.md
 require_japanese_text docs/CONFIGURATION.md
+require_japanese_text docs/PLAYER_GUIDE.md
+require_japanese_text docs/OPERATOR_GUIDE.md
+require_japanese_text docs/COMMAND_REFERENCE.md
 require_japanese_text docs/RELEASE_READINESS.md
 require_japanese_text docs/SUPPORT_BUNDLE.md
 require_japanese_text docs/SECURITY_REDACTION.md
@@ -60,6 +63,8 @@ require_japanese_text docs/PLAYER_REPORT_RUNTIME_SMOKE_CHECKLIST.md
 
 require_literal README.md "/rep version"
 require_literal README.md "/reportbad"
+require_literal README.md "docs/PLAYER_GUIDE.md"
+require_literal README.md "docs/OPERATOR_GUIDE.md"
 require_literal README.md "reputationban.admin"
 require_literal README.md "1.0.0"
 require_literal docs/V1_RELEASE_PLAN.md "v1.0.0"

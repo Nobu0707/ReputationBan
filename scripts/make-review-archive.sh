@@ -205,6 +205,9 @@ done < "$OUTDIR/meta/changed-files.txt"
   echo
   echo "## rg phase 37 v1.0.1 production hardening"
   rg -n "phase-37|Phase 37|1\\.0\\.1|TargetProtectionService|TargetProtectionResult|offline-lookup|fail-closed-for-bypass|busy_timeout|synchronous = NORMAL|max-report-reason-length|max-review-note-length|max-audit-reason-length|max-context-summary-length|idx_reports_status_created|idx_players_lower_name|Bukkit Profile BAN was applied but ReputationBan DB record failed" .github README.md CHANGELOG.md docs reputationban_phase_plan.md scripts src/main/java src/test/java src/main/resources build.gradle.kts || true
+  echo
+  echo "## rg phase 38 player and operator documentation"
+  rg -n "phase-38|Phase 38|PLAYER_GUIDE|OPERATOR_GUIDE|COMMAND_REFERENCE|/reportbad|/rep doctor|/reports evidence|100人規模運用" README.md CHANGELOG.md SUPPORT.md docs scripts || true
 } > "$OUTDIR/checks/rg-review-signals.txt"
 
 {
@@ -498,6 +501,35 @@ fi
     echo "discordsrv-configured-smoke-hold=missing"
   fi
 } > "$OUTDIR/checks/github-templates.txt"
+
+{
+  if [[ -f "$ROOT/docs/PLAYER_GUIDE.md" ]]; then
+    echo "docs/PLAYER_GUIDE.md=present"
+  else
+    echo "docs/PLAYER_GUIDE.md=missing"
+  fi
+  if [[ -f "$ROOT/docs/OPERATOR_GUIDE.md" ]]; then
+    echo "docs/OPERATOR_GUIDE.md=present"
+  else
+    echo "docs/OPERATOR_GUIDE.md=missing"
+  fi
+  if [[ -f "$ROOT/docs/COMMAND_REFERENCE.md" ]]; then
+    echo "docs/COMMAND_REFERENCE.md=present"
+  else
+    echo "docs/COMMAND_REFERENCE.md=absent"
+  fi
+  if [[ -f "$ROOT/docs/phase-38.md" ]]; then
+    echo "docs/phase-38.md=present"
+  else
+    echo "docs/phase-38.md=missing"
+  fi
+  if grep -q "docs/PLAYER_GUIDE.md" "$ROOT/README.md" \
+    && grep -q "docs/OPERATOR_GUIDE.md" "$ROOT/README.md"; then
+    echo "README links=present"
+  else
+    echo "README links=missing"
+  fi
+} > "$OUTDIR/checks/user-docs.txt"
 
 {
   if command -v gh >/dev/null 2>&1; then

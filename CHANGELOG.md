@@ -2,6 +2,10 @@
 
 ## 1.0.1
 
+## Documentation
+
+- Added player-facing and operator-facing usage guides.
+
 - Phase 37 で v1.0.1 hotfix candidate として、100人規模本番運用向けの production hardening を実装しました。
 - TargetProtectionService を追加し、OP、`reputationban.bypass`、LuckPerms bypass group の保護判定を `/reportbad`、`/reports approve`、BANしきい値を跨ぐ `/rep remove|set`、自動BAN直前で一元化しました。
 - LuckPerms bypass 判定は offline `loadUser(UUID)` を非同期 reflection で扱い、`integrations.luckperms.offline-lookup.timeout-millis` と `fail-closed-for-bypass` を追加しました。
