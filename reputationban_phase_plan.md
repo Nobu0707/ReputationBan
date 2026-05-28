@@ -764,7 +764,46 @@
 - version、DB schema、新機能、runtime behavior は変更しない。
 - DiscordSRV unavailable は引き続き WARN とし、ReputationBan 本体と他連携の release gate は止めない。
 
-## Phase 32以降: 外部連携・高度な悪用対策
+## Phase 32 / v1.0.0: Post-release monitoring / v1.0.1 intake
+
+目的: 公開済み v1.0.0 の状態を維持しながら、post-release monitoring、bugfix intake、v1.0.1 candidates の運用文書を整える。
+
+実装範囲:
+
+- `docs/POST_RELEASE_MONITORING.md`
+- `docs/BUGFIX_INTAKE.md`
+- `docs/V1_0_1_CANDIDATES.md`
+- `docs/phase-32.md`
+- README、CHANGELOG、review checks の post-release docs 対応
+
+注意:
+
+- version bump、`v1.0.1` tag 作成、GitHub Release asset 差し替えは行わない。
+- `v1.0.0` tag は移動しない。
+- DiscordSRV unavailable は引き続き WARN とし、本番利用前の追加確認候補として残す。
+
+## Phase 33 / v1.0.0: DiscordSRV configured smoke intake
+
+目的: DiscordSRV token-configured runtime smoke を安全に記録し、未設定環境を `NOT_RUN` / `HOLD_FOR_DISCORDSRV_CONFIGURED_SMOKE` として扱う。
+
+実装範囲:
+
+- `docs/DISCORDSRV_CONFIGURED_RUNTIME_SMOKE_CHECKLIST.md`
+- `scripts/record-discordsrv-runtime-smoke-result.sh`
+- `scripts/check-discordsrv-runtime-readiness.sh`
+- `scripts/make-review-archive.sh` の DiscordSRV configured smoke 収集
+- `scripts/check-v1-release-gates.sh` の `discordSrvConfiguredSmoke` 表示
+- `docs/V1_0_1_CANDIDATES.md` への DiscordSRV configured smoke 状態追記
+- `docs/phase-33.md`
+
+注意:
+
+- Discord bot token、Webhook URL、secret、session、cookie、password は記録しない。
+- DiscordSRV token 未設定を PASS 扱いしない。
+- version bump、`v1.0.1` tag 作成、GitHub Release asset 差し替えは行わない。
+- `v1.0.0` tag は移動しない。
+
+## Phase 34以降: 外部連携・高度な悪用対策
 
 実装候補:
 

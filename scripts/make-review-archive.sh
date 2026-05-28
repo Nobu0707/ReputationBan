@@ -44,6 +44,25 @@ if [[ -d "$ROOT/build/manual-smoke" ]]; then
   cp -R "$ROOT/build/manual-smoke/." "$PRESERVED_MANUAL_SMOKE_DIR/"
 fi
 
+restore_preserved_manual_smoke_if_latest_not_run() {
+  local kind="$1"
+  local latest result status
+  if [[ ! -d "$PRESERVED_MANUAL_SMOKE_DIR" ]]; then
+    return 0
+  fi
+  latest="$(find "$ROOT/build/manual-smoke" -maxdepth 2 -path "*/${kind}-*/summary.txt" -type f 2>/dev/null | sort | tail -n 1 || true)"
+  if [[ -z "$latest" || ! -f "$latest" ]]; then
+    return 0
+  fi
+  result="$(grep -E '^result=' "$latest" | tail -n 1 | cut -d= -f2- || true)"
+  status="$(grep -E '^status=' "$latest" | tail -n 1 | cut -d= -f2- || true)"
+  if [[ "$result" == "NOT_RUN" || "$status" == "NOT_RUN" ]]; then
+    mkdir -p "$ROOT/build/manual-smoke"
+    cp -R "$PRESERVED_MANUAL_SMOKE_DIR/." "$ROOT/build/manual-smoke/"
+    echo "preserve-${kind}=restored-after-auto-not-run" >> "$COMMAND_STATUS"
+  fi
+}
+
 LATEST_PLAYER_REPORT_BEFORE_CLEAN="$(find "$ROOT/build/manual-smoke" -maxdepth 2 -path '*/player-report-runtime-*/summary.txt' -type f 2>/dev/null | sort | tail -n 1 || true)"
 if [[ -n "$LATEST_PLAYER_REPORT_BEFORE_CLEAN" && -f "$LATEST_PLAYER_REPORT_BEFORE_CLEAN" ]]; then
   PRESERVED_PLAYER_REPORT_NAME="$(basename "$(dirname "$LATEST_PLAYER_REPORT_BEFORE_CLEAN")")"
@@ -171,6 +190,9 @@ done < "$OUTDIR/meta/changed-files.txt"
   echo
   echo "## rg phase 32 post-release monitoring"
   rg -n "phase-32|Phase 32|POST_RELEASE_MONITORING|BUGFIX_INTAKE|V1_0_1_CANDIDATES|post-release monitoring|bugfix intake|v1\\.0\\.1 candidates|Post-release documentation updates" README.md CHANGELOG.md docs reputationban_phase_plan.md scripts build.gradle.kts src/main/resources/plugin.yml || true
+  echo
+  echo "## rg phase 33 DiscordSRV configured smoke intake"
+  rg -n "phase-33|Phase 33|DISCORDSRV_CONFIGURED_RUNTIME_SMOKE_CHECKLIST|record-discordsrv-runtime-smoke-result|check-discordsrv-runtime-readiness|discordSrvConfiguredSmoke|HOLD_FOR_DISCORDSRV_CONFIGURED_SMOKE|DiscordSRV token-configured runtime smoke" README.md CHANGELOG.md docs reputationban_phase_plan.md scripts build.gradle.kts src/main/resources/plugin.yml || true
 } > "$OUTDIR/checks/rg-review-signals.txt"
 
 {
@@ -239,6 +261,7 @@ fi
 
 if [[ -x "$ROOT/scripts/run-paper-runtime-smoke.sh" ]]; then
   run_logged "./scripts/run-paper-runtime-smoke.sh" "$OUTDIR/checks/paper-runtime-smoke-auto.txt" "$ROOT/scripts/run-paper-runtime-smoke.sh"
+  restore_preserved_manual_smoke_if_latest_not_run "paper-runtime"
 else
   echo "./scripts/run-paper-runtime-smoke.sh=missing" >> "$COMMAND_STATUS"
 fi
@@ -251,6 +274,7 @@ fi
 
 if [[ -x "$ROOT/scripts/run-integration-runtime-smoke.sh" ]]; then
   run_logged "./scripts/run-integration-runtime-smoke.sh" "$OUTDIR/checks/integration-runtime-smoke-auto.txt" "$ROOT/scripts/run-integration-runtime-smoke.sh"
+  restore_preserved_manual_smoke_if_latest_not_run "integration-runtime"
 else
   echo "./scripts/run-integration-runtime-smoke.sh=missing" >> "$COMMAND_STATUS"
 fi
@@ -259,6 +283,12 @@ if [[ -x "$ROOT/scripts/check-integration-runtime-readiness.sh" ]]; then
   run_logged "./scripts/check-integration-runtime-readiness.sh" "$OUTDIR/checks/integration-runtime-readiness.txt" "$ROOT/scripts/check-integration-runtime-readiness.sh"
 else
   echo "./scripts/check-integration-runtime-readiness.sh=missing" >> "$COMMAND_STATUS"
+fi
+
+if [[ -x "$ROOT/scripts/check-discordsrv-runtime-readiness.sh" ]]; then
+  run_logged "./scripts/check-discordsrv-runtime-readiness.sh" "$OUTDIR/checks/discordsrv-runtime-readiness.txt" "$ROOT/scripts/check-discordsrv-runtime-readiness.sh"
+else
+  echo "./scripts/check-discordsrv-runtime-readiness.sh=missing" >> "$COMMAND_STATUS"
 fi
 
 if [[ -x "$ROOT/scripts/check-player-report-runtime-readiness.sh" ]]; then
@@ -311,6 +341,22 @@ else
     echo "note=No player report runtime smoke summary found. Do not mark PASS without two real players."
     echo "createdAt=$(date -Iseconds)"
   } > "$OUTDIR/checks/latest-player-report-runtime-smoke-summary.txt"
+fi
+
+LATEST_DISCORDSRV_SMOKE="$(find "$ROOT/build/manual-smoke" -maxdepth 2 -path '*/discordsrv-runtime-*/summary.txt' -type f 2>/dev/null | sort | tail -n 1 || true)"
+if [[ -n "$LATEST_DISCORDSRV_SMOKE" && -f "$LATEST_DISCORDSRV_SMOKE" ]]; then
+  cp "$LATEST_DISCORDSRV_SMOKE" "$OUTDIR/checks/latest-discordsrv-runtime-smoke-summary.txt"
+else
+  {
+    echo "status=NOT_RUN"
+    echo "result=NOT_RUN"
+    echo "scenario=DiscordSRV token-configured runtime smoke not run"
+    echo "note=Bot token is not configured or configured smoke has not been run in this environment."
+    echo "version=1.0.0"
+    echo "jar=build/libs/ReputationBan-1.0.0.jar"
+    echo "jarSha256=missing"
+    echo "createdAt=$(date -Iseconds)"
+  } > "$OUTDIR/checks/latest-discordsrv-runtime-smoke-summary.txt"
 fi
 
 if [[ -x "$ROOT/scripts/check-runtime-smoke-consistency.sh" ]]; then
@@ -375,7 +421,9 @@ fi
     "docs/POST_RELEASE_MONITORING.md" \
     "docs/BUGFIX_INTAKE.md" \
     "docs/V1_0_1_CANDIDATES.md" \
-    "docs/phase-32.md"; do
+    "docs/phase-32.md" \
+    "docs/phase-33.md" \
+    "docs/DISCORDSRV_CONFIGURED_RUNTIME_SMOKE_CHECKLIST.md"; do
     if [[ -f "$ROOT/$file" ]]; then
       echo "$file=present"
     else
@@ -613,6 +661,13 @@ copy_runtime_smoke_latest() {
         echo "reportId="
         echo "note=No player report runtime smoke summary found. Do not mark PASS without two real players."
         echo "createdAt=$(date -Iseconds)"
+      elif [[ "$dest_name" == "discordsrv-runtime-latest" ]]; then
+        echo "version=1.0.0"
+        echo "jar=build/libs/ReputationBan-1.0.0.jar"
+        echo "jarSha256=missing"
+        echo "scenario=DiscordSRV token-configured runtime smoke not run"
+        echo "note=Bot token is not configured or configured smoke has not been run in this environment."
+        echo "createdAt=$(date -Iseconds)"
       fi
     } > "$dest/summary.txt"
     return 0
@@ -639,6 +694,8 @@ copy_runtime_smoke_latest "integration-runtime" "integration-runtime-latest" \
   summary.txt commands.txt environment.txt staged-plugins.txt plugin-restore.txt integration-status.txt
 copy_runtime_smoke_latest "player-report-runtime" "player-report-runtime-latest" \
   summary.txt manual-checklist.txt
+copy_runtime_smoke_latest "discordsrv-runtime" "discordsrv-runtime-latest" \
+  summary.txt
 
 tar -czf "$ARCHIVE" -C "$(dirname "$OUTDIR")" "$(basename "$OUTDIR")"
 cp "$ARCHIVE" "$LATEST"

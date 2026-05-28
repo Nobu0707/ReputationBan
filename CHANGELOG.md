@@ -2,6 +2,8 @@
 
 ## 1.0.0
 
+- Phase 33 で DiscordSRV token-configured runtime smoke checklist、結果記録スクリプト、readiness check、review archive 収集を追加しました。未設定環境は `NOT_RUN` / `HOLD_FOR_DISCORDSRV_CONFIGURED_SMOKE` として扱い、PASS にはしません。
+- `scripts/check-v1-release-gates.sh` が `discordSrvConfiguredSmoke` を表示し、未実施時は `RELEASED_WITH_DISCORDSRV_WARNING`、PASS 時は `RELEASED` として post-release 状態を示すようにしました。`v1.0.0` tag と GitHub Release assets は変更していません。
 - Post-release documentation updates after v1.0.0 publication.
 - Phase 32 で `docs/POST_RELEASE_MONITORING.md`、`docs/BUGFIX_INTAKE.md`、`docs/V1_0_1_CANDIDATES.md`、`docs/phase-32.md` を追加し、公開後監視、bugfix intake、v1.0.1 candidates の扱いを記録しました。
 - Phase 31a で公開済み GitHub Release 本文と生成レポートの整合性を修正しました。`GitHub Release status: PUBLISHED`、Release URL、`Tag status: CREATED`、`Next action: Post-release monitoring / bugfix intake` を release notes / Go-No-Go report に反映しています。

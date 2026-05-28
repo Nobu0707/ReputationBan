@@ -18,7 +18,7 @@
 - `./scripts/run-local-smoke-check.sh` が成功します。
 - `./scripts/create-release-artifact.sh` が成功します。
 - `./scripts/verify-release-artifact.sh` が成功します。
-- `./scripts/make-review-archive.sh "Phase 31a"` が archive を作成し、`checks/docs-localization.txt`、`checks/optional-dependency-safety.txt`、`checks/paper-runtime-smoke-auto.txt`、`checks/paper-runtime-readiness.txt`、`checks/integration-runtime-smoke-auto.txt`、`checks/integration-runtime-readiness.txt`、`checks/player-report-runtime-readiness.txt`、`checks/runtime-smoke-consistency.txt`、`checks/v1-release-gates.txt`、`checks/generate-v1-go-no-go-report.txt`、`checks/generate-v1-release-notes.txt`、`checks/v1-tag-status.txt`、`checks/v1-release-publish-status.txt`、`checks/github-release-status-after-publish.txt`、`checks/release-notes-body-check.txt`、`checks/release-assets-after-publish.txt`、`checks/integration-runtime-smoke-helper-syntax.txt`、`checks/latest-paper-runtime-smoke-summary.txt`、`checks/latest-integration-runtime-smoke-summary.txt`、`checks/latest-player-report-runtime-smoke-summary.txt`、`runtime-smoke/paper-runtime-latest/`、`runtime-smoke/integration-runtime-latest/`、`runtime-smoke/player-report-runtime-latest/summary.txt`、`runtime-smoke/player-report-runtime-latest/manual-checklist.txt`、`release-prep/ReputationBan-v1-go-no-go-report.md`、`release-prep/ReputationBan-v1.0.0-release-notes.md`、`release-prep/V1_RELEASE_EXECUTION_PLAN.md` を含みます。
+- `./scripts/make-review-archive.sh "Phase 33"` が archive を作成し、`checks/docs-localization.txt`、`checks/optional-dependency-safety.txt`、`checks/paper-runtime-smoke-auto.txt`、`checks/paper-runtime-readiness.txt`、`checks/integration-runtime-smoke-auto.txt`、`checks/integration-runtime-readiness.txt`、`checks/discordsrv-runtime-readiness.txt`、`checks/player-report-runtime-readiness.txt`、`checks/runtime-smoke-consistency.txt`、`checks/v1-release-gates.txt`、`checks/generate-v1-go-no-go-report.txt`、`checks/generate-v1-release-notes.txt`、`checks/v1-tag-status.txt`、`checks/v1-release-publish-status.txt`、`checks/github-release-status-after-publish.txt`、`checks/release-notes-body-check.txt`、`checks/release-assets-after-publish.txt`、`checks/integration-runtime-smoke-helper-syntax.txt`、`checks/latest-paper-runtime-smoke-summary.txt`、`checks/latest-integration-runtime-smoke-summary.txt`、`checks/latest-discordsrv-runtime-smoke-summary.txt`、`checks/latest-player-report-runtime-smoke-summary.txt`、`runtime-smoke/paper-runtime-latest/`、`runtime-smoke/integration-runtime-latest/`、`runtime-smoke/discordsrv-runtime-latest/summary.txt`、`runtime-smoke/player-report-runtime-latest/summary.txt`、`runtime-smoke/player-report-runtime-latest/manual-checklist.txt`、`release-prep/ReputationBan-v1-go-no-go-report.md`、`release-prep/ReputationBan-v1.0.0-release-notes.md`、`release-prep/V1_RELEASE_EXECUTION_PLAN.md` を含みます。
 - `bash -n scripts/run-paper-runtime-smoke.sh` が成功します。
 - `bash -n scripts/check-paper-runtime-readiness.sh` が成功します。
 - `bash -n scripts/run-paper-runtime-smoke-helper.sh` が成功します。
@@ -27,6 +27,8 @@
 - `bash -n scripts/verify-release-artifact.sh` が成功します。
 - `bash -n scripts/record-paper-runtime-smoke-result.sh` が成功します。
 - `bash -n scripts/record-integration-runtime-smoke-result.sh` が成功します。
+- `bash -n scripts/record-discordsrv-runtime-smoke-result.sh` が成功します。
+- `bash -n scripts/check-discordsrv-runtime-readiness.sh` が成功します。
 - `bash -n scripts/record-player-report-runtime-smoke-result.sh` が成功します。
 - `bash -n scripts/check-player-report-runtime-readiness.sh` が成功します。
 - `bash -n scripts/check-integration-runtime-readiness.sh` が成功します。
@@ -43,7 +45,9 @@
 - Integration runtime smoke は `integration-status.txt` と summary の `activeIntegrations` / `unavailableIntegrations` を残します。
 - 可能な限り実Paperサーバーで /rep version、/rep doctor、/rep integrations、/rep integrations test、/rep placeholders、/reports evidence <id>、/rep support bundle、/rep backup、/reportbad TAB補完、DiscordSRV 導入/未導入時の account link 表示を確認してください。`/reportbad` と `/reports evidence` による report_context 実生成確認は実プレイヤー2名以上で行います。
 - Phase 29 時点の主要 runtime gate は Paper runtime smoke: PASS、Integration runtime smoke: PASS、Player report/evidence runtime smoke: PASS です。
-- v1 release gates の既定 judgment は `READY_FOR_V1_RELEASE_WITH_DISCORDSRV_WARNING` です。
+- v1.0.0 公開後の v1 release gates は、DiscordSRV configured smoke 未実施時に `discordSrvConfiguredSmoke=NOT_RUN` と `judgment=RELEASED_WITH_DISCORDSRV_WARNING` を表示します。
+- DiscordSRV configured smoke が PASS の場合は `discordSrvConfiguredSmoke=PASS` と `judgment=RELEASED` を表示します。
+- 公開前フェーズの v1 release gates の既定 judgment は `READY_FOR_V1_RELEASE_WITH_DISCORDSRV_WARNING` でした。
 - Phase 31 公開前確認でも v1 release gates judgment は `READY_FOR_V1_RELEASE_WITH_DISCORDSRV_WARNING` です。
 - Phase 31a 以降の generated release notes / Go-No-Go report は `GitHub Release status: PUBLISHED` を表示し、Go/No-Go report は `Judgment: RELEASED_WITH_DISCORDSRV_WARNING` を表示します。
 - DiscordSRV を必須扱いにする運用では `./scripts/check-v1-release-gates.sh --strict --require-discordsrv` を使い、unavailable なら `HOLD_FOR_DISCORDSRV_RUNTIME_SMOKE` とします。
@@ -60,6 +64,7 @@
 - PlaceholderAPI 導入時、`/papi parse <player> %reputationban_score%` が cache 由来の score を表示します。
 - DiscordSRV 導入時、`/reports evidence <id>` が provider `discordsrv` の account link context を表示し、既定では Discord ID を hidden にします。
 - DiscordSRV が bot token 未設定などで unavailable の場合は WARN として記録します。本番で DiscordSRV 通知や account link を使う場合は bot token 設定済み環境で追加確認します。
+- DiscordSRV token-configured runtime smoke が未実施の場合は `NOT_RUN` / `HOLD_FOR_DISCORDSRV_CONFIGURED_SMOKE` として記録し、PASS 扱いにしません。
 - `/rep backup before-release` が `backups/reputationban-manual-backup-*.db` を作成します。
 - `/rep support bundle` が `support/reputationban-support-*.zip` を作成します。
 - support bundle に `meta.txt`、`doctor.txt`、`counts.txt`、`config-redacted.yml`、`README-SHARING.txt` が含まれます。

@@ -61,6 +61,7 @@ for file in \
   scripts/check-docs-localization.sh \
   scripts/check-optional-dependency-safety.sh \
   scripts/check-integration-runtime-readiness.sh \
+  scripts/check-discordsrv-runtime-readiness.sh \
   scripts/check-paper-runtime-readiness.sh \
   scripts/check-player-report-runtime-readiness.sh \
   scripts/check-runtime-smoke-consistency.sh \
@@ -72,6 +73,7 @@ for file in \
   scripts/verify-release-artifact.sh \
   scripts/record-paper-runtime-smoke-result.sh \
   scripts/record-integration-runtime-smoke-result.sh \
+  scripts/record-discordsrv-runtime-smoke-result.sh \
   scripts/record-player-report-runtime-smoke-result.sh \
   scripts/generate-v1-go-no-go-report.sh \
   scripts/generate-v1-release-notes.sh \
@@ -80,6 +82,8 @@ for file in \
   docs/POST_RELEASE_MONITORING.md \
   docs/BUGFIX_INTAKE.md \
   docs/V1_0_1_CANDIDATES.md \
+  docs/DISCORDSRV_CONFIGURED_RUNTIME_SMOKE_CHECKLIST.md \
+  docs/phase-33.md \
   docs/phase-32.md \
   docs/INSTALLATION.md \
   docs/CONFIGURATION.md \
@@ -109,6 +113,7 @@ for executable in \
   scripts/check-docs-localization.sh \
   scripts/check-optional-dependency-safety.sh \
   scripts/check-integration-runtime-readiness.sh \
+  scripts/check-discordsrv-runtime-readiness.sh \
   scripts/check-paper-runtime-readiness.sh \
   scripts/check-player-report-runtime-readiness.sh \
   scripts/check-runtime-smoke-consistency.sh \
@@ -120,6 +125,7 @@ for executable in \
   scripts/verify-release-artifact.sh \
   scripts/record-paper-runtime-smoke-result.sh \
   scripts/record-integration-runtime-smoke-result.sh \
+  scripts/record-discordsrv-runtime-smoke-result.sh \
   scripts/record-player-report-runtime-smoke-result.sh \
   scripts/generate-v1-go-no-go-report.sh \
   scripts/generate-v1-release-notes.sh \
@@ -144,6 +150,8 @@ grep -q "1.0.0" CHANGELOG.md || fail "CHANGELOG.md does not mention 1.0.0"
 grep -q "POST_RELEASE_MONITORING.md" README.md || fail "README.md does not mention post-release monitoring docs"
 grep -q "BUGFIX_INTAKE.md" README.md || fail "README.md does not mention bugfix intake docs"
 grep -q "V1_0_1_CANDIDATES.md" README.md || fail "README.md does not mention v1.0.1 candidates docs"
+grep -q "DISCORDSRV_CONFIGURED_RUNTIME_SMOKE_CHECKLIST.md" README.md || fail "README.md does not mention DiscordSRV configured smoke checklist"
+grep -q "phase-33.md" README.md || fail "README.md does not mention Phase 33 docs"
 grep -q "v1.0.0 tag" README.md docs/phase-30.md docs/phase-29.md docs/V1_RELEASE_EXECUTION_PLAN.md || fail "v1.0.0 tag status docs missing"
 grep -q "GitHub Release" README.md docs/phase-30.md docs/phase-29.md docs/V1_RELEASE_EXECUTION_PLAN.md || fail "GitHub Release status docs missing"
 grep -q "Tag 作成前チェック" docs/V1_RELEASE_EXECUTION_PLAN.md || fail "v1.0.0 tag preflight check docs missing"
@@ -159,6 +167,15 @@ grep -q -- "--carried-forward-from" scripts/record-player-report-runtime-smoke-r
 grep -q "carriedForwardFrom" scripts/record-player-report-runtime-smoke-result.sh docs/phase-29.md || fail "player report carry-forward summary/doc missing"
 grep -q "generate-v1-release-notes.sh" scripts/make-review-archive.sh docs/RELEASE_READINESS.md docs/RELEASE_CANDIDATE_CHECKLIST.md || fail "release notes final script is not wired into docs/archive"
 grep -q "V1_RELEASE_EXECUTION_PLAN.md" scripts/make-review-archive.sh docs/RELEASE_READINESS.md README.md || fail "release execution plan is not wired into docs/archive"
+grep -q "HOLD_FOR_DISCORDSRV_CONFIGURED_SMOKE" scripts/check-discordsrv-runtime-readiness.sh docs/phase-33.md || fail "DiscordSRV configured smoke HOLD judgment missing"
+grep -q -- "--strict" scripts/check-discordsrv-runtime-readiness.sh || fail "DiscordSRV runtime readiness lacks strict mode"
+grep -q "discordsrv-runtime-readiness" scripts/make-review-archive.sh || fail "review archive does not collect DiscordSRV runtime readiness"
+grep -q "latest-discordsrv-runtime-smoke-summary" scripts/make-review-archive.sh || fail "review archive does not collect latest DiscordSRV runtime smoke summary"
+grep -q "discordsrv-runtime-latest" scripts/make-review-archive.sh || fail "review archive does not collect latest DiscordSRV runtime smoke directory"
+grep -q "contains_secret_like_note" scripts/record-discordsrv-runtime-smoke-result.sh || fail "DiscordSRV runtime smoke recorder lacks note redaction"
+grep -q "<redacted>" scripts/record-discordsrv-runtime-smoke-result.sh || fail "DiscordSRV runtime smoke recorder does not redact dangerous notes"
+grep -q "DiscordSRV token-configured runtime smoke" docs/V1_0_1_CANDIDATES.md || fail "v1.0.1 candidates missing DiscordSRV configured smoke status"
+grep -q "discordSrvConfiguredSmoke" scripts/check-v1-release-gates.sh || fail "v1 release gates do not show DiscordSRV configured smoke status"
 
 if [[ -n "$(git tag --list "v1.0.0")" ]]; then
   HEAD_COMMIT="$(git rev-parse HEAD)"
@@ -252,6 +269,7 @@ grep -q "^version:[[:space:]]*${EXPECTED_VERSION}$" "$TMP_DIR/plugin.yml" || fai
 
 ./scripts/check-paper-runtime-readiness.sh
 ./scripts/check-integration-runtime-readiness.sh
+./scripts/check-discordsrv-runtime-readiness.sh
 ./scripts/check-player-report-runtime-readiness.sh
 ./scripts/check-runtime-smoke-consistency.sh
 REPUTATIONBAN_ALLOW_V1_TAG_BEHIND_HEAD=1 ./scripts/check-v1-release-gates.sh

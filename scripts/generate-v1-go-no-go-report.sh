@@ -62,6 +62,7 @@ JAR_SHA="$PUBLISHED_JAR_SHA"
 ZIP_SHA="$PUBLISHED_ZIP_SHA"
 JUDGMENT="$(gate_value judgment)"
 DISCORDSRV="$(gate_value discordSrv)"
+DISCORDSRV_CONFIGURED_SMOKE="$(gate_value discordSrvConfiguredSmoke)"
 if [[ -z "$(git tag --list "v1.0.0")" ]]; then
   TAG_STATUS="NOT_CREATED"
 else
@@ -103,6 +104,7 @@ cat > "$REPORT" <<REPORT
 - Integration runtime smoke: $(gate_value integrationRuntime)
 - Player report runtime smoke: $(gate_value playerReportRuntime)
 - Runtime smoke consistency: $(gate_value runtimeSmokeConsistency)
+- DiscordSRV configured smoke: ${DISCORDSRV_CONFIGURED_SMOKE:-NOT_RUN}
 - Secret scan: $(gate_value secretScan)
 - Support bundle safety: PASS
 - Release docs: PASS
@@ -116,10 +118,11 @@ cat > "$REPORT" <<REPORT
 - GriefPrevention: $(integration_status_value GriefPrevention)
 - PlaceholderAPI: $(integration_status_value PlaceholderAPI)
 - DiscordSRV: ${DISCORDSRV}
+- DiscordSRV configured smoke: ${DISCORDSRV_CONFIGURED_SMOKE:-NOT_RUN}
 
 ## DiscordSRV WARN
 
-- bot token未設定のため unavailable として記録されています。
+- bot token未設定または configured smoke 未実施の場合は WARN/HOLD として記録されています。
 - DiscordSRV通知はデフォルト無効です。
 - ReputationBan本体、Paper runtime smoke、他の外部連携 runtime smoke の release gate は止めません。
 - 本番でDiscordSRV通知や account link を使うなら、bot token設定済み環境で追加確認が必要です。

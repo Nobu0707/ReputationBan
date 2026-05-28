@@ -31,6 +31,8 @@ DiscordSRV は bot token 未設定、DiscordSRV API unavailable、または opti
 
 本番で DiscordSRV 通知または account link context を使う場合は、bot token 設定済み環境で追加 smoke を実施し、`/rep integrations`、`/rep integrations test`、`/reports evidence <id>` の表示を確認してください。
 
+Phase 33 以降は `docs/DISCORDSRV_CONFIGURED_RUNTIME_SMOKE_CHECKLIST.md` を使い、結果を `scripts/record-discordsrv-runtime-smoke-result.sh` で記録します。未設定環境では `NOT_RUN` として記録し、`scripts/check-discordsrv-runtime-readiness.sh` は `HOLD_FOR_DISCORDSRV_CONFIGURED_SMOKE` を表示します。bot token、Webhook URL、secret、session、cookie、password は記録しません。
+
 ## 問題報告時に集める情報
 
 - Paper version
@@ -41,6 +43,7 @@ DiscordSRV は bot token 未設定、DiscordSRV API unavailable、または opti
 - 実行した command と permission
 - 発生時刻と関連する server log
 - runtime smoke の結果
+- DiscordSRV token-configured runtime smoke の結果。未実施の場合は `NOT_RUN` / `HOLD_FOR_DISCORDSRV_CONFIGURED_SMOKE`
 - `/rep doctor` の結果
 - `/rep integrations` と `/rep integrations test` の結果
 - `/rep support bundle` で作成した support bundle

@@ -66,6 +66,31 @@ latest_summary() {
     | tail -n 1
 }
 
+summary_result() {
+  local kind="$1"
+  local summary result status
+  summary="$(latest_summary "$kind" || true)"
+  if [[ -z "$summary" || ! -f "$summary" ]]; then
+    echo "NOT_RUN"
+    return 0
+  fi
+  result="$(grep -E '^result=' "$summary" | tail -n 1 | cut -d= -f2- || true)"
+  status="$(grep -E '^status=' "$summary" | tail -n 1 | cut -d= -f2- || true)"
+  if [[ "$result" == "PASS" || "$status" == "PASS" ]]; then
+    echo "PASS"
+    return 0
+  fi
+  if [[ -n "$result" ]]; then
+    echo "$result"
+    return 0
+  fi
+  if [[ -n "$status" ]]; then
+    echo "$status"
+    return 0
+  fi
+  echo "UNKNOWN"
+}
+
 mark_gate() {
   local key="$1"
   local output="$2"
@@ -187,7 +212,9 @@ else
 fi
 
 DISCORDSRV="$(discordsrv_state)"
+DISCORDSRV_CONFIGURED_SMOKE="$(summary_result discordsrv-runtime)"
 echo "discordSrv=$DISCORDSRV"
+echo "discordSrvConfiguredSmoke=$DISCORDSRV_CONFIGURED_SMOKE"
 
 if [[ "$REQUIRE_DISCORDSRV" == "1" && "$DISCORDSRV" != "PASS" ]]; then
   echo "judgment=HOLD_FOR_DISCORDSRV_RUNTIME_SMOKE"
@@ -199,10 +226,10 @@ if [[ "$FAILED" != "0" ]]; then
   exit 1
 fi
 
-if [[ "$DISCORDSRV" == WARNING_* ]]; then
-  echo "judgment=READY_FOR_V1_RELEASE_WITH_DISCORDSRV_WARNING"
+if [[ "$DISCORDSRV_CONFIGURED_SMOKE" == "PASS" ]]; then
+  echo "judgment=RELEASED"
 else
-  echo "judgment=READY_FOR_V1_RELEASE"
+  echo "judgment=RELEASED_WITH_DISCORDSRV_WARNING"
 fi
 
 exit 0

@@ -39,6 +39,7 @@ JAR_SHA="$PUBLISHED_JAR_SHA"
 ZIP_SHA="$PUBLISHED_ZIP_SHA"
 JUDGMENT="$(gate_value judgment)"
 DISCORDSRV="$(gate_value discordSrv)"
+DISCORDSRV_CONFIGURED_SMOKE="$(gate_value discordSrvConfiguredSmoke)"
 TAG_STATUS="NOT_CREATED"
 if [[ -n "$(git tag --list "v1.0.0")" ]]; then
   TAG_STATUS="CREATED"
@@ -90,6 +91,7 @@ ReputationBan は、評判スコア、プレイヤー通報、審査、監査、
 - Integration runtime smoke: $(gate_value integrationRuntime)
 - Player report/evidence runtime smoke: $(gate_value playerReportRuntime)
 - Runtime smoke consistency: $(gate_value runtimeSmokeConsistency)
+- DiscordSRV configured smoke: ${DISCORDSRV_CONFIGURED_SMOKE:-NOT_RUN}
 - Optional dependency safety: $(gate_value optionalDependencySafety)
 - Docs localization: $(gate_value docsLocalization)
 - Release artifact verification: $(gate_value releaseArtifact)
@@ -103,7 +105,7 @@ ReputationBan は、評判スコア、プレイヤー通報、審査、監査、
 
 ## DiscordSRV WARN
 
-DiscordSRV は bot token 未設定または API unavailable の場合、\`${DISCORDSRV:-WARNING_UNCONFIRMED}\` として WARN 扱いです。DiscordSRV 通知はデフォルト無効であり、ReputationBan 本体、Paper runtime smoke、他の外部連携 runtime smoke の release gate は止めません。本番で DiscordSRV 通知や account link を使う場合は、bot token 設定済み環境で追加確認してください。
+DiscordSRV は bot token 未設定または API unavailable の場合、\`${DISCORDSRV:-WARNING_UNCONFIRMED}\` として WARN 扱いです。DiscordSRV configured smoke は \`${DISCORDSRV_CONFIGURED_SMOKE:-NOT_RUN}\` です。DiscordSRV 通知はデフォルト無効であり、ReputationBan 本体、Paper runtime smoke、他の外部連携 runtime smoke の release gate は止めません。本番で DiscordSRV 通知や account link を使う場合は、bot token 設定済み環境で追加確認してください。
 
 ## SHA256
 
