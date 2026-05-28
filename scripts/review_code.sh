@@ -83,6 +83,7 @@ for file in \
   docs/BUGFIX_INTAKE.md \
   docs/V1_0_1_CANDIDATES.md \
   docs/DISCORDSRV_CONFIGURED_RUNTIME_SMOKE_CHECKLIST.md \
+  docs/phase-34.md \
   docs/phase-33.md \
   docs/phase-32.md \
   docs/INSTALLATION.md \
@@ -151,6 +152,7 @@ grep -q "POST_RELEASE_MONITORING.md" README.md || fail "README.md does not menti
 grep -q "BUGFIX_INTAKE.md" README.md || fail "README.md does not mention bugfix intake docs"
 grep -q "V1_0_1_CANDIDATES.md" README.md || fail "README.md does not mention v1.0.1 candidates docs"
 grep -q "DISCORDSRV_CONFIGURED_RUNTIME_SMOKE_CHECKLIST.md" README.md || fail "README.md does not mention DiscordSRV configured smoke checklist"
+grep -q "phase-34.md" README.md || fail "README.md does not mention Phase 34 docs"
 grep -q "phase-33.md" README.md || fail "README.md does not mention Phase 33 docs"
 grep -q "v1.0.0 tag" README.md docs/phase-30.md docs/phase-29.md docs/V1_RELEASE_EXECUTION_PLAN.md || fail "v1.0.0 tag status docs missing"
 grep -q "GitHub Release" README.md docs/phase-30.md docs/phase-29.md docs/V1_RELEASE_EXECUTION_PLAN.md || fail "GitHub Release status docs missing"
@@ -175,6 +177,9 @@ grep -q "discordsrv-runtime-latest" scripts/make-review-archive.sh || fail "revi
 grep -q "contains_secret_like_note" scripts/record-discordsrv-runtime-smoke-result.sh || fail "DiscordSRV runtime smoke recorder lacks note redaction"
 grep -q "<redacted>" scripts/record-discordsrv-runtime-smoke-result.sh || fail "DiscordSRV runtime smoke recorder does not redact dangerous notes"
 grep -q "DiscordSRV token-configured runtime smoke" docs/V1_0_1_CANDIDATES.md || fail "v1.0.1 candidates missing DiscordSRV configured smoke status"
+grep -q "current status: \`NOT_RUN\`" docs/V1_0_1_CANDIDATES.md || fail "v1.0.1 candidates missing DiscordSRV configured smoke current status"
+grep -q "Phase 34 decision" docs/V1_0_1_CANDIDATES.md || fail "v1.0.1 candidates missing Phase 34 DiscordSRV smoke decision"
+grep -q "HOLD_FOR_DISCORDSRV_CONFIGURED_SMOKE" docs/phase-34.md || fail "Phase 34 docs missing DiscordSRV configured smoke judgment"
 grep -q "discordSrvConfiguredSmoke" scripts/check-v1-release-gates.sh || fail "v1 release gates do not show DiscordSRV configured smoke status"
 
 if [[ -n "$(git tag --list "v1.0.0")" ]]; then

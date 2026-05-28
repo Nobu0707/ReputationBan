@@ -5,12 +5,15 @@
 ## 現時点の候補
 
 - 未確定。実ユーザー報告または追加 runtime smoke の結果が入ったら追記します。
-- DiscordSRV token-configured smoke が未実施の場合、本番で DiscordSRV 通知や account link context を使う前の確認候補として残します。
+- DiscordSRV token-configured smoke は Phase 34 で `NOT_RUN` として判断記録済みです。本番で DiscordSRV 通知や account link context を使う前の運用確認候補として残します。
 
 ## DiscordSRV token-configured runtime smoke
 
 - current status: `NOT_RUN`
 - readiness judgment: `HOLD_FOR_DISCORDSRV_CONFIGURED_SMOKE`
+- Phase 34 decision: token-configured environment or production-use decision was not provided, so the smoke was deferred and not marked PASS.
+- actual run: no
+- reason: DiscordSRV bot token configured environment, bot online state, test Discord channel, and production-use intent were not available in this workspace.
 - v1.0.1 bugfix ではなく運用確認候補です。
 - DiscordSRV 本番利用時は `docs/DISCORDSRV_CONFIGURED_RUNTIME_SMOKE_CHECKLIST.md` に沿った実施を推奨します。
 - smoke 結果から bug が再現した場合のみ、再現条件、影響範囲、回避策を v1.0.1 candidates として追記します。

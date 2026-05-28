@@ -193,6 +193,9 @@ done < "$OUTDIR/meta/changed-files.txt"
   echo
   echo "## rg phase 33 DiscordSRV configured smoke intake"
   rg -n "phase-33|Phase 33|DISCORDSRV_CONFIGURED_RUNTIME_SMOKE_CHECKLIST|record-discordsrv-runtime-smoke-result|check-discordsrv-runtime-readiness|discordSrvConfiguredSmoke|HOLD_FOR_DISCORDSRV_CONFIGURED_SMOKE|DiscordSRV token-configured runtime smoke" README.md CHANGELOG.md docs reputationban_phase_plan.md scripts build.gradle.kts src/main/resources/plugin.yml || true
+  echo
+  echo "## rg phase 34 DiscordSRV configured smoke decision"
+  rg -n "phase-34|Phase 34|DiscordSRV configured smoke deferred|Phase 34 decision|production-use decision|HOLD_FOR_DISCORDSRV_CONFIGURED_SMOKE|discordSrvConfiguredSmoke|V1_0_1_CANDIDATES" README.md CHANGELOG.md docs reputationban_phase_plan.md scripts build.gradle.kts src/main/resources/plugin.yml || true
 } > "$OUTDIR/checks/rg-review-signals.txt"
 
 {
@@ -423,6 +426,7 @@ fi
     "docs/V1_0_1_CANDIDATES.md" \
     "docs/phase-32.md" \
     "docs/phase-33.md" \
+    "docs/phase-34.md" \
     "docs/DISCORDSRV_CONFIGURED_RUNTIME_SMOKE_CHECKLIST.md"; do
     if [[ -f "$ROOT/$file" ]]; then
       echo "$file=present"

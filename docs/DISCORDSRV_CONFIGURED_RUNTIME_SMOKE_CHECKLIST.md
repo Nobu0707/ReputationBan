@@ -8,6 +8,7 @@ DiscordSRV bot token 設定済み環境で、ReputationBan の DiscordSRV 連携
 
 - bot token は docs、logs、review archive、support bundle に出しません。
 - token 値を command output、issue、chat、review comment に貼りません。
+- Codex は bot token を要求しません。
 - DiscordSRV 通知はデフォルト無効です。
 - テスト用 Discord チャンネルを使います。
 - 本番 Discord へ通知する場合は、事前に関係者へ告知します。
@@ -22,6 +23,21 @@ DiscordSRV bot token 設定済み環境で、ReputationBan の DiscordSRV 連携
 - DiscordSRV bot が online である。
 - `integrations.discordsrv.enabled=true` である。
 - 通知テストする場合のみ `integrations.discordsrv.notifications.enabled=true` である。
+- テスト用 Discord チャンネルが用意済みである。
+- DiscordSRV 連携を本番で使う予定、または token-configured smoke を確認したい意図がある。
+
+## 実施しない場合
+
+前提が揃わない場合は PASS にしません。`NOT_RUN` として次のように記録します。
+
+```bash
+./scripts/record-discordsrv-runtime-smoke-result.sh \
+  --result NOT_RUN \
+  --scenario "DiscordSRV configured smoke deferred" \
+  --note "DiscordSRV configured runtime smoke deferred; token-configured environment or production-use decision not provided."
+```
+
+`DEFERRED` を使える運用に拡張した場合も、既存 readiness との互換を保ち、未実施を PASS と混同しないでください。
 
 ## 確認項目
 

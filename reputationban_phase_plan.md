@@ -803,7 +803,31 @@
 - version bump、`v1.0.1` tag 作成、GitHub Release asset 差し替えは行わない。
 - `v1.0.0` tag は移動しない。
 
-## Phase 34以降: 外部連携・高度な悪用対策
+## Phase 34 / v1.0.0: DiscordSRV configured smoke decision / post-release intake
+
+目的: v1.0.0 公開済み状態を維持しながら、DiscordSRV token-configured runtime smoke を実施できるか判定し、実施できない場合は `NOT_RUN` / `HOLD_FOR_DISCORDSRV_CONFIGURED_SMOKE` として正直に記録する。
+
+実装範囲:
+
+- v1.0.0 GitHub Release 公開状態の再確認
+- DiscordSRV configured smoke の実施可否判断
+- token-configured environment または production-use decision が提供されていない場合の `NOT_RUN` 記録
+- `docs/phase-34.md`
+- `docs/V1_0_1_CANDIDATES.md` の DiscordSRV configured smoke 状態更新
+- post-release monitoring / bugfix intake / release readiness / README / CHANGELOG の Phase 34 反映
+- review archive と review checks の Phase 34 対応
+
+注意:
+
+- Discord bot token、Webhook URL、secret、session、cookie、password は記録しない。
+- Codex は bot token を要求しない。
+- 未設定環境や本番利用予定未提供を PASS 扱いしない。
+- DiscordSRV configured smoke 未実施は v1.0.1 bugfix ではなく運用確認候補として扱う。
+- 実装不具合が再現した場合のみ v1.0.1 candidate に昇格する。
+- version bump、`v1.0.1` tag 作成、GitHub Release asset 差し替えは行わない。
+- `v1.0.0` tag は移動しない。
+
+## Phase 35以降: 外部連携・高度な悪用対策
 
 実装候補:
 

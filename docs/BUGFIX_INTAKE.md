@@ -37,6 +37,7 @@ Webhook URL、bot token、secret、password、session ID、private database、se
 - 新機能ではなく、既存機能の安全性、互換性、診断性を改善する修正。
 - DiscordSRV token-configured smoke が未実施で、本番利用前の確認として残す必要がある項目。
 - DiscordSRV token-configured smoke の結果から、実装不具合として再現した項目。単なる未実施は bugfix ではなく運用確認候補です。
+- Phase 34 の DiscordSRV token-configured smoke は `NOT_RUN` です。token-configured environment または production-use decision が提供されていないためであり、v1.0.1 bugfix には昇格しません。
 - docs-only で誤解や危険な運用を防げる項目。
 
 ## Hotfixが必要な条件

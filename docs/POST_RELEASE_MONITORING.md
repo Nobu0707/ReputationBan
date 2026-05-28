@@ -33,6 +33,8 @@ DiscordSRV は bot token 未設定、DiscordSRV API unavailable、または opti
 
 Phase 33 以降は `docs/DISCORDSRV_CONFIGURED_RUNTIME_SMOKE_CHECKLIST.md` を使い、結果を `scripts/record-discordsrv-runtime-smoke-result.sh` で記録します。未設定環境では `NOT_RUN` として記録し、`scripts/check-discordsrv-runtime-readiness.sh` は `HOLD_FOR_DISCORDSRV_CONFIGURED_SMOKE` を表示します。bot token、Webhook URL、secret、session、cookie、password は記録しません。
 
+Phase 34 では DiscordSRV bot token configured 環境、本番利用予定、テスト用 Discord チャンネルが提供されていないため、DiscordSRV token-configured runtime smoke は実施せず `NOT_RUN` として記録しました。これは PASS ではなく、本番で DiscordSRV 通知または account link context を使う前の運用確認候補です。
+
 ## 問題報告時に集める情報
 
 - Paper version

@@ -2,6 +2,8 @@
 
 ## 1.0.0
 
+- Phase 34 で DiscordSRV token-configured runtime smoke の実施可否を再判断し、token-configured environment または production-use decision が提供されていないため `NOT_RUN` / `HOLD_FOR_DISCORDSRV_CONFIGURED_SMOKE` として記録しました。未実施は PASS ではなく、v1.0.1 bugfix ではなく運用確認候補です。
+- `docs/phase-34.md` を追加し、post-release monitoring、bugfix intake、v1.0.1 candidates、release readiness、README に Phase 34 の判断を反映しました。`v1.0.0` tag、GitHub Release、Release assets、version は変更していません。
 - Phase 33 で DiscordSRV token-configured runtime smoke checklist、結果記録スクリプト、readiness check、review archive 収集を追加しました。未設定環境は `NOT_RUN` / `HOLD_FOR_DISCORDSRV_CONFIGURED_SMOKE` として扱い、PASS にはしません。
 - `scripts/check-v1-release-gates.sh` が `discordSrvConfiguredSmoke` を表示し、未実施時は `RELEASED_WITH_DISCORDSRV_WARNING`、PASS 時は `RELEASED` として post-release 状態を示すようにしました。`v1.0.0` tag と GitHub Release assets は変更していません。
 - Post-release documentation updates after v1.0.0 publication.
