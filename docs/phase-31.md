@@ -62,3 +62,7 @@ Phase 31 では次を行っていません。
 - 新機能追加
 - DB schema 変更
 - GitHub Release 削除
+
+## Phase 31a follow-up
+
+Phase 31a で公開済み GitHub Release 本文と生成レポートの整合性を修正しました。Release URL は <https://github.com/Nobu0707/ReputationBan/releases/tag/v1.0.0> です。`v1.0.0` tag と Release asset 4件は変更していません。

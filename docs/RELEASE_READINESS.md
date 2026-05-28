@@ -1,6 +1,6 @@
 # Release Readiness
 
-1.0.0 の v1.0.0 final artifact / release publish readiness として、次の項目を確認してください。Phase 31 で `v1.0.0` GitHub Release は公開済みです。`v1.0.0` annotated tag は Phase 30 commit `b422e72ec5a917cdc04dee902e96a0cef190026c` を指し、GitHub Release は `draft=false`、`prerelease=false` です。Release URL は <https://github.com/Nobu0707/ReputationBan/releases/tag/v1.0.0> です。
+1.0.0 の v1.0.0 final artifact / release publish readiness として、次の項目を確認してください。Phase 31 で `v1.0.0` GitHub Release は公開済みです。Phase 31a で公開済み Release 本文と生成レポートの `PUBLISHED` 整合性を修正しました。`v1.0.0` annotated tag は Phase 30 commit `b422e72ec5a917cdc04dee902e96a0cef190026c` を指し、GitHub Release は `draft=false`、`prerelease=false` です。Release URL は <https://github.com/Nobu0707/ReputationBan/releases/tag/v1.0.0> です。DiscordSRV は引き続き WARN 扱いです。
 
 - `./gradlew clean test build --warning-mode all` が成功します。
 - `./scripts/review_code.sh` が成功します。
@@ -18,7 +18,7 @@
 - `./scripts/run-local-smoke-check.sh` が成功します。
 - `./scripts/create-release-artifact.sh` が成功します。
 - `./scripts/verify-release-artifact.sh` が成功します。
-- `./scripts/make-review-archive.sh "Phase 31"` が archive を作成し、`checks/docs-localization.txt`、`checks/optional-dependency-safety.txt`、`checks/paper-runtime-smoke-auto.txt`、`checks/paper-runtime-readiness.txt`、`checks/integration-runtime-smoke-auto.txt`、`checks/integration-runtime-readiness.txt`、`checks/player-report-runtime-readiness.txt`、`checks/runtime-smoke-consistency.txt`、`checks/v1-release-gates.txt`、`checks/generate-v1-go-no-go-report.txt`、`checks/generate-v1-release-notes.txt`、`checks/v1-tag-status.txt`、`checks/v1-release-publish-status.txt`、`checks/github-release-status-after-publish.txt`、`checks/release-assets-after-publish.txt`、`checks/integration-runtime-smoke-helper-syntax.txt`、`checks/latest-paper-runtime-smoke-summary.txt`、`checks/latest-integration-runtime-smoke-summary.txt`、`checks/latest-player-report-runtime-smoke-summary.txt`、`runtime-smoke/paper-runtime-latest/`、`runtime-smoke/integration-runtime-latest/`、`runtime-smoke/player-report-runtime-latest/summary.txt`、`runtime-smoke/player-report-runtime-latest/manual-checklist.txt`、`release-prep/ReputationBan-v1-go-no-go-report.md`、`release-prep/ReputationBan-v1.0.0-release-notes.md`、`release-prep/V1_RELEASE_EXECUTION_PLAN.md` を含みます。
+- `./scripts/make-review-archive.sh "Phase 31a"` が archive を作成し、`checks/docs-localization.txt`、`checks/optional-dependency-safety.txt`、`checks/paper-runtime-smoke-auto.txt`、`checks/paper-runtime-readiness.txt`、`checks/integration-runtime-smoke-auto.txt`、`checks/integration-runtime-readiness.txt`、`checks/player-report-runtime-readiness.txt`、`checks/runtime-smoke-consistency.txt`、`checks/v1-release-gates.txt`、`checks/generate-v1-go-no-go-report.txt`、`checks/generate-v1-release-notes.txt`、`checks/v1-tag-status.txt`、`checks/v1-release-publish-status.txt`、`checks/github-release-status-after-publish.txt`、`checks/release-notes-body-check.txt`、`checks/release-assets-after-publish.txt`、`checks/integration-runtime-smoke-helper-syntax.txt`、`checks/latest-paper-runtime-smoke-summary.txt`、`checks/latest-integration-runtime-smoke-summary.txt`、`checks/latest-player-report-runtime-smoke-summary.txt`、`runtime-smoke/paper-runtime-latest/`、`runtime-smoke/integration-runtime-latest/`、`runtime-smoke/player-report-runtime-latest/summary.txt`、`runtime-smoke/player-report-runtime-latest/manual-checklist.txt`、`release-prep/ReputationBan-v1-go-no-go-report.md`、`release-prep/ReputationBan-v1.0.0-release-notes.md`、`release-prep/V1_RELEASE_EXECUTION_PLAN.md` を含みます。
 - `bash -n scripts/run-paper-runtime-smoke.sh` が成功します。
 - `bash -n scripts/check-paper-runtime-readiness.sh` が成功します。
 - `bash -n scripts/run-paper-runtime-smoke-helper.sh` が成功します。
@@ -45,6 +45,7 @@
 - Phase 29 時点の主要 runtime gate は Paper runtime smoke: PASS、Integration runtime smoke: PASS、Player report/evidence runtime smoke: PASS です。
 - v1 release gates の既定 judgment は `READY_FOR_V1_RELEASE_WITH_DISCORDSRV_WARNING` です。
 - Phase 31 公開前確認でも v1 release gates judgment は `READY_FOR_V1_RELEASE_WITH_DISCORDSRV_WARNING` です。
+- Phase 31a 以降の generated release notes / Go-No-Go report は `GitHub Release status: PUBLISHED` を表示し、Go/No-Go report は `Judgment: RELEASED_WITH_DISCORDSRV_WARNING` を表示します。
 - DiscordSRV を必須扱いにする運用では `./scripts/check-v1-release-gates.sh --strict --require-discordsrv` を使い、unavailable なら `HOLD_FOR_DISCORDSRV_RUNTIME_SMOKE` とします。
 - Player report/evidence runtime smoke は Phase 27 のユーザー手動確認結果を `manualConfirmed=true`、`carriedForwardFrom=0.27.0` として carry-forward 記録済みです。
 - `config.yml` が生成され、内容を確認済みです。

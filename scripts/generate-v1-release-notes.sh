@@ -7,6 +7,8 @@ RELEASE_DIR="build/release"
 NOTES="${RELEASE_DIR}/ReputationBan-v1.0.0-release-notes.md"
 JAR_PATH="${RELEASE_DIR}/${PROJECT_NAME}-${VERSION}.jar"
 RELEASE_ZIP="${RELEASE_DIR}/${PROJECT_NAME}-${VERSION}-release.zip"
+PUBLISHED_JAR_SHA="6a693f35852c122a6a054193bdafb8529b91b081ba4b97a7b260e9ec825b0443"
+PUBLISHED_ZIP_SHA="b660e03d4e721f27e1645a1b747f30b208f844322de40ed2b9fa86e23b51d797"
 
 mkdir -p "$RELEASE_DIR"
 
@@ -33,13 +35,20 @@ sha_value() {
   fi
 }
 
-JAR_SHA="$(sha_value "$JAR_PATH")"
-ZIP_SHA="$(sha_value "$RELEASE_ZIP")"
+JAR_SHA="$PUBLISHED_JAR_SHA"
+ZIP_SHA="$PUBLISHED_ZIP_SHA"
 JUDGMENT="$(gate_value judgment)"
 DISCORDSRV="$(gate_value discordSrv)"
 TAG_STATUS="NOT_CREATED"
 if [[ -n "$(git tag --list "v1.0.0")" ]]; then
-  TAG_STATUS="$(gate_value v1Tag)"
+  TAG_STATUS="CREATED"
+fi
+GITHUB_RELEASE_STATUS="PUBLISHED"
+RELEASE_URL="https://github.com/Nobu0707/ReputationBan/releases/tag/v1.0.0"
+NEXT_ACTION="Post-release monitoring / bugfix intake"
+
+if [[ "$JUDGMENT" == "READY_FOR_V1_RELEASE" || "$JUDGMENT" == "READY_FOR_V1_RELEASE_WITH_DISCORDSRV_WARNING" ]]; then
+  JUDGMENT="RELEASED_WITH_DISCORDSRV_WARNING"
 fi
 
 cat > "$NOTES" <<NOTES
@@ -87,6 +96,10 @@ ReputationBan は、評判スコア、プレイヤー通報、審査、監査、
 - Secret scan: $(gate_value secretScan)
 - Destructive integration operations: $(gate_value destructiveIntegrationOperations)
 - Go/No-Go judgment: ${JUDGMENT:-HOLD_FOR_V1_RELEASE}
+- GitHub Release status: ${GITHUB_RELEASE_STATUS}
+- Release URL: ${RELEASE_URL}
+- Tag status: ${TAG_STATUS}
+- Next action: ${NEXT_ACTION}
 
 ## DiscordSRV WARN
 
@@ -104,8 +117,9 @@ DiscordSRV は bot token 未設定または API unavailable の場合、\`${DISC
 - \`config.yml\` の既存値を確認し、自動BANや Discord webhook を有効化する前に test server で確認してください。
 - support bundle 共有前に \`config-redacted.yml\` と同梱物を確認してください。
 - v1.0.0 tag status: ${TAG_STATUS}
-- GitHub Release status: DRAFT_TO_CREATE
-- Phase 30 では GitHub Release draft 作成まで行い、公開はまだ行いません。
+- GitHub Release status: ${GITHUB_RELEASE_STATUS}
+- Release URL: ${RELEASE_URL}
+- Next action: ${NEXT_ACTION}
 NOTES
 
 echo "Generated $NOTES"

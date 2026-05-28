@@ -6,6 +6,7 @@ PROJECT_NAME="ReputationBan"
 RELEASE_DIR="build/release"
 JAR_PATH="${RELEASE_DIR}/${PROJECT_NAME}-${VERSION}.jar"
 RELEASE_ZIP="${RELEASE_DIR}/${PROJECT_NAME}-${VERSION}-release.zip"
+EXPECTED_V1_TAG_COMMIT="b422e72ec5a917cdc04dee902e96a0cef190026c"
 STRICT=0
 REQUIRE_DISCORDSRV=0
 
@@ -18,7 +19,8 @@ Usage:
 
 Checks the v1.0.0 release review gates without creating a v1.0.0 tag or GitHub Release.
 If v1.0.0 already exists, it must point at HEAD unless
-REPUTATIONBAN_ALLOW_V1_TAG_BEHIND_HEAD=1 is set for post-release docs-only commits.
+REPUTATIONBAN_ALLOW_V1_TAG_BEHIND_HEAD=1 is set, or docs/phase-31.md exists and
+the tag still points at the Phase 30 release commit as an ancestor of HEAD.
 USAGE
 }
 
@@ -114,7 +116,9 @@ v1_tag_is_safe() {
     echo "v1Tag=CREATED_MATCHES_HEAD"
     return 0
   fi
-  if [[ "${REPUTATIONBAN_ALLOW_V1_TAG_BEHIND_HEAD:-0}" == "1" ]] && git merge-base --is-ancestor "$tag_commit" "$head"; then
+  if [[ "$tag_commit" == "$EXPECTED_V1_TAG_COMMIT" ]] \
+    && [[ "${REPUTATIONBAN_ALLOW_V1_TAG_BEHIND_HEAD:-0}" == "1" || -f docs/phase-31.md || -f docs/phase-31a.md ]] \
+    && git merge-base --is-ancestor "$tag_commit" "$head"; then
     echo "v1Tag=CREATED_BEHIND_HEAD_ALLOWED"
     echo "v1TagCommit=$tag_commit"
     echo "headCommit=$head"

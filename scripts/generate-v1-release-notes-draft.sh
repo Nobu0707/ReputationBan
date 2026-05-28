@@ -27,6 +27,7 @@ sha_value() {
 
 JAR_SHA="$(sha_value "$JAR_PATH")"
 ZIP_SHA="$(sha_value "$RELEASE_ZIP")"
+RELEASE_URL="https://github.com/Nobu0707/ReputationBan/releases/tag/v1.0.0"
 
 cat > "$DRAFT" <<DRAFT
 # ReputationBan v1.0.0 Release Notes Draft
@@ -86,7 +87,12 @@ cat > "$DRAFT" <<DRAFT
 
 ## Draft Note
 
-Phase 29では \`v1.0.0\` tag 作成と GitHub Release 公開はまだ行っていません。この draft は互換目的で残し、レビューアーカイブには final candidate の \`ReputationBan-v1.0.0-release-notes.md\` を含めます。
+v1.0.0 GitHub Release は公開済みです。この draft generator は互換目的で残し、公開済み Release 本文には final の \`ReputationBan-v1.0.0-release-notes.md\` を使います。
+
+- GitHub Release status: PUBLISHED
+- Release URL: ${RELEASE_URL}
+- Tag status: CREATED
+- Next action: Post-release monitoring / bugfix intake
 DRAFT
 
 echo "Generated $DRAFT"

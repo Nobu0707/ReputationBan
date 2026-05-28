@@ -743,6 +743,27 @@
 - 本番で DiscordSRV 通知や account link を使う場合は bot token 設定済み環境で追加確認する。
 - Java runtime behavior、DB schema、`/reportbad`、`/reports evidence`、`report_context` 生成は変更しない。
 
+## Phase 31a / v1.0.0: Published GitHub Release notes consistency
+
+目的: 公開済み `v1.0.0` GitHub Release 本文と review archive の生成物から公開前の draft 文言を取り除き、release notes / Go-No-Go report を公開済み状態へ揃える。
+
+実装範囲:
+
+- `scripts/generate-v1-release-notes.sh` の `GitHub Release status: PUBLISHED` 反映
+- `scripts/generate-v1-release-notes-draft.sh` の互換出力を公開済み状態へ更新
+- `scripts/generate-v1-go-no-go-report.sh` の `GitHub Release status: PUBLISHED`、`Tag status: CREATED`、`Judgment: RELEASED_WITH_DISCORDSRV_WARNING` 反映
+- 公開済み GitHub Release 本文の古い draft 文言修正
+- `scripts/review_code.sh` の stale release notes/report 検出追加
+- `scripts/make-review-archive.sh` の `checks/release-notes-body-check.txt` 追加
+- `docs/phase-31a.md`
+
+注意:
+
+- `v1.0.0` tag は移動しない。
+- release asset は削除、差し替え、再アップロードしない。
+- version、DB schema、新機能、runtime behavior は変更しない。
+- DiscordSRV unavailable は引き続き WARN とし、ReputationBan 本体と他連携の release gate は止めない。
+
 ## Phase 32以降: 外部連携・高度な悪用対策
 
 実装候補:

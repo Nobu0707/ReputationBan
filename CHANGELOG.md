@@ -2,13 +2,15 @@
 
 ## 1.0.0
 
+- Phase 31a で公開済み GitHub Release 本文と生成レポートの整合性を修正しました。`GitHub Release status: PUBLISHED`、Release URL、`Tag status: CREATED`、`Next action: Post-release monitoring / bugfix intake` を release notes / Go-No-Go report に反映しています。
+- Go/No-Go report の公開後判定は `RELEASED_WITH_DISCORDSRV_WARNING` です。DiscordSRV は引き続き WARN 扱いで、tag と Release assets は変更していません。
 - Phase 31 で GitHub Release `v1.0.0` を公開しました。Release URL は <https://github.com/Nobu0707/ReputationBan/releases/tag/v1.0.0> です。
 - 公開後の GitHub Release は `isDraft=false`、`isPrerelease=false` で、asset は `ReputationBan-1.0.0.jar`、`ReputationBan-1.0.0.jar.sha256`、`ReputationBan-1.0.0-release.zip`、`ReputationBan-1.0.0-release.zip.sha256` の4件です。
 - `v1.0.0` annotated tag は Phase 30 commit `b422e72ec5a917cdc04dee902e96a0cef190026c` を指しています。Phase 31 の docs-only commit により main は tag より進みますが、tag は移動していません。
 - `docs/phase-31.md` を追加し、公開前後の release 状態、asset、SHA256、runtime gate、DiscordSRV WARN、公開日時を記録しました。
 - Phase 30 は v1.0.0 tag / GitHub Release draft preparation フェーズです。`v1.0.0` annotated tag を Phase 30 commit に作成し、GitHub Release は draft として作成します。
 - GitHub Release draft には `ReputationBan-1.0.0.jar`、JAR sha256、`ReputationBan-1.0.0-release.zip`、release zip sha256 を添付します。
-- GitHub Release 公開、`draft=false` への変更、v1.0.1 以降への version bump はまだ行いません。
+- Phase 30 時点では GitHub Release 公開、`draft=false` への変更、v1.0.1 以降への version bump は行いませんでした。
 - `docs/phase-30.md` を追加し、tag/draft 作成方針、添付 artifact、runtime gate、DiscordSRV WARN、次Phaseの公開手順を記録しました。
 - `scripts/make-review-archive.sh` が tag 状態、GitHub Release draft 状態、draft asset 一覧を review archive に含めるようにしました。
 - Phase 29 は first stable release candidate final artifact preparation フェーズです。version を 1.0.0 に更新し、`ReputationBan-1.0.0.jar` と `ReputationBan-1.0.0-release.zip` を配布候補として準備します。

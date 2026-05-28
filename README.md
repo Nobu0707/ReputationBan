@@ -31,6 +31,7 @@ v1.0.0 は GitHub Release 公開済みです。`v1.0.0` annotated tag は Phase 
 - [Release candidate checklist](docs/RELEASE_CANDIDATE_CHECKLIST.md)
 - [v1.0.0 release plan](docs/V1_RELEASE_PLAN.md)
 - [v1.0.0 release execution plan](docs/V1_RELEASE_EXECUTION_PLAN.md)
+- [Phase 31a notes](docs/phase-31a.md)
 - [Phase 31 notes](docs/phase-31.md)
 - [Phase 30 notes](docs/phase-30.md)
 - [Phase 29 notes](docs/phase-29.md)
@@ -135,7 +136,7 @@ JAR は `build/libs/ReputationBan-1.0.0.jar` に生成されます。
 
 v1.0.0 は first stable release として公開済みです。Release URL は <https://github.com/Nobu0707/ReputationBan/releases/tag/v1.0.0> です。Paper runtime smoke、integration runtime smoke、player report runtime smoke の主要 gate は PASS/READY で揃い、`scripts/check-runtime-smoke-consistency.sh` で整合確認済みです。
 
-Phase 31 では GitHub Release draft を確認し、`draft=false` へ変更して公開しました。DiscordSRV は bot token 未設定時 WARN 扱いのため、本番で DiscordSRV 通知や account link を使う場合は追加確認してください。
+Phase 31 では GitHub Release draft を確認し、`draft=false` へ変更して公開しました。Phase 31a では公開済み GitHub Release 本文と生成済み release notes / Go-No-Go report を `PUBLISHED` 状態へ揃えました。DiscordSRV は bot token 未設定時 WARN 扱いのため、本番で DiscordSRV 通知や account link を使う場合は追加確認してください。
 
 ## 現在の制限
 

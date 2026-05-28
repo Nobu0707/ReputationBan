@@ -84,6 +84,7 @@ for file in \
   docs/V1_RELEASE_PLAN.md \
   docs/V1_RELEASE_EXECUTION_PLAN.md \
   docs/runtime-smoke-checklist.md \
+  docs/phase-31a.md \
   docs/phase-30.md \
   docs/phase-29.md \
   docs/SECURITY_REDACTION.md \
@@ -154,9 +155,10 @@ grep -q "V1_RELEASE_EXECUTION_PLAN.md" scripts/make-review-archive.sh docs/RELEA
 if [[ -n "$(git tag --list "v1.0.0")" ]]; then
   HEAD_COMMIT="$(git rev-parse HEAD)"
   TAG_COMMIT="$(git rev-list -n 1 v1.0.0)"
+  [[ "$TAG_COMMIT" == "b422e72ec5a917cdc04dee902e96a0cef190026c" ]] || fail "v1.0.0 tag no longer points at the Phase 30 release commit"
   if [[ "$HEAD_COMMIT" != "$TAG_COMMIT" ]]; then
     if [[ -f docs/phase-31.md ]] && git merge-base --is-ancestor "$TAG_COMMIT" "$HEAD_COMMIT"; then
-      pass "v1.0.0 tag points to an ancestor release commit after Phase 31 docs-only commit"
+      pass "v1.0.0 tag points to an ancestor release commit after Phase 31/31a docs-only commits"
     else
       fail "v1.0.0 tag exists but does not point at HEAD"
     fi
@@ -227,6 +229,19 @@ grep -q "^version:[[:space:]]*${EXPECTED_VERSION}$" "$TMP_DIR/plugin.yml" || fai
 REPUTATIONBAN_ALLOW_V1_TAG_BEHIND_HEAD=1 ./scripts/check-v1-release-gates.sh
 ./scripts/generate-v1-go-no-go-report.sh
 ./scripts/generate-v1-release-notes.sh
+
+RELEASE_NOTES="${RELEASE_DIR}/ReputationBan-v1.0.0-release-notes.md"
+GO_NO_GO_REPORT="${RELEASE_DIR}/ReputationBan-v1-go-no-go-report.md"
+require_file "$RELEASE_NOTES"
+require_file "$GO_NO_GO_REPORT"
+if grep -E "DRAFT_TO_CREATE|公開はまだ|draft 作成まで|Phase 30 creates" "$RELEASE_NOTES" "$GO_NO_GO_REPORT" >/dev/null; then
+  fail "Published release notes/report still contain pre-publish wording"
+fi
+grep -q "GitHub Release status: PUBLISHED" "$RELEASE_NOTES" || fail "Release notes do not show published GitHub Release status"
+grep -q "GitHub Release status: PUBLISHED" "$GO_NO_GO_REPORT" || fail "Go/No-Go report does not show published GitHub Release status"
+grep -q "Tag status: CREATED" "$RELEASE_NOTES" || fail "Release notes do not show created tag status"
+grep -q "Tag status: CREATED" "$GO_NO_GO_REPORT" || fail "Go/No-Go report does not show created tag status"
+grep -q "Judgment: RELEASED_WITH_DISCORDSRV_WARNING" "$GO_NO_GO_REPORT" || fail "Go/No-Go report does not show released judgment"
 
 ./scripts/create-release-artifact.sh
 [[ -f "$RELEASE_JAR" ]] || fail "release jar not found: $RELEASE_JAR"

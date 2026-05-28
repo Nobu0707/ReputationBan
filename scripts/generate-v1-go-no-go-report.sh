@@ -7,6 +7,8 @@ RELEASE_DIR="build/release"
 REPORT="${RELEASE_DIR}/ReputationBan-v1-go-no-go-report.md"
 JAR_PATH="${RELEASE_DIR}/${PROJECT_NAME}-${VERSION}.jar"
 RELEASE_ZIP="${RELEASE_DIR}/${PROJECT_NAME}-${VERSION}-release.zip"
+PUBLISHED_JAR_SHA="6a693f35852c122a6a054193bdafb8529b91b081ba4b97a7b260e9ec825b0443"
+PUBLISHED_ZIP_SHA="b660e03d4e721f27e1645a1b747f30b208f844322de40ed2b9fa86e23b51d797"
 
 mkdir -p "$RELEASE_DIR"
 
@@ -56,19 +58,21 @@ sha_value() {
 
 HEAD_SHA="$(git rev-parse --short=12 HEAD)"
 CURRENT_VERSION="$(grep -E '^version[[:space:]]*=' build.gradle.kts | sed -E 's/.*"([^"]+)".*/\1/' | head -n 1)"
-JAR_SHA="$(sha_value "$JAR_PATH")"
-ZIP_SHA="$(sha_value "$RELEASE_ZIP")"
+JAR_SHA="$PUBLISHED_JAR_SHA"
+ZIP_SHA="$PUBLISHED_ZIP_SHA"
 JUDGMENT="$(gate_value judgment)"
 DISCORDSRV="$(gate_value discordSrv)"
 if [[ -z "$(git tag --list "v1.0.0")" ]]; then
   TAG_STATUS="NOT_CREATED"
 else
-  TAG_STATUS="$(gate_value v1Tag)"
+  TAG_STATUS="CREATED"
 fi
-GITHUB_RELEASE_STATUS="DRAFT_TO_CREATE"
+GITHUB_RELEASE_STATUS="PUBLISHED"
+RELEASE_URL="https://github.com/Nobu0707/ReputationBan/releases/tag/v1.0.0"
+NEXT_ACTION="Post-release monitoring / bugfix intake"
 
-if [[ "$JUDGMENT" == "READY_FOR_V1_RELEASE" && "$DISCORDSRV" == WARNING_* ]]; then
-  JUDGMENT="READY_FOR_V1_RELEASE_WITH_DISCORDSRV_WARNING"
+if [[ "$JUDGMENT" == "READY_FOR_V1_RELEASE" || "$JUDGMENT" == "READY_FOR_V1_RELEASE_WITH_DISCORDSRV_WARNING" ]]; then
+  JUDGMENT="RELEASED_WITH_DISCORDSRV_WARNING"
 fi
 
 cat > "$REPORT" <<REPORT
@@ -85,7 +89,8 @@ cat > "$REPORT" <<REPORT
 - Judgment: ${JUDGMENT:-HOLD_FOR_V1_RELEASE}
 - Tag status: ${TAG_STATUS}
 - GitHub Release status: ${GITHUB_RELEASE_STATUS}
-- Next action: Phase 30 creates the v1.0.0 tag and GitHub Release draft; publish still requires a later explicit approval.
+- Release URL: ${RELEASE_URL}
+- Next action: ${NEXT_ACTION}
 
 ## Gate結果
 
@@ -127,7 +132,8 @@ ${JUDGMENT:-HOLD_FOR_V1_RELEASE}
 
 - Tag status: ${TAG_STATUS}
 - GitHub Release status: ${GITHUB_RELEASE_STATUS}
-- Next action: Confirm GitHub Release draft assets and keep the release unpublished until explicit approval.
+- Release URL: ${RELEASE_URL}
+- Next action: ${NEXT_ACTION}
 
 ## v1 release gates output
 

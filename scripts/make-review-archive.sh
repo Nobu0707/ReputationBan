@@ -165,6 +165,9 @@ done < "$OUTDIR/meta/changed-files.txt"
   echo
   echo "## rg phase 31 v1 GitHub Release publish"
   rg -n "phase-31|Phase 31|GitHub Release: published|releasePublished|github-release-status-after-publish|release-assets-after-publish|v1-release-publish-status|CREATED_BEHIND_HEAD_ALLOWED|isDraft=false|isPrerelease=false" README.md CHANGELOG.md docs reputationban_phase_plan.md scripts build.gradle.kts src/main/resources/plugin.yml || true
+  echo
+  echo "## rg phase 31a published release notes consistency"
+  rg -n "phase-31a|Phase 31a|release-notes-body-check|GitHub Release status: PUBLISHED|RELEASED_WITH_DISCORDSRV_WARNING|Post-release monitoring / bugfix intake" README.md CHANGELOG.md docs reputationban_phase_plan.md scripts build.gradle.kts src/main/resources/plugin.yml || true
 } > "$OUTDIR/checks/rg-review-signals.txt"
 
 {
@@ -334,6 +337,35 @@ fi
 if [[ -x "$ROOT/scripts/generate-v1-release-notes-draft.sh" ]]; then
   run_logged "./scripts/generate-v1-release-notes-draft.sh" "$OUTDIR/checks/generate-v1-release-notes-draft.txt" "$ROOT/scripts/generate-v1-release-notes-draft.sh"
 fi
+
+{
+  notes="$ROOT/build/release/ReputationBan-v1.0.0-release-notes.md"
+  report="$ROOT/build/release/ReputationBan-v1-go-no-go-report.md"
+  body_file="$OUTDIR/checks/github-release-body.txt"
+  if command -v gh >/dev/null 2>&1; then
+    gh release view v1.0.0 --json body --jq .body > "$body_file" 2>/dev/null || : > "$body_file"
+  else
+    : > "$body_file"
+  fi
+
+  if grep -E "DRAFT_TO_CREATE" "$notes" "$report" "$body_file" >/dev/null 2>&1; then
+    echo "DRAFT_TO_CREATE=present"
+  else
+    echo "DRAFT_TO_CREATE=absent"
+  fi
+
+  if grep -E "公開はまだ|draft 作成まで|Phase 30 creates" "$notes" "$report" "$body_file" >/dev/null 2>&1; then
+    echo "prePublishText=present"
+  else
+    echo "prePublishText=absent"
+  fi
+
+  if grep -q "GitHub Release status: PUBLISHED" "$notes" 2>/dev/null && grep -q "GitHub Release status: PUBLISHED" "$report" 2>/dev/null; then
+    echo "releaseStatus=PUBLISHED"
+  else
+    echo "releaseStatus=unknown"
+  fi
+} > "$OUTDIR/checks/release-notes-body-check.txt"
 
 {
   local_tag="$(git tag --list "v1.0.0" || true)"
