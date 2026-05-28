@@ -50,19 +50,23 @@ summary_value() {
 SUMMARY="$(latest_summary || true)"
 RESULT="NOT_RUN"
 STATUS="NOT_RUN"
+MANUAL_CONFIRMED="false"
 
 if [[ -n "$SUMMARY" && -f "$SUMMARY" ]]; then
   RESULT="$(summary_value "result" "$SUMMARY")"
   STATUS="$(summary_value "status" "$SUMMARY")"
+  MANUAL_CONFIRMED="$(summary_value "manualConfirmed" "$SUMMARY")"
   RESULT="${RESULT:-$STATUS}"
   RESULT="${RESULT:-UNKNOWN}"
   STATUS="${STATUS:-$RESULT}"
+  MANUAL_CONFIRMED="${MANUAL_CONFIRMED:-false}"
 fi
 
 case "$RESULT:$STATUS" in
   PASS:*|*:PASS)
     echo "player report runtime smoke: PASS"
     echo "summary: $SUMMARY"
+    echo "manualConfirmed=$MANUAL_CONFIRMED"
     echo "judgment: READY_FOR_PLAYER_REPORT_RUNTIME_RELEASE_REVIEW"
     exit 0
     ;;

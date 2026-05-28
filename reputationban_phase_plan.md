@@ -606,7 +606,33 @@
 - CoreProtect rollback、restore、purge、LuckPerms 書き込み、WorldGuard region/flag 変更、GriefPrevention claim/trust 変更は引き続き行わない。
 - Discord から Minecraft コマンドを実行する機能、Discord role 変更、Discord button 承認は行わない。
 
-## Phase 27以降: 外部連携・高度な悪用対策
+## Phase 27 / v0.27.0: Player report runtime smoke result recording / release gate close
+
+目的: Phase 26 でユーザーが手動確認済みと報告した player report/evidence runtime smoke PASS を正式記録し、release gate と review archive に反映する。
+
+実装範囲:
+
+- version 0.27.0
+- `scripts/record-player-report-runtime-smoke-result.sh --manual-confirmed`
+- manual confirmed PASS summary の `manualConfirmed=true`
+- `build/manual-smoke/player-report-runtime-*/manual-checklist.txt`
+- `scripts/check-player-report-runtime-readiness.sh` の manual confirmed PASS READY 表示
+- `scripts/check-runtime-smoke-consistency.sh` で Paper / integration / player report の PASS/READY 整合確認
+- review archive の `checks/latest-player-report-runtime-smoke-summary.txt`
+- review archive の `runtime-smoke/player-report-runtime-latest/manual-checklist.txt`
+- `docs/phase-27.md`
+- release readiness docs に Paper runtime smoke PASS、Integration runtime smoke PASS、Player report/evidence runtime smoke PASS 済みを記録
+- review/release archive scripts の v0.27.0 対応
+
+注意:
+
+- 今回の PASS は Codex が実機で再確認したものではなく、ユーザーが Phase 26 の手動 checklist 全項目 OK と報告した結果を正式に記録する。
+- reporter、target、report id は公開レビューに残さず `<manual-confirmed>` として記録する。
+- DiscordSRV は bot token 未設定時 WARN 扱い。本番で DiscordSRV 通知や account link を使う場合は追加確認する。
+- CoreProtect rollback、restore、purge、LuckPerms 書き込み、WorldGuard region/flag 変更、GriefPrevention claim/trust 変更は引き続き行わない。
+- Discord から Minecraft コマンドを実行する機能、Discord role 変更、Discord button 承認は行わない。
+
+## Phase 28以降: 外部連携・高度な悪用対策
 
 実装候補:
 

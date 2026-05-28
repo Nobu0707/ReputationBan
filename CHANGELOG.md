@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.27.0
+
+- Phase 27 は player report/evidence runtime smoke result recording / release gate close フェーズです。新機能追加ではなく、Phase 26 でユーザーが手動確認済みと報告した player report/evidence runtime smoke PASS を正式な記録として保存しました。
+- `scripts/record-player-report-runtime-smoke-result.sh` に `--manual-confirmed` を追加し、公開用レビューに reporter、target、report id を残さず `reporter=<manual-confirmed>`、`target=<manual-confirmed>`、`reportId=<manual-confirmed>`、`manualConfirmed=true` を記録できるようにしました。
+- manual confirmed PASS では `manual-checklist.txt` を `build/manual-smoke/player-report-runtime-*` に保存し、`latest-player-report-runtime-smoke-summary.txt`、`player-report-runtime-readiness.txt`、`runtime-smoke-consistency.txt` が PASS/READY/PASS で揃うようにしました。
+- Release readiness と release candidate checklist に Paper runtime smoke PASS、Integration runtime smoke PASS、Player report/evidence runtime smoke PASS 済みを記録しました。DiscordSRV は bot token 未設定時 WARN のため、本番で通知や account link を使う場合は追加確認が必要です。
+- 新しい外部連携、Discord からの Minecraft コマンド実行、Discord role 変更、GUI、Folia 対応、v1.0.0 リリース化は追加していません。
+
 ## 0.26.0
 
 - Phase 26 は player report/evidence runtime smoke gate フェーズです。新しい外部連携ではなく、実プレイヤー2名以上が必要な `/reportbad`、`/reports view`、`/reports evidence`、`report_context` 表示確認を記録しやすくしました。

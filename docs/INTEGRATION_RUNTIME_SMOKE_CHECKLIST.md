@@ -1,6 +1,6 @@
 # Integration Runtime Smoke Checklist
 
-Phase 26 では LuckPerms / CoreProtect / WorldEdit / WorldGuard / GriefPrevention / PlaceholderAPI / DiscordSRV の JAR を `~/servers/PaperPlugins/` から Paper test server へ staging し、ReputationBan が連携込みで起動・診断できるかを自動確認できます。未実施でも v0.26.0 の local release checks は失敗扱いにしませんが、未実施は PASS ではありません。v1.0.0 前には実施し、`run-integration-runtime-smoke.sh` または `record-integration-runtime-smoke-result.sh` で結果を記録してください。
+Phase 26 では LuckPerms / CoreProtect / WorldEdit / WorldGuard / GriefPrevention / PlaceholderAPI / DiscordSRV の JAR を `~/servers/PaperPlugins/` から Paper test server へ staging し、ReputationBan が連携込みで起動・診断できるかを自動確認できます。未実施でも v0.27.0 の local release checks は失敗扱いにしませんが、未実施は PASS ではありません。v1.0.0 前には実施し、`run-integration-runtime-smoke.sh` または `record-integration-runtime-smoke-result.sh` で結果を記録してください。
 
 ## Runtime Gate
 
@@ -26,7 +26,7 @@ Phase 26 では LuckPerms / CoreProtect / WorldEdit / WorldGuard / GriefPreventi
 ## 共通確認
 
 - PaperMC 26.1.2 と Java 25 で起動します。
-- `build/libs/ReputationBan-0.26.0.jar` を配置します。
+- `build/libs/ReputationBan-0.27.0.jar` を配置します。
 - 自動 smoke は `version`、`plugins`、`rep version`、`rep doctor`、`rep integrations`、`rep integrations test`、`rep placeholders`、`reports help`、`rep audit recent 5`、`rep maintenance preview` を console へ投入します。
 - `/reportbad` と `/reports evidence` による report_context の実生成確認は、実プレイヤー2名以上で `docs/PLAYER_REPORT_RUNTIME_SMOKE_CHECKLIST.md` に沿って手動確認が必要です。未実施なら `check-player-report-runtime-readiness.sh` は `HOLD_FOR_PLAYER_REPORT_RUNTIME_SMOKE` を表示します。
 - CoreProtect rollback、restore、purge は使いません。

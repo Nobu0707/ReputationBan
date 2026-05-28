@@ -2,7 +2,7 @@
 set -euo pipefail
 
 PROJECT_NAME="ReputationBan"
-EXPECTED_VERSION="0.26.0"
+EXPECTED_VERSION="0.27.0"
 EXPECTED_MAIN="dev.modplugin.reputationban.ReputationBanPlugin"
 EXPECTED_API_VERSION="26.1.2"
 EXPECTED_PACKAGE_DIR="src/main/java/dev/modplugin/reputationban"
@@ -67,6 +67,7 @@ require_file docs/phase-22.md
 require_file docs/phase-23.md
 require_file docs/phase-25.md
 require_file docs/phase-26.md
+require_file docs/phase-27.md
 require_file docs/INTEGRATIONS.md
 require_file docs/INTEGRATION_RUNTIME_SMOKE_CHECKLIST.md
 require_file docs/PLAYER_REPORT_RUNTIME_SMOKE_CHECKLIST.md
@@ -99,7 +100,7 @@ YML=src/main/resources/plugin.yml
 grep -q "io.papermc.paper:paper-api:26.1.2.build" build.gradle.kts || fail "Paper API 26.1.2 dependency not found"
 grep -q "org.xerial:sqlite-jdbc" "$YML" || fail "Missing sqlite-jdbc library"
 grep -q "JavaLanguageVersion.of(25)" build.gradle.kts || fail "Java 25 toolchain not found"
-grep -q 'version = "0.26.0"' build.gradle.kts || fail "build.gradle.kts version is not 0.26.0"
+grep -q 'version = "0.27.0"' build.gradle.kts || fail "build.gradle.kts version is not 0.27.0"
 grep -q "options.release.set(25)" build.gradle.kts || fail "Java release 25 not found"
 grep -q 'net.luckperms:api:5.5' build.gradle.kts || fail "LuckPerms compileOnly dependency not found"
 grep -q 'net.coreprotect:coreprotect:23.2' build.gradle.kts || fail "CoreProtect compileOnly dependency not found"
@@ -321,6 +322,7 @@ grep -q "DiscordSRV" docs/phase-22.md || fail "docs/phase-22.md missing DiscordS
 grep -q "Paper runtime smoke" docs/phase-23.md || fail "docs/phase-23.md missing Paper runtime smoke explanation"
 grep -q "Integration runtime smoke" docs/phase-25.md || fail "docs/phase-25.md missing Integration runtime smoke explanation"
 grep -q "Player report/evidence runtime smoke" docs/phase-26.md || fail "docs/phase-26.md missing player report runtime smoke explanation"
+grep -q "manual-confirmed" docs/phase-27.md || fail "docs/phase-27.md missing manual-confirmed explanation"
 if grep -R "DatabaseManager\\|getConnection\\|executeQuery\\|PreparedStatement" src/main/java/dev/modplugin/reputationban/integration/placeholderapi/ReputationBanPlaceholderExpansion.java >/dev/null; then
   fail "Placeholder expansion contains direct DB access markers"
 fi
@@ -508,9 +510,10 @@ grep -q "HOLD_FOR_PAPER_RUNTIME_SMOKE" docs/runtime-smoke-checklist.md scripts/c
 grep -q "HOLD_FOR_PLAYER_REPORT_RUNTIME_SMOKE" docs/PLAYER_REPORT_RUNTIME_SMOKE_CHECKLIST.md scripts/check-player-report-runtime-readiness.sh || fail "Player report runtime HOLD/NOT_RUN explanation missing"
 grep -q "player report" scripts/check-runtime-smoke-consistency.sh || fail "check-runtime-smoke-consistency.sh does not handle player report runtime"
 grep -q "Player report/evidence runtime smoke" docs/RELEASE_CANDIDATE_CHECKLIST.md || fail "release candidate checklist missing player report runtime smoke"
-grep -q "Player report/evidence runtime smoke PASS" docs/RELEASE_READINESS.md || fail "release readiness missing player report runtime smoke gate"
+grep -Eq "Player report/evidence runtime smoke(:)? PASS|Player report/evidence runtime smoke: PASS" docs/RELEASE_READINESS.md || fail "release readiness missing player report runtime smoke gate"
+grep -q "Player report/evidence runtime smoke: PASS" docs/RELEASE_READINESS.md || fail "release readiness missing player report runtime smoke PASS status"
 
-grep -q "0.26.0" README.md || fail "README.md does not mention 0.26.0"
+grep -q "0.27.0" README.md || fail "README.md does not mention 0.27.0"
 grep -q "RELEASE_CANDIDATE_CHECKLIST" README.md || fail "README.md does not link RELEASE_CANDIDATE_CHECKLIST"
 grep -q "RELEASE_CANDIDATE_CHECKLIST" docs/phase-15.md docs/RELEASE_CANDIDATE_CHECKLIST.md README.md || fail "Release candidate checklist references missing"
 
@@ -522,14 +525,14 @@ require_command jar
 jar tf "$JAR" | grep -q "plugin.yml" || fail "plugin.yml missing from jar"
 jar tf "$JAR" | grep -q "dev/modplugin/reputationban/ReputationBanPlugin.class" || fail "Main class missing from jar"
 
-grep -q "EXPECTED_VERSION=\"0.26.0\"" scripts/run-local-smoke-check.sh || fail "run-local-smoke-check.sh does not check v0.26.0"
+grep -q "EXPECTED_VERSION=\"0.27.0\"" scripts/run-local-smoke-check.sh || fail "run-local-smoke-check.sh does not check v0.27.0"
 grep -q "REPUTATIONBAN_SKIP_BUILD" scripts/run-local-smoke-check.sh || fail "run-local-smoke-check.sh does not support REPUTATIONBAN_SKIP_BUILD"
-grep -q "VERSION=\"0.26.0\"" scripts/create-release-artifact.sh || fail "create-release-artifact.sh does not target v0.26.0"
+grep -q "VERSION=\"0.27.0\"" scripts/create-release-artifact.sh || fail "create-release-artifact.sh does not target v0.27.0"
 grep -q "build/release" scripts/create-release-artifact.sh || fail "create-release-artifact.sh does not write build/release"
 grep -q "sha256sum" scripts/create-release-artifact.sh || fail "create-release-artifact.sh does not create sha256"
 grep -q "release.zip" scripts/create-release-artifact.sh || fail "create-release-artifact.sh does not create release zip"
 grep -q "RELEASE_ZIP_SHA" scripts/create-release-artifact.sh || fail "create-release-artifact.sh does not create release zip sha256"
-grep -q "VERSION=\"0.26.0\"" scripts/verify-release-artifact.sh || fail "verify-release-artifact.sh does not target v0.26.0"
+grep -q "VERSION=\"0.27.0\"" scripts/verify-release-artifact.sh || fail "verify-release-artifact.sh does not target v0.27.0"
 grep -q "docs/INTEGRATIONS.md" scripts/verify-release-artifact.sh || fail "verify-release-artifact.sh does not verify integrations docs"
 grep -q "sha256sum -c" scripts/verify-release-artifact.sh || fail "verify-release-artifact.sh does not verify sha256"
 grep -q "docs/INSTALLATION.md" scripts/verify-release-artifact.sh || fail "verify-release-artifact.sh does not verify localized docs"
@@ -539,6 +542,11 @@ grep -q "record-paper-runtime-smoke-result" scripts/record-paper-runtime-smoke-r
 grep -q 'echo "status=$RESULT"' scripts/record-paper-runtime-smoke-result.sh || fail "record paper runtime smoke script does not write status"
 grep -q "record-player-report-runtime-smoke-result" scripts/record-player-report-runtime-smoke-result.sh || fail "record player report runtime smoke script missing usage text"
 grep -q 'echo "status=$RESULT"' scripts/record-player-report-runtime-smoke-result.sh || fail "record player report runtime smoke script does not write status"
+grep -q -- "--manual-confirmed" scripts/record-player-report-runtime-smoke-result.sh || fail "record player report runtime smoke script missing --manual-confirmed"
+grep -q 'manualConfirmed=true\|manualConfirmed=$MANUAL_CONFIRMED' scripts/record-player-report-runtime-smoke-result.sh || fail "record player report runtime smoke script does not write manualConfirmed"
+grep -q "manual-checklist.txt" scripts/record-player-report-runtime-smoke-result.sh || fail "record player report runtime smoke script does not create manual-checklist.txt"
+grep -q "<manual-confirmed>" scripts/record-player-report-runtime-smoke-result.sh || fail "record player report runtime smoke script does not hide reporter/target/report id for manual confirmation"
+grep -q "manualConfirmed" scripts/check-player-report-runtime-readiness.sh || fail "check-player-report-runtime-readiness.sh does not handle manualConfirmed"
 grep -q "docs-localization.txt" scripts/make-review-archive.sh || fail "make-review-archive.sh does not create docs-localization.txt"
 grep -q "check-docs-localization.sh" scripts/make-review-archive.sh || fail "make-review-archive.sh does not record docs localization status"
 grep -q "optional-dependency-safety.txt" scripts/make-review-archive.sh || fail "make-review-archive.sh does not create optional-dependency-safety.txt"
@@ -554,6 +562,7 @@ grep -q "latest-integration-runtime-smoke-summary.txt" scripts/make-review-archi
 grep -q "runtime-smoke/integration-runtime-latest" scripts/make-review-archive.sh || fail "make-review-archive.sh does not collect latest integration runtime smoke directory"
 grep -q "runtime-smoke/paper-runtime-latest" scripts/make-review-archive.sh || fail "make-review-archive.sh does not collect latest paper runtime smoke directory"
 grep -q "player-report-runtime-latest" scripts/make-review-archive.sh || fail "make-review-archive.sh does not collect latest player report runtime smoke directory"
+grep -q "manual-checklist.txt" scripts/make-review-archive.sh || fail "make-review-archive.sh does not collect player report manual-checklist.txt"
 grep -q "record-integration-runtime-smoke-result" scripts/make-review-archive.sh || fail "make-review-archive.sh review signals do not mention integration smoke recorder"
 grep -q "local-smoke-check.txt" scripts/make-review-archive.sh || fail "make-review-archive.sh does not create local-smoke-check.txt"
 grep -q "scripts/run-local-smoke-check.sh" scripts/make-review-archive.sh || fail "make-review-archive.sh does not record run-local-smoke-check.sh status"
@@ -592,15 +601,15 @@ bash -n scripts/record-integration-runtime-smoke-result.sh || fail "record-integ
 bash -n scripts/record-player-report-runtime-smoke-result.sh || fail "record-player-report-runtime-smoke-result.sh syntax check failed"
 bash -n scripts/check-player-report-runtime-readiness.sh || fail "check-player-report-runtime-readiness.sh syntax check failed"
 ./scripts/create-release-artifact.sh
-[[ -f "build/release/ReputationBan-0.26.0.jar" ]] || fail "release jar not found"
-[[ -f "build/release/ReputationBan-0.26.0.jar.sha256" ]] || fail "release jar sha256 not found"
-[[ -f "build/release/ReputationBan-0.26.0-release.zip" ]] || fail "release zip not found"
-[[ -f "build/release/ReputationBan-0.26.0-release.zip.sha256" ]] || fail "release zip sha256 not found"
+[[ -f "build/release/ReputationBan-0.27.0.jar" ]] || fail "release jar not found"
+[[ -f "build/release/ReputationBan-0.27.0.jar.sha256" ]] || fail "release jar sha256 not found"
+[[ -f "build/release/ReputationBan-0.27.0-release.zip" ]] || fail "release zip not found"
+[[ -f "build/release/ReputationBan-0.27.0-release.zip.sha256" ]] || fail "release zip sha256 not found"
 ./scripts/verify-release-artifact.sh
-jar tf "build/release/ReputationBan-0.26.0-release.zip" | grep -q "README.md" || fail "release zip missing README.md"
-jar tf "build/release/ReputationBan-0.26.0-release.zip" | grep -q "docs/INTEGRATIONS.md" || fail "release zip missing docs/INTEGRATIONS.md"
-jar tf "build/release/ReputationBan-0.26.0-release.zip" | grep -q "docs/PLAYER_REPORT_RUNTIME_SMOKE_CHECKLIST.md" || fail "release zip missing docs/PLAYER_REPORT_RUNTIME_SMOKE_CHECKLIST.md"
-if jar tf "build/release/ReputationBan-0.26.0-release.zip" | grep -E '(^|/)(config\.yml|reputationban\.db|latest\.log|debug\.log)$|(^|/)logs/' >/dev/null; then
+jar tf "build/release/ReputationBan-0.27.0-release.zip" | grep -q "README.md" || fail "release zip missing README.md"
+jar tf "build/release/ReputationBan-0.27.0-release.zip" | grep -q "docs/INTEGRATIONS.md" || fail "release zip missing docs/INTEGRATIONS.md"
+jar tf "build/release/ReputationBan-0.27.0-release.zip" | grep -q "docs/PLAYER_REPORT_RUNTIME_SMOKE_CHECKLIST.md" || fail "release zip missing docs/PLAYER_REPORT_RUNTIME_SMOKE_CHECKLIST.md"
+if jar tf "build/release/ReputationBan-0.27.0-release.zip" | grep -E '(^|/)(config\.yml|reputationban\.db|latest\.log|debug\.log)$|(^|/)logs/' >/dev/null; then
   fail "release zip contains forbidden config, DB, or logs"
 fi
 

@@ -35,6 +35,15 @@ rm -rf "$OUTDIR"
 mkdir -p "$OUTDIR"/{meta,diff,file-diffs,files,checks,runtime-smoke}
 COMMAND_STATUS="$OUTDIR/checks/command-status.txt"
 : > "$COMMAND_STATUS"
+PRESERVED_PLAYER_REPORT_DIR="$OUTDIR/meta/preserved-player-report-runtime"
+PRESERVED_PLAYER_REPORT_NAME=""
+
+LATEST_PLAYER_REPORT_BEFORE_CLEAN="$(find "$ROOT/build/manual-smoke" -maxdepth 2 -path '*/player-report-runtime-*/summary.txt' -type f 2>/dev/null | sort | tail -n 1 || true)"
+if [[ -n "$LATEST_PLAYER_REPORT_BEFORE_CLEAN" && -f "$LATEST_PLAYER_REPORT_BEFORE_CLEAN" ]]; then
+  PRESERVED_PLAYER_REPORT_NAME="$(basename "$(dirname "$LATEST_PLAYER_REPORT_BEFORE_CLEAN")")"
+  mkdir -p "$PRESERVED_PLAYER_REPORT_DIR"
+  cp -R "$(dirname "$LATEST_PLAYER_REPORT_BEFORE_CLEAN")/." "$PRESERVED_PLAYER_REPORT_DIR/"
+fi
 
 {
   echo "generatedAt=$STAMP"
@@ -139,8 +148,8 @@ done < "$OUTDIR/meta/changed-files.txt"
   echo "## rg phase 24 integration runtime smoke automation"
   rg -n "run-integration-runtime-smoke|integration-runtime-smoke-auto|runtime-smoke/integration-runtime-latest|runtime-smoke/paper-runtime-latest|REPUTATIONBAN_INTEGRATION_PLUGIN_DIR|REPUTATIONBAN_INTEGRATION_RESTORE_PLUGINS|PaperPlugins|staged-plugins|plugin-restore|reputationban-integration-smoke|0\\.24\\.0" README.md CHANGELOG.md docs reputationban_phase_plan.md scripts build.gradle.kts src/main/resources/plugin.yml || true
   echo
-  echo "## rg phase 26 player report runtime smoke gate"
-  rg -n "player-report-runtime|PLAYER_REPORT_RUNTIME_SMOKE_CHECKLIST|check-player-report-runtime-readiness|record-player-report-runtime-smoke-result|HOLD_FOR_PLAYER_REPORT_RUNTIME_SMOKE|/reportbad|/reports evidence|report_context|0\\.26\\.0" README.md CHANGELOG.md docs reputationban_phase_plan.md scripts build.gradle.kts src/main/resources/plugin.yml || true
+  echo "## rg phase 27 player report runtime smoke result recording"
+  rg -n "player-report-runtime|PLAYER_REPORT_RUNTIME_SMOKE_CHECKLIST|check-player-report-runtime-readiness|record-player-report-runtime-smoke-result|manualConfirmed|manual-checklist|--manual-confirmed|HOLD_FOR_PLAYER_REPORT_RUNTIME_SMOKE|/reportbad|/reports evidence|report_context|0\\.27\\.0" README.md CHANGELOG.md docs reputationban_phase_plan.md scripts build.gradle.kts src/main/resources/plugin.yml || true
 } > "$OUTDIR/checks/rg-review-signals.txt"
 
 {
@@ -185,6 +194,18 @@ if [[ -x "$ROOT/scripts/check-optional-dependency-safety.sh" ]]; then
   run_logged "./scripts/check-optional-dependency-safety.sh" "$OUTDIR/checks/optional-dependency-safety.txt" "$ROOT/scripts/check-optional-dependency-safety.sh"
 else
   echo "./scripts/check-optional-dependency-safety.sh=missing" >> "$COMMAND_STATUS"
+fi
+
+if [[ -n "$PRESERVED_PLAYER_REPORT_NAME" && -f "$PRESERVED_PLAYER_REPORT_DIR/summary.txt" ]]; then
+  if ! find "$ROOT/build/manual-smoke" -maxdepth 2 -path '*/player-report-runtime-*/summary.txt' -type f 2>/dev/null | grep -q .; then
+    mkdir -p "$ROOT/build/manual-smoke/$PRESERVED_PLAYER_REPORT_NAME"
+    cp -R "$PRESERVED_PLAYER_REPORT_DIR/." "$ROOT/build/manual-smoke/$PRESERVED_PLAYER_REPORT_NAME/"
+    echo "preserve-player-report-runtime=restored:$PRESERVED_PLAYER_REPORT_NAME" >> "$COMMAND_STATUS"
+  else
+    echo "preserve-player-report-runtime=not-needed" >> "$COMMAND_STATUS"
+  fi
+else
+  echo "preserve-player-report-runtime=not-found" >> "$COMMAND_STATUS"
 fi
 
 if [[ -x "$ROOT/scripts/run-paper-runtime-smoke.sh" ]]; then
@@ -252,8 +273,8 @@ else
   {
     echo "status=NOT_RUN"
     echo "result=NOT_RUN"
-    echo "version=0.26.0"
-    echo "jar=build/libs/ReputationBan-0.26.0.jar"
+    echo "version=0.27.0"
+    echo "jar=build/libs/ReputationBan-0.27.0.jar"
     echo "jarSha256=missing"
     echo "reporter="
     echo "target="
@@ -300,8 +321,8 @@ fi
 
 if [[ -d "$ROOT/build/libs" ]]; then
   find "$ROOT/build/libs" -maxdepth 1 -type f -print | sort > "$OUTDIR/checks/built-jars.txt"
-  if [[ -f "$ROOT/build/libs/ReputationBan-0.26.0.jar" ]]; then
-    (cd "$ROOT" && sha256sum build/libs/ReputationBan-0.26.0.jar) > "$OUTDIR/checks/jar-sha256.txt"
+  if [[ -f "$ROOT/build/libs/ReputationBan-0.27.0.jar" ]]; then
+    (cd "$ROOT" && sha256sum build/libs/ReputationBan-0.27.0.jar) > "$OUTDIR/checks/jar-sha256.txt"
   fi
 fi
 
@@ -330,8 +351,8 @@ copy_runtime_smoke_latest() {
       echo "status=NOT_RUN"
       echo "result=NOT_RUN"
       if [[ "$dest_name" == "player-report-runtime-latest" ]]; then
-        echo "version=0.26.0"
-        echo "jar=build/libs/ReputationBan-0.26.0.jar"
+        echo "version=0.27.0"
+        echo "jar=build/libs/ReputationBan-0.27.0.jar"
         echo "jarSha256=missing"
         echo "reporter="
         echo "target="
@@ -363,7 +384,7 @@ copy_runtime_smoke_latest "paper-runtime" "paper-runtime-latest" \
 copy_runtime_smoke_latest "integration-runtime" "integration-runtime-latest" \
   summary.txt commands.txt environment.txt staged-plugins.txt plugin-restore.txt integration-status.txt
 copy_runtime_smoke_latest "player-report-runtime" "player-report-runtime-latest" \
-  summary.txt
+  summary.txt manual-checklist.txt
 
 tar -czf "$ARCHIVE" -C "$(dirname "$OUTDIR")" "$(basename "$OUTDIR")"
 cp "$ARCHIVE" "$LATEST"
