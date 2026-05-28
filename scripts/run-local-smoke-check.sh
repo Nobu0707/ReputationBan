@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-EXPECTED_VERSION="0.25.0"
+EXPECTED_VERSION="0.26.0"
 JAR="build/libs/ReputationBan-${EXPECTED_VERSION}.jar"
 
 fail() { echo "[FAIL] $*" >&2; exit 1; }
@@ -29,7 +29,7 @@ sha256sum "$JAR"
 cat <<'STEPS'
 
 Manual runtime smoke:
-Copy build/libs/ReputationBan-0.25.0.jar to your Paper 26.1.2 plugins directory.
+Copy build/libs/ReputationBan-0.26.0.jar to your Paper 26.1.2 plugins directory.
 Start Paper with Java 25.
 Verify /plugins, /rep version, /rep help, /rep doctor, /rep integrations, /rep integrations test, /rep placeholders, /reports evidence <id>, /rep support bundle, /reportbad tab completion, /rep audit recent.
 For WorldGuard smoke, test without WorldGuard, with WorldEdit only, and with WorldEdit + WorldGuard; confirm no region or flag is modified.

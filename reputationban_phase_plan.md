@@ -579,7 +579,34 @@
 - CoreProtect rollback、restore、purge、LuckPerms 書き込み、WorldGuard region/flag 変更、GriefPrevention claim/trust 変更は引き続き行わない。
 - Discord から Minecraft コマンドを実行する機能、Discord role 変更、Discord button 承認は行わない。
 
-## Phase 26以降: 外部連携・高度な悪用対策
+## Phase 26 / v0.26.0: Player report/evidence runtime smoke gate
+
+目的: 実プレイヤー操作が必要な `/reportbad`、`/reports view`、`/reports evidence`、`report_context` 表示を、v1.0.0 前の手動 runtime smoke gate として記録・判定しやすくする。
+
+実装範囲:
+
+- version 0.26.0
+- `docs/PLAYER_REPORT_RUNTIME_SMOKE_CHECKLIST.md`
+- `docs/phase-26.md`
+- `scripts/record-player-report-runtime-smoke-result.sh`
+- `scripts/check-player-report-runtime-readiness.sh`
+- `scripts/check-runtime-smoke-consistency.sh` の player report runtime 対応
+- review archive の `checks/player-report-runtime-readiness.txt`
+- review archive の `checks/latest-player-report-runtime-smoke-summary.txt`
+- review archive の `runtime-smoke/player-report-runtime-latest/summary.txt`
+- release readiness docs に v1.0.0 前の推奨 gate として Paper runtime smoke PASS、Integration runtime smoke PASS、Player report/evidence runtime smoke PASS を明記
+- review/release archive scripts の v0.26.0 対応
+
+注意:
+
+- `/reportbad` は player sender 前提のため、手動 player report smoke は実プレイヤー2名以上で確認する。
+- 実プレイヤー2名以上で確認していない場合、PASS summary は作らない。
+- 未実施は `NOT_RUN` / `HOLD_FOR_PLAYER_REPORT_RUNTIME_SMOKE` として正直に記録する。
+- `make-review-archive.sh` は `/reportbad` を自動実行しない。
+- CoreProtect rollback、restore、purge、LuckPerms 書き込み、WorldGuard region/flag 変更、GriefPrevention claim/trust 変更は引き続き行わない。
+- Discord から Minecraft コマンドを実行する機能、Discord role 変更、Discord button 承認は行わない。
+
+## Phase 27以降: 外部連携・高度な悪用対策
 
 実装候補:
 

@@ -2,7 +2,7 @@
 
 ReputationBan は、通報とスタッフ操作をもとにプレイヤーの評判スコアを管理する PaperMC 向け moderation プラグインです。データは SQLite に保存し、未処理通報の審査、監査ログ、バックアップ、support bundle、設定に基づく Profile BAN を扱います。
 
-現在のバージョン: `0.25.0`
+現在のバージョン: `0.26.0`
 
 ## 対象環境
 
@@ -24,8 +24,10 @@ ReputationBan は、通報とスタッフ操作をもとにプレイヤーの評
 - [Security and redaction](docs/SECURITY_REDACTION.md)
 - [外部連携](docs/INTEGRATIONS.md)
 - [Integration runtime smoke checklist](docs/INTEGRATION_RUNTIME_SMOKE_CHECKLIST.md)
+- [Player report runtime smoke checklist](docs/PLAYER_REPORT_RUNTIME_SMOKE_CHECKLIST.md)
 - [Paper runtime smoke checklist](docs/runtime-smoke-checklist.md)
 - [Release candidate checklist](docs/RELEASE_CANDIDATE_CHECKLIST.md)
+- [Phase 26 notes](docs/phase-26.md)
 - [Phase 25 notes](docs/phase-25.md)
 - [Phase 23 notes](docs/phase-23.md)
 - [Phase 22 notes](docs/phase-22.md)
@@ -118,13 +120,13 @@ ReputationBan は、通報とスタッフ操作をもとにプレイヤーの評
 ./scripts/review_code.sh
 ```
 
-JAR は `build/libs/ReputationBan-0.25.0.jar` に生成されます。
+JAR は `build/libs/ReputationBan-0.26.0.jar` に生成されます。
 
 ## 現在の位置づけ
 
-v0.25.0 は runtime smoke readiness consistency / release gate 整合フェーズです。`scripts/make-review-archive.sh` は Paper runtime smoke 実行後に Paper readiness、integration runtime smoke 実行後に integration readiness を判定し、`scripts/check-runtime-smoke-consistency.sh` で latest summary と readiness の矛盾を検出します。`scripts/run-integration-runtime-smoke.sh` は `integration-status.txt` と `activeIntegrations` / `unavailableIntegrations` summary を残します。DiscordSRV が bot token 未設定で unavailable になる場合は WARN として記録し、ReputationBan 本体と他連携の runtime smoke PASS を妨げません。
+v0.26.0 は player report/evidence runtime smoke gate フェーズです。`scripts/make-review-archive.sh` は Paper runtime smoke、integration runtime smoke、player report runtime smoke の readiness と latest summary を収集し、`scripts/check-runtime-smoke-consistency.sh` で三者の summary と readiness の矛盾を検出します。`/reportbad`、`/reports view <id>`、`/reports evidence <id>`、`report_context` 実生成は実プレイヤー2名以上で確認する必要があります。未実施の場合は PASS と扱わず、`NOT_RUN` / `HOLD_FOR_PLAYER_REPORT_RUNTIME_SMOKE` として記録します。
 
-v1.0.0 へ進む前に [Release candidate checklist](docs/RELEASE_CANDIDATE_CHECKLIST.md)、[Paper runtime smoke checklist](docs/runtime-smoke-checklist.md)、[Integration runtime smoke checklist](docs/INTEGRATION_RUNTIME_SMOKE_CHECKLIST.md) を確認してください。Paper / integration 実機スモークを実行していない場合は PASS と扱わず、未実施として記録します。
+v1.0.0 へ進む前に [Release candidate checklist](docs/RELEASE_CANDIDATE_CHECKLIST.md)、[Paper runtime smoke checklist](docs/runtime-smoke-checklist.md)、[Integration runtime smoke checklist](docs/INTEGRATION_RUNTIME_SMOKE_CHECKLIST.md)、[Player report runtime smoke checklist](docs/PLAYER_REPORT_RUNTIME_SMOKE_CHECKLIST.md) を確認してください。Paper / integration / player report 実機スモークを実行していない場合は PASS と扱わず、未実施として記録します。
 
 ## 現在の制限
 

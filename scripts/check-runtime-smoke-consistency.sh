@@ -9,9 +9,9 @@ Usage:
   ./scripts/check-runtime-smoke-consistency.sh
   ./scripts/check-runtime-smoke-consistency.sh --checks-dir build/review-temp/checks
 
-Checks that the latest Paper and integration runtime smoke summaries match
-their readiness outputs. PASS summaries must have READY/PASS readiness, and
-NOT_RUN summaries must have HOLD/NOT_RUN readiness.
+Checks that the latest Paper, integration, and player report runtime smoke
+summaries match their readiness outputs. PASS summaries must have READY/PASS
+readiness, and NOT_RUN summaries must have HOLD/NOT_RUN readiness.
 USAGE
 }
 
@@ -117,20 +117,27 @@ paper_summary_file="$(checks_summary_file latest-paper-runtime-smoke-summary.txt
 paper_summary_file="${paper_summary_file:-$(latest_summary paper-runtime || true)}"
 integration_summary_file="$(checks_summary_file latest-integration-runtime-smoke-summary.txt)"
 integration_summary_file="${integration_summary_file:-$(latest_summary integration-runtime || true)}"
+player_report_summary_file="$(checks_summary_file latest-player-report-runtime-smoke-summary.txt)"
+player_report_summary_file="${player_report_summary_file:-$(latest_summary player-report-runtime || true)}"
 
 paper_summary="$(summary_value "$paper_summary_file")"
 integration_summary="$(summary_value "$integration_summary_file")"
+player_report_summary="$(summary_value "$player_report_summary_file")"
 
 paper_readiness_text="$(readiness_output paper-runtime-readiness.txt ./scripts/check-paper-runtime-readiness.sh)"
 integration_readiness_text="$(readiness_output integration-runtime-readiness.txt ./scripts/check-integration-runtime-readiness.sh)"
+player_report_readiness_text="$(readiness_output player-report-runtime-readiness.txt ./scripts/check-player-report-runtime-readiness.sh)"
 
 paper_readiness="$(readiness_state "$paper_readiness_text")"
 integration_readiness="$(readiness_state "$integration_readiness_text")"
+player_report_readiness="$(readiness_state "$player_report_readiness_text")"
 
 echo "paper summary: $paper_summary"
 echo "paper readiness: $paper_readiness"
 echo "integration summary: $integration_summary"
 echo "integration readiness: $integration_readiness"
+echo "player report summary: $player_report_summary"
+echo "player report readiness: $player_report_readiness"
 
 FAILED=0
 if ! check_pair "paper" "$paper_summary" "$paper_readiness"; then
@@ -139,6 +146,10 @@ if ! check_pair "paper" "$paper_summary" "$paper_readiness"; then
 fi
 if ! check_pair "integration" "$integration_summary" "$integration_readiness"; then
   echo "integration consistency: FAIL"
+  FAILED=1
+fi
+if ! check_pair "player report" "$player_report_summary" "$player_report_readiness"; then
+  echo "player report consistency: FAIL"
   FAILED=1
 fi
 

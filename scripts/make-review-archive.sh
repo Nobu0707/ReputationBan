@@ -138,6 +138,9 @@ done < "$OUTDIR/meta/changed-files.txt"
   echo
   echo "## rg phase 24 integration runtime smoke automation"
   rg -n "run-integration-runtime-smoke|integration-runtime-smoke-auto|runtime-smoke/integration-runtime-latest|runtime-smoke/paper-runtime-latest|REPUTATIONBAN_INTEGRATION_PLUGIN_DIR|REPUTATIONBAN_INTEGRATION_RESTORE_PLUGINS|PaperPlugins|staged-plugins|plugin-restore|reputationban-integration-smoke|0\\.24\\.0" README.md CHANGELOG.md docs reputationban_phase_plan.md scripts build.gradle.kts src/main/resources/plugin.yml || true
+  echo
+  echo "## rg phase 26 player report runtime smoke gate"
+  rg -n "player-report-runtime|PLAYER_REPORT_RUNTIME_SMOKE_CHECKLIST|check-player-report-runtime-readiness|record-player-report-runtime-smoke-result|HOLD_FOR_PLAYER_REPORT_RUNTIME_SMOKE|/reportbad|/reports evidence|report_context|0\\.26\\.0" README.md CHANGELOG.md docs reputationban_phase_plan.md scripts build.gradle.kts src/main/resources/plugin.yml || true
 } > "$OUTDIR/checks/rg-review-signals.txt"
 
 {
@@ -208,6 +211,12 @@ else
   echo "./scripts/check-integration-runtime-readiness.sh=missing" >> "$COMMAND_STATUS"
 fi
 
+if [[ -x "$ROOT/scripts/check-player-report-runtime-readiness.sh" ]]; then
+  run_logged "./scripts/check-player-report-runtime-readiness.sh" "$OUTDIR/checks/player-report-runtime-readiness.txt" "$ROOT/scripts/check-player-report-runtime-readiness.sh"
+else
+  echo "./scripts/check-player-report-runtime-readiness.sh=missing" >> "$COMMAND_STATUS"
+fi
+
 if [[ -f "$ROOT/scripts/run-integration-runtime-smoke-helper.sh" ]]; then
   run_logged "bash -n scripts/run-integration-runtime-smoke-helper.sh" "$OUTDIR/checks/integration-runtime-smoke-helper-syntax.txt" bash -n "$ROOT/scripts/run-integration-runtime-smoke-helper.sh"
 else
@@ -234,6 +243,24 @@ else
     echo "message=No integration runtime smoke summary found."
     echo "nextStep=Run docs/INTEGRATION_RUNTIME_SMOKE_CHECKLIST.md and record results with scripts/record-integration-runtime-smoke-result.sh"
   } > "$OUTDIR/checks/latest-integration-runtime-smoke-summary.txt"
+fi
+
+LATEST_PLAYER_REPORT_SMOKE="$(find "$ROOT/build/manual-smoke" -maxdepth 2 -path '*/player-report-runtime-*/summary.txt' -type f 2>/dev/null | sort | tail -n 1 || true)"
+if [[ -n "$LATEST_PLAYER_REPORT_SMOKE" && -f "$LATEST_PLAYER_REPORT_SMOKE" ]]; then
+  cp "$LATEST_PLAYER_REPORT_SMOKE" "$OUTDIR/checks/latest-player-report-runtime-smoke-summary.txt"
+else
+  {
+    echo "status=NOT_RUN"
+    echo "result=NOT_RUN"
+    echo "version=0.26.0"
+    echo "jar=build/libs/ReputationBan-0.26.0.jar"
+    echo "jarSha256=missing"
+    echo "reporter="
+    echo "target="
+    echo "reportId="
+    echo "note=No player report runtime smoke summary found. Do not mark PASS without two real players."
+    echo "createdAt=$(date -Iseconds)"
+  } > "$OUTDIR/checks/latest-player-report-runtime-smoke-summary.txt"
 fi
 
 if [[ -x "$ROOT/scripts/check-runtime-smoke-consistency.sh" ]]; then
@@ -273,8 +300,8 @@ fi
 
 if [[ -d "$ROOT/build/libs" ]]; then
   find "$ROOT/build/libs" -maxdepth 1 -type f -print | sort > "$OUTDIR/checks/built-jars.txt"
-  if [[ -f "$ROOT/build/libs/ReputationBan-0.25.0.jar" ]]; then
-    (cd "$ROOT" && sha256sum build/libs/ReputationBan-0.25.0.jar) > "$OUTDIR/checks/jar-sha256.txt"
+  if [[ -f "$ROOT/build/libs/ReputationBan-0.26.0.jar" ]]; then
+    (cd "$ROOT" && sha256sum build/libs/ReputationBan-0.26.0.jar) > "$OUTDIR/checks/jar-sha256.txt"
   fi
 fi
 
@@ -299,7 +326,20 @@ copy_runtime_smoke_latest() {
   local dest="$OUTDIR/runtime-smoke/$dest_name"
   mkdir -p "$dest"
   if [[ -z "$latest_summary" || ! -f "$latest_summary" ]]; then
-    echo "status=NOT_RUN" > "$dest/summary.txt"
+    {
+      echo "status=NOT_RUN"
+      echo "result=NOT_RUN"
+      if [[ "$dest_name" == "player-report-runtime-latest" ]]; then
+        echo "version=0.26.0"
+        echo "jar=build/libs/ReputationBan-0.26.0.jar"
+        echo "jarSha256=missing"
+        echo "reporter="
+        echo "target="
+        echo "reportId="
+        echo "note=No player report runtime smoke summary found. Do not mark PASS without two real players."
+        echo "createdAt=$(date -Iseconds)"
+      fi
+    } > "$dest/summary.txt"
     return 0
   fi
 
@@ -322,6 +362,8 @@ copy_runtime_smoke_latest "paper-runtime" "paper-runtime-latest" \
   summary.txt commands.txt environment.txt
 copy_runtime_smoke_latest "integration-runtime" "integration-runtime-latest" \
   summary.txt commands.txt environment.txt staged-plugins.txt plugin-restore.txt integration-status.txt
+copy_runtime_smoke_latest "player-report-runtime" "player-report-runtime-latest" \
+  summary.txt
 
 tar -czf "$ARCHIVE" -C "$(dirname "$OUTDIR")" "$(basename "$OUTDIR")"
 cp "$ARCHIVE" "$LATEST"

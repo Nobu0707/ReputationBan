@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-EXPECTED_VERSION="0.25.0"
+EXPECTED_VERSION="0.26.0"
 PLUGIN_JAR="build/libs/ReputationBan-${EXPECTED_VERSION}.jar"
 
 usage() {

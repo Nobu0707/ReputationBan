@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.26.0
+
+- Phase 26 は player report/evidence runtime smoke gate フェーズです。新しい外部連携ではなく、実プレイヤー2名以上が必要な `/reportbad`、`/reports view`、`/reports evidence`、`report_context` 表示確認を記録しやすくしました。
+- `docs/PLAYER_REPORT_RUNTIME_SMOKE_CHECKLIST.md` と `docs/phase-26.md` を追加し、未実施を PASS 扱いにしない方針、PASS/FAIL 条件、cleanup 手順を明記しました。
+- `scripts/record-player-report-runtime-smoke-result.sh` を追加し、PASS/FAIL/NOT_RUN summary を `build/manual-smoke/player-report-runtime-*` に保存できるようにしました。PASS は reporter、target、report id を必須にしています。
+- `scripts/check-player-report-runtime-readiness.sh` を追加し、通常モードでは NOT_RUN/HOLD を exit 0、`--strict` では PASS 以外を non-zero とする gate を用意しました。
+- `scripts/check-runtime-smoke-consistency.sh` と `scripts/make-review-archive.sh` が Player report runtime smoke の readiness、latest summary、review archive 収集を扱うようになりました。
+- Release readiness と release candidate checklist に、v1.0.0 前の推奨ゲートとして Paper runtime smoke PASS、Integration runtime smoke PASS、Player report/evidence runtime smoke PASS を明記しました。
+- 手動プレイヤー操作なしに `/reportbad` を自動実行する処理、Discord から Minecraft コマンドを実行する機能、Discord role 変更、GUI、Folia 対応、v1.0.0 リリース化は追加していません。
+
 ## 0.25.0
 
 - Phase 25 は runtime smoke readiness consistency / release gate 整合フェーズです。新機能追加ではなく、Paper runtime smoke / integration runtime smoke と readiness 判定の矛盾を防ぐための release automation を更新しました。
