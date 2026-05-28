@@ -218,7 +218,7 @@ grep -q "^version:[[:space:]]*${EXPECTED_VERSION}$" "$TMP_DIR/plugin.yml" || fai
 ./scripts/check-integration-runtime-readiness.sh
 ./scripts/check-player-report-runtime-readiness.sh
 ./scripts/check-runtime-smoke-consistency.sh
-./scripts/check-v1-release-gates.sh
+REPUTATIONBAN_ALLOW_V1_TAG_BEHIND_HEAD=1 ./scripts/check-v1-release-gates.sh
 ./scripts/generate-v1-go-no-go-report.sh
 ./scripts/generate-v1-release-notes.sh
 

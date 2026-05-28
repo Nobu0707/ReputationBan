@@ -162,6 +162,9 @@ done < "$OUTDIR/meta/changed-files.txt"
   echo
   echo "## rg phase 30 v1 tag and GitHub Release draft preparation"
   rg -n "phase-30|Phase 30|v1\\.0\\.0 tag|GitHub Release draft|draft=false|release-draft command|v1-tag-status|github-release-draft-status|release-draft-assets|V1_GITHUB_RELEASE_DRAFT_MANUAL|CREATED_MATCHES_HEAD" README.md CHANGELOG.md docs reputationban_phase_plan.md scripts build.gradle.kts src/main/resources/plugin.yml || true
+  echo
+  echo "## rg phase 31 v1 GitHub Release publish"
+  rg -n "phase-31|Phase 31|GitHub Release: published|releasePublished|github-release-status-after-publish|release-assets-after-publish|v1-release-publish-status|CREATED_BEHIND_HEAD_ALLOWED|isDraft=false|isPrerelease=false" README.md CHANGELOG.md docs reputationban_phase_plan.md scripts build.gradle.kts src/main/resources/plugin.yml || true
 } > "$OUTDIR/checks/rg-review-signals.txt"
 
 {
@@ -311,7 +314,7 @@ else
 fi
 
 if [[ -x "$ROOT/scripts/check-v1-release-gates.sh" ]]; then
-  run_logged "./scripts/check-v1-release-gates.sh" "$OUTDIR/checks/v1-release-gates.txt" "$ROOT/scripts/check-v1-release-gates.sh"
+  run_logged "./scripts/check-v1-release-gates.sh" "$OUTDIR/checks/v1-release-gates.txt" env REPUTATIONBAN_ALLOW_V1_TAG_BEHIND_HEAD=1 "$ROOT/scripts/check-v1-release-gates.sh"
 else
   echo "./scripts/check-v1-release-gates.sh=missing" >> "$COMMAND_STATUS"
 fi
@@ -354,6 +357,17 @@ fi
     echo "matchesHead=true"
   else
     echo "matchesHead=false"
+  fi
+  if [[ -n "$local_tag_commit" ]] && git merge-base --is-ancestor "$local_tag_commit" "$head_commit"; then
+    echo "localTagIsAncestorOfHead=true"
+  else
+    echo "localTagIsAncestorOfHead=false"
+  fi
+  echo "phase30Commit=b422e72ec5a917cdc04dee902e96a0cef190026c"
+  if [[ "$local_tag_commit" == "b422e72ec5a917cdc04dee902e96a0cef190026c" && "$remote_tag_commit" == "b422e72ec5a917cdc04dee902e96a0cef190026c" ]]; then
+    echo "pointsToPhase30Commit=true"
+  else
+    echo "pointsToPhase30Commit=false"
   fi
 } > "$OUTDIR/checks/v1-tag-status.txt"
 
@@ -408,6 +422,60 @@ fi
     fi
   fi
 } > "$OUTDIR/checks/github-release-draft-status.txt"
+
+{
+  echo "ReputationBan-1.0.0.jar"
+  echo "ReputationBan-1.0.0.jar.sha256"
+  echo "ReputationBan-1.0.0-release.zip"
+  echo "ReputationBan-1.0.0-release.zip.sha256"
+} > "$OUTDIR/checks/release-assets-after-publish.txt"
+
+{
+  if command -v gh >/dev/null 2>&1; then
+    echo "ghAvailable=true"
+    set +e
+    release_json="$(gh release view v1.0.0 --json tagName,name,isDraft,isPrerelease,url,assets 2>&1)"
+    release_code=$?
+    set -e
+    if [[ "$release_code" == "0" ]]; then
+      tag_name="$(printf '%s\n' "$release_json" | sed -n 's/.*"tagName":"\([^"]*\)".*/\1/p')"
+      url="$(printf '%s\n' "$release_json" | sed -n 's/.*"url":"\([^"]*\)".*/\1/p')"
+      is_draft="$([[ "$release_json" == *'"isDraft":true'* ]] && echo true || echo false)"
+      is_prerelease="$([[ "$release_json" == *'"isPrerelease":true'* ]] && echo true || echo false)"
+      echo "releaseExists=true"
+      echo "releasePublished=$([[ "$is_draft" == "false" ]] && echo true || echo false)"
+      echo "tagName=${tag_name:-unknown}"
+      echo "isDraft=$is_draft"
+      echo "isPrerelease=$is_prerelease"
+      echo "url=${url:-unknown}"
+      for asset in \
+        "ReputationBan-1.0.0.jar" \
+        "ReputationBan-1.0.0.jar.sha256" \
+        "ReputationBan-1.0.0-release.zip" \
+        "ReputationBan-1.0.0-release.zip.sha256"; do
+        if [[ "$release_json" == *"\"name\":\"$asset\""* ]]; then
+          echo "asset:${asset}=present"
+        else
+          echo "asset:${asset}=missing"
+        fi
+      done
+    else
+      echo "releaseExists=unknown"
+      echo "releasePublished=unknown"
+      echo "tagName=unknown"
+      echo "isDraft=unknown"
+      echo "isPrerelease=unknown"
+      echo "url=unknown"
+      echo "ghError=${release_json//$'\n'/ }"
+    fi
+  else
+    echo "ghAvailable=false"
+    echo "releaseExists=unknown"
+    echo "releasePublished=unknown"
+  fi
+} > "$OUTDIR/checks/github-release-status-after-publish.txt"
+
+cp "$OUTDIR/checks/github-release-status-after-publish.txt" "$OUTDIR/checks/v1-release-publish-status.txt"
 
 if [[ -x "$ROOT/scripts/run-local-smoke-check.sh" ]]; then
   run_logged "local-smoke-check" "$OUTDIR/checks/local-smoke-check.txt" env REPUTATIONBAN_SKIP_REVIEW_CODE=1 REPUTATIONBAN_SKIP_BUILD=1 "$ROOT/scripts/run-local-smoke-check.sh"

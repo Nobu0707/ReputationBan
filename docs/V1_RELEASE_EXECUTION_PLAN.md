@@ -1,6 +1,30 @@
 # v1.0.0 Release Execution Plan
 
-この文書は Phase 30 の v1.0.0 tag / GitHub Release draft preparation 実行計画です。Phase 30 では `v1.0.0` annotated tag を作成して GitHub へ push し、GitHub Release は draft まで作成します。GitHub Release 公開、`draft=false` への変更、v1.0.1 以降への version bump はまだ行いません。
+この文書は v1.0.0 tag / GitHub Release 実行記録です。Phase 30 では `v1.0.0` annotated tag を作成して GitHub へ push し、GitHub Release draft を作成しました。Phase 31 では draft を最終確認し、GitHub Release を公開しました。v1.0.1 以降への version bump はまだ行いません。
+
+## Phase 31 公開結果
+
+- `v1.0.0` tag commit: `b422e72ec5a917cdc04dee902e96a0cef190026c`
+- GitHub Release: published
+- Release URL: <https://github.com/Nobu0707/ReputationBan/releases/tag/v1.0.0>
+- `isDraft=false`
+- `isPrerelease=false`
+- Publish time: `2026-05-28T12:00:28+09:00`
+- v1 release gates judgment: `READY_FOR_V1_RELEASE_WITH_DISCORDSRV_WARNING`
+
+Published assets:
+
+- `ReputationBan-1.0.0.jar`
+- `ReputationBan-1.0.0.jar.sha256`
+- `ReputationBan-1.0.0-release.zip`
+- `ReputationBan-1.0.0-release.zip.sha256`
+
+SHA256:
+
+- JAR: `6a693f35852c122a6a054193bdafb8529b91b081ba4b97a7b260e9ec825b0443`
+- Release ZIP: `b660e03d4e721f27e1645a1b747f30b208f844322de40ed2b9fa86e23b51d797`
+
+DiscordSRV は bot token 未設定または API unavailable の場合 WARN として扱います。本番で DiscordSRV 通知や account link を使う場合は、bot token 設定済み環境で追加確認してください。
 
 ## Tag 作成前チェック
 

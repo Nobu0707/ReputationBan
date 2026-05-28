@@ -17,7 +17,8 @@ Usage:
   ./scripts/check-v1-release-gates.sh --strict --require-discordsrv
 
 Checks the v1.0.0 release review gates without creating a v1.0.0 tag or GitHub Release.
-If v1.0.0 already exists, it must point at HEAD.
+If v1.0.0 already exists, it must point at HEAD unless
+REPUTATIONBAN_ALLOW_V1_TAG_BEHIND_HEAD=1 is set for post-release docs-only commits.
 USAGE
 }
 
@@ -111,6 +112,12 @@ v1_tag_is_safe() {
   tag_commit="$(git rev-list -n 1 v1.0.0)"
   if [[ "$head" == "$tag_commit" ]]; then
     echo "v1Tag=CREATED_MATCHES_HEAD"
+    return 0
+  fi
+  if [[ "${REPUTATIONBAN_ALLOW_V1_TAG_BEHIND_HEAD:-0}" == "1" ]] && git merge-base --is-ancestor "$tag_commit" "$head"; then
+    echo "v1Tag=CREATED_BEHIND_HEAD_ALLOWED"
+    echo "v1TagCommit=$tag_commit"
+    echo "headCommit=$head"
     return 0
   fi
   echo "v1Tag=FAIL_POINTS_TO_${tag_commit}"

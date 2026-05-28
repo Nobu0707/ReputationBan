@@ -716,7 +716,34 @@
 - CoreProtect rollback、restore、purge、LuckPerms 書き込み、WorldGuard region/flag 変更、GriefPrevention claim/trust 変更は引き続き行わない。
 - Discord から Minecraft コマンドを実行する機能、Discord role 変更、Discord button 承認は行わない。
 
-## Phase 31以降: 外部連携・高度な悪用対策
+## Phase 31 / v1.0.0: GitHub Release publish
+
+目的: Phase 30 で作成した `v1.0.0` GitHub Release draft を最終確認し、問題がなければ公開する。
+
+実装範囲:
+
+- Git working tree clean、`main`、local/remote `v1.0.0` tag 存在確認
+- `v1.0.0` tag が Phase 30 commit `b422e72ec5a917cdc04dee902e96a0cef190026c` を指すことの確認
+- GitHub Release draft の `tagName=v1.0.0`、`isDraft=true`、`isPrerelease=false`、asset 4件確認
+- JAR / release ZIP の SHA256 と内容確認
+- v1 release gates judgment `READY_FOR_V1_RELEASE_WITH_DISCORDSRV_WARNING` の確認
+- GitHub Release を `draft=false` に変更して公開
+- 公開後の `isDraft=false`、`isPrerelease=false`、asset 4件確認
+- `docs/phase-31.md`
+- release publication docs-only commit
+- `scripts/make-review-archive.sh` の公開後 release 状態収集
+
+注意:
+
+- `v1.0.0` tag は移動しない。
+- release asset は差し替えない。
+- GitHub Release は削除しない。
+- Phase 31 docs-only commit により main は `v1.0.0` tag より進む。
+- DiscordSRV unavailable は WARN とし、ReputationBan 本体と他連携の release gate は止めない。
+- 本番で DiscordSRV 通知や account link を使う場合は bot token 設定済み環境で追加確認する。
+- Java runtime behavior、DB schema、`/reportbad`、`/reports evidence`、`report_context` 生成は変更しない。
+
+## Phase 32以降: 外部連携・高度な悪用対策
 
 実装候補:
 

@@ -4,7 +4,7 @@ ReputationBan は、通報とスタッフ操作をもとにプレイヤーの評
 
 現在のバージョン: `1.0.0`
 
-v1.0.0 final artifact prepared の状態です。`ReputationBan-1.0.0.jar` と release artifact を作成でき、主要 runtime gate は Paper runtime smoke、Integration runtime smoke、Player report/evidence runtime smoke、runtime smoke consistency まで PASS 済みです。Phase 30 では `v1.0.0` annotated tag を作成して GitHub へ push し、GitHub Release は draft まで作成します。Release 公開、`draft=false` への変更、v1.0.1 以降への version bump はまだ行いません。DiscordSRV は bot token 未設定時に WARN として扱い、ReputationBan 本体や他連携の release gate は止めません。
+v1.0.0 は GitHub Release 公開済みです。`v1.0.0` annotated tag は Phase 30 commit `b422e72ec5a917cdc04dee902e96a0cef190026c` を指し、GitHub Release は `draft=false`、`prerelease=false` として公開されています。Release assets は `ReputationBan-1.0.0.jar`、JAR sha256、`ReputationBan-1.0.0-release.zip`、release zip sha256 の4件です。DiscordSRV は bot token 未設定時に WARN として扱い、ReputationBan 本体や他連携の release gate は止めません。
 
 ## 対象環境
 
@@ -31,6 +31,7 @@ v1.0.0 final artifact prepared の状態です。`ReputationBan-1.0.0.jar` と r
 - [Release candidate checklist](docs/RELEASE_CANDIDATE_CHECKLIST.md)
 - [v1.0.0 release plan](docs/V1_RELEASE_PLAN.md)
 - [v1.0.0 release execution plan](docs/V1_RELEASE_EXECUTION_PLAN.md)
+- [Phase 31 notes](docs/phase-31.md)
 - [Phase 30 notes](docs/phase-30.md)
 - [Phase 29 notes](docs/phase-29.md)
 - [Phase 28 notes](docs/phase-28.md)
@@ -132,9 +133,9 @@ JAR は `build/libs/ReputationBan-1.0.0.jar` に生成されます。
 
 ## 現在の位置づけ
 
-v1.0.0 は first stable release candidate final artifact / release draft preparation フェーズです。新機能追加ではなく、`scripts/check-v1-release-gates.sh`、Go/No-Go report、v1.0.0 release notes final candidate、`docs/V1_RELEASE_EXECUTION_PLAN.md` を整備し、Phase 30 で tag push と GitHub Release draft 作成まで進めます。Paper runtime smoke、integration runtime smoke、player report runtime smoke の主要 gate は PASS/READY で揃い、`scripts/check-runtime-smoke-consistency.sh` で整合確認します。
+v1.0.0 は first stable release として公開済みです。Release URL は <https://github.com/Nobu0707/ReputationBan/releases/tag/v1.0.0> です。Paper runtime smoke、integration runtime smoke、player report runtime smoke の主要 gate は PASS/READY で揃い、`scripts/check-runtime-smoke-consistency.sh` で整合確認済みです。
 
-Phase 30 では `v1.0.0` annotated tag と GitHub Release draft を作成します。GitHub Release の publish と `draft=false` への変更は次Phaseでユーザー承認後に実施します。DiscordSRV は bot token 未設定時 WARN 扱いのため、本番で DiscordSRV 通知や account link を使う場合は追加確認してください。
+Phase 31 では GitHub Release draft を確認し、`draft=false` へ変更して公開しました。DiscordSRV は bot token 未設定時 WARN 扱いのため、本番で DiscordSRV 通知や account link を使う場合は追加確認してください。
 
 ## 現在の制限
 
