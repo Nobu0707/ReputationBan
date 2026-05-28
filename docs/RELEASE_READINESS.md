@@ -1,6 +1,6 @@
 # Release Readiness
 
-1.0.0 の v1.0.0 final artifact / release publish readiness として、次の項目を確認してください。Phase 31 で `v1.0.0` GitHub Release は公開済みです。Phase 31a で公開済み Release 本文と生成レポートの `PUBLISHED` 整合性を修正しました。`v1.0.0` annotated tag は Phase 30 commit `b422e72ec5a917cdc04dee902e96a0cef190026c` を指し、GitHub Release は `draft=false`、`prerelease=false` です。Release URL は <https://github.com/Nobu0707/ReputationBan/releases/tag/v1.0.0> です。DiscordSRV は引き続き WARN 扱いです。
+1.0.0 の v1.0.0 final artifact / release publish readiness として、次の項目を確認してください。Phase 31 で `v1.0.0` GitHub Release は公開済みです。Phase 31a で公開済み Release 本文と生成レポートの `PUBLISHED` 整合性を修正しました。Phase 35 で GitHub issue templates、PR template、support/security/contribution docs を追加しました。`v1.0.0` annotated tag は Phase 30 commit `b422e72ec5a917cdc04dee902e96a0cef190026c` を指し、GitHub Release は `draft=false`、`prerelease=false` です。Release URL は <https://github.com/Nobu0707/ReputationBan/releases/tag/v1.0.0> です。DiscordSRV は引き続き WARN 扱いです。
 
 - `./gradlew clean test build --warning-mode all` が成功します。
 - `./scripts/review_code.sh` が成功します。
@@ -18,7 +18,7 @@
 - `./scripts/run-local-smoke-check.sh` が成功します。
 - `./scripts/create-release-artifact.sh` が成功します。
 - `./scripts/verify-release-artifact.sh` が成功します。
-- `./scripts/make-review-archive.sh "Phase 34"` が archive を作成し、`checks/docs-localization.txt`、`checks/optional-dependency-safety.txt`、`checks/paper-runtime-smoke-auto.txt`、`checks/paper-runtime-readiness.txt`、`checks/integration-runtime-smoke-auto.txt`、`checks/integration-runtime-readiness.txt`、`checks/discordsrv-runtime-readiness.txt`、`checks/player-report-runtime-readiness.txt`、`checks/runtime-smoke-consistency.txt`、`checks/v1-release-gates.txt`、`checks/generate-v1-go-no-go-report.txt`、`checks/generate-v1-release-notes.txt`、`checks/v1-tag-status.txt`、`checks/v1-release-publish-status.txt`、`checks/github-release-status-after-publish.txt`、`checks/release-notes-body-check.txt`、`checks/release-assets-after-publish.txt`、`checks/integration-runtime-smoke-helper-syntax.txt`、`checks/latest-paper-runtime-smoke-summary.txt`、`checks/latest-integration-runtime-smoke-summary.txt`、`checks/latest-discordsrv-runtime-smoke-summary.txt`、`checks/latest-player-report-runtime-smoke-summary.txt`、`runtime-smoke/paper-runtime-latest/`、`runtime-smoke/integration-runtime-latest/`、`runtime-smoke/discordsrv-runtime-latest/summary.txt`、`runtime-smoke/player-report-runtime-latest/summary.txt`、`runtime-smoke/player-report-runtime-latest/manual-checklist.txt`、`release-prep/ReputationBan-v1-go-no-go-report.md`、`release-prep/ReputationBan-v1.0.0-release-notes.md`、`release-prep/V1_RELEASE_EXECUTION_PLAN.md` を含みます。
+- `./scripts/make-review-archive.sh "Phase 35"` が archive を作成し、`checks/docs-localization.txt`、`checks/optional-dependency-safety.txt`、`checks/paper-runtime-smoke-auto.txt`、`checks/paper-runtime-readiness.txt`、`checks/integration-runtime-smoke-auto.txt`、`checks/integration-runtime-readiness.txt`、`checks/discordsrv-runtime-readiness.txt`、`checks/player-report-runtime-readiness.txt`、`checks/runtime-smoke-consistency.txt`、`checks/v1-release-gates.txt`、`checks/generate-v1-go-no-go-report.txt`、`checks/generate-v1-release-notes.txt`、`checks/v1-tag-status.txt`、`checks/v1-release-publish-status.txt`、`checks/github-release-status-after-publish.txt`、`checks/release-notes-body-check.txt`、`checks/release-assets-after-publish.txt`、`checks/github-templates.txt`、`checks/integration-runtime-smoke-helper-syntax.txt`、`checks/latest-paper-runtime-smoke-summary.txt`、`checks/latest-integration-runtime-smoke-summary.txt`、`checks/latest-discordsrv-runtime-smoke-summary.txt`、`checks/latest-player-report-runtime-smoke-summary.txt`、`runtime-smoke/paper-runtime-latest/`、`runtime-smoke/integration-runtime-latest/`、`runtime-smoke/discordsrv-runtime-latest/summary.txt`、`runtime-smoke/player-report-runtime-latest/summary.txt`、`runtime-smoke/player-report-runtime-latest/manual-checklist.txt`、`release-prep/ReputationBan-v1-go-no-go-report.md`、`release-prep/ReputationBan-v1.0.0-release-notes.md`、`release-prep/V1_RELEASE_EXECUTION_PLAN.md` を含みます。
 - `bash -n scripts/run-paper-runtime-smoke.sh` が成功します。
 - `bash -n scripts/check-paper-runtime-readiness.sh` が成功します。
 - `bash -n scripts/run-paper-runtime-smoke-helper.sh` が成功します。
@@ -74,6 +74,7 @@
 - `/rep audit export recent 10` は安全な export directory 配下に CSV を作成します。
 - `build/release/ReputationBan-1.0.0.jar`、`.jar.sha256`、`ReputationBan-1.0.0-release.zip`、`ReputationBan-1.0.0-release.zip.sha256` が存在します。
 - GitHub Release `v1.0.0` には `ReputationBan-1.0.0.jar`、`ReputationBan-1.0.0.jar.sha256`、`ReputationBan-1.0.0-release.zip`、`ReputationBan-1.0.0-release.zip.sha256` が添付されています。
+- GitHub issue templates、PR template、`SECURITY.md`、`SUPPORT.md`、`CONTRIBUTING.md`、`docs/phase-35.md` が存在します。
 - release ZIP には JAR、checksum、README、CHANGELOG、docs が含まれます。
 - release ZIP には `docs/INTEGRATIONS.md` が含まれます。
 - release ZIP には `docs/INTEGRATION_RUNTIME_SMOKE_CHECKLIST.md` が含まれます。

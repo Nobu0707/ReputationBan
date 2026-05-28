@@ -79,9 +79,19 @@ for file in \
   scripts/generate-v1-release-notes.sh \
   scripts/generate-v1-release-notes-draft.sh \
   scripts/make-review-archive.sh \
+  .github/ISSUE_TEMPLATE/bug_report.yml \
+  .github/ISSUE_TEMPLATE/integration_issue.yml \
+  .github/ISSUE_TEMPLATE/support_request.yml \
+  .github/ISSUE_TEMPLATE/feature_request.yml \
+  .github/ISSUE_TEMPLATE/config.yml \
+  .github/pull_request_template.md \
+  SECURITY.md \
+  SUPPORT.md \
+  CONTRIBUTING.md \
   docs/POST_RELEASE_MONITORING.md \
   docs/BUGFIX_INTAKE.md \
   docs/V1_0_1_CANDIDATES.md \
+  docs/phase-35.md \
   docs/DISCORDSRV_CONFIGURED_RUNTIME_SMOKE_CHECKLIST.md \
   docs/phase-34.md \
   docs/phase-33.md \
@@ -152,6 +162,10 @@ grep -q "POST_RELEASE_MONITORING.md" README.md || fail "README.md does not menti
 grep -q "BUGFIX_INTAKE.md" README.md || fail "README.md does not mention bugfix intake docs"
 grep -q "V1_0_1_CANDIDATES.md" README.md || fail "README.md does not mention v1.0.1 candidates docs"
 grep -q "DISCORDSRV_CONFIGURED_RUNTIME_SMOKE_CHECKLIST.md" README.md || fail "README.md does not mention DiscordSRV configured smoke checklist"
+grep -q "SUPPORT.md" README.md || fail "README.md does not mention SUPPORT.md"
+grep -q "SECURITY.md" README.md || fail "README.md does not mention SECURITY.md"
+grep -q "CONTRIBUTING.md" README.md || fail "README.md does not mention CONTRIBUTING.md"
+grep -q "phase-35.md" README.md || fail "README.md does not mention Phase 35 docs"
 grep -q "phase-34.md" README.md || fail "README.md does not mention Phase 34 docs"
 grep -q "phase-33.md" README.md || fail "README.md does not mention Phase 33 docs"
 grep -q "v1.0.0 tag" README.md docs/phase-30.md docs/phase-29.md docs/V1_RELEASE_EXECUTION_PLAN.md || fail "v1.0.0 tag status docs missing"
@@ -179,8 +193,35 @@ grep -q "<redacted>" scripts/record-discordsrv-runtime-smoke-result.sh || fail "
 grep -q "DiscordSRV token-configured runtime smoke" docs/V1_0_1_CANDIDATES.md || fail "v1.0.1 candidates missing DiscordSRV configured smoke status"
 grep -q "current status: \`NOT_RUN\`" docs/V1_0_1_CANDIDATES.md || fail "v1.0.1 candidates missing DiscordSRV configured smoke current status"
 grep -q "Phase 34 decision" docs/V1_0_1_CANDIDATES.md || fail "v1.0.1 candidates missing Phase 34 DiscordSRV smoke decision"
+grep -q "Confirmed bug candidates" docs/V1_0_1_CANDIDATES.md || fail "v1.0.1 candidates missing confirmed bug candidates section"
+grep -q "none" docs/V1_0_1_CANDIDATES.md || fail "v1.0.1 candidates missing none status"
+grep -q "Docs/support improvements" docs/V1_0_1_CANDIDATES.md || fail "v1.0.1 candidates missing docs/support improvements section"
+grep -q "completed in Phase 35" docs/V1_0_1_CANDIDATES.md || fail "v1.0.1 candidates missing Phase 35 support completion"
+grep -q "v1.1.0以降" docs/V1_0_1_CANDIDATES.md || fail "v1.0.1 candidates missing feature request target"
 grep -q "HOLD_FOR_DISCORDSRV_CONFIGURED_SMOKE" docs/phase-34.md || fail "Phase 34 docs missing DiscordSRV configured smoke judgment"
+grep -q "GitHub issue templates" docs/phase-35.md || fail "Phase 35 docs missing GitHub issue templates"
+grep -q "SUPPORT.md" docs/phase-35.md || fail "Phase 35 docs missing SUPPORT.md"
+grep -q "SECURITY.md" docs/phase-35.md || fail "Phase 35 docs missing SECURITY.md"
+grep -q "CONTRIBUTING.md" docs/phase-35.md || fail "Phase 35 docs missing CONTRIBUTING.md"
 grep -q "discordSrvConfiguredSmoke" scripts/check-v1-release-gates.sh || fail "v1 release gates do not show DiscordSRV configured smoke status"
+grep -q "GitHub issue templates" reputationban_phase_plan.md || fail "phase plan missing Phase 35 GitHub issue templates"
+grep -q "checks/github-templates.txt" scripts/make-review-archive.sh || fail "review archive does not collect GitHub template status"
+
+for template in \
+  .github/ISSUE_TEMPLATE/bug_report.yml \
+  .github/ISSUE_TEMPLATE/integration_issue.yml \
+  .github/ISSUE_TEMPLATE/support_request.yml \
+  .github/ISSUE_TEMPLATE/feature_request.yml; do
+  grep -q "Discord bot token" "$template" || fail "$template does not warn about Discord bot token"
+  grep -q "secret" "$template" || fail "$template does not warn about secret values"
+done
+grep -q "blank_issues_enabled: false" .github/ISSUE_TEMPLATE/config.yml || fail "GitHub issue template chooser allows blank issues"
+grep -q "SUPPORT_BUNDLE.md" .github/ISSUE_TEMPLATE/config.yml || fail "GitHub issue template chooser missing support bundle link"
+grep -q "runtime smoke" .github/pull_request_template.md || fail "PR template missing runtime smoke checklist"
+grep -q "optional dependency safety" .github/pull_request_template.md || fail "PR template missing optional dependency safety checklist"
+grep -q "DB migration" .github/pull_request_template.md || fail "PR template missing DB migration checklist"
+grep -q "Discord bot token" SECURITY.md SUPPORT.md CONTRIBUTING.md || fail "support/security/contributing docs missing Discord bot token warning"
+grep -q "v1.0.x" CONTRIBUTING.md SUPPORT.md || fail "support/contributing docs missing v1.0.x policy"
 
 if [[ -n "$(git tag --list "v1.0.0")" ]]; then
   HEAD_COMMIT="$(git rev-parse HEAD)"

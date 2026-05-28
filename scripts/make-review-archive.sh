@@ -196,6 +196,9 @@ done < "$OUTDIR/meta/changed-files.txt"
   echo
   echo "## rg phase 34 DiscordSRV configured smoke decision"
   rg -n "phase-34|Phase 34|DiscordSRV configured smoke deferred|Phase 34 decision|production-use decision|HOLD_FOR_DISCORDSRV_CONFIGURED_SMOKE|discordSrvConfiguredSmoke|V1_0_1_CANDIDATES" README.md CHANGELOG.md docs reputationban_phase_plan.md scripts build.gradle.kts src/main/resources/plugin.yml || true
+  echo
+  echo "## rg phase 35 support templates"
+  rg -n "phase-35|Phase 35|bug_report|integration_issue|support_request|feature_request|pull_request_template|SECURITY.md|SUPPORT.md|CONTRIBUTING.md|GitHub issue templates|v1.1.0以降|Confirmed bug candidates|Docs/support improvements" .github README.md CHANGELOG.md docs reputationban_phase_plan.md scripts SECURITY.md SUPPORT.md CONTRIBUTING.md || true
 } > "$OUTDIR/checks/rg-review-signals.txt"
 
 {
@@ -427,6 +430,7 @@ fi
     "docs/phase-32.md" \
     "docs/phase-33.md" \
     "docs/phase-34.md" \
+    "docs/phase-35.md" \
     "docs/DISCORDSRV_CONFIGURED_RUNTIME_SMOKE_CHECKLIST.md"; do
     if [[ -f "$ROOT/$file" ]]; then
       echo "$file=present"
@@ -442,6 +446,42 @@ fi
     echo "README-post-release-docs=missing"
   fi
 } > "$OUTDIR/checks/post-release-monitoring-docs.txt"
+
+{
+  for file in \
+    ".github/ISSUE_TEMPLATE/bug_report.yml" \
+    ".github/ISSUE_TEMPLATE/integration_issue.yml" \
+    ".github/ISSUE_TEMPLATE/support_request.yml" \
+    ".github/ISSUE_TEMPLATE/feature_request.yml" \
+    ".github/ISSUE_TEMPLATE/config.yml" \
+    ".github/pull_request_template.md" \
+    "SECURITY.md" \
+    "SUPPORT.md" \
+    "CONTRIBUTING.md" \
+    "docs/phase-35.md"; do
+    name="$(basename "$file")"
+    if [[ "$file" == ".github/pull_request_template.md" ]]; then
+      name="pull_request_template.md"
+    fi
+    if [[ -f "$ROOT/$file" ]]; then
+      echo "$name=present"
+    else
+      echo "$name=missing"
+    fi
+  done
+  if grep -q "SUPPORT.md" "$ROOT/README.md" \
+    && grep -q "SECURITY.md" "$ROOT/README.md" \
+    && grep -q "CONTRIBUTING.md" "$ROOT/README.md"; then
+    echo "README-support-links=present"
+  else
+    echo "README-support-links=missing"
+  fi
+  if grep -q "HOLD_FOR_DISCORDSRV_CONFIGURED_SMOKE" "$ROOT/docs/V1_0_1_CANDIDATES.md"; then
+    echo "discordsrv-configured-smoke-hold=present"
+  else
+    echo "discordsrv-configured-smoke-hold=missing"
+  fi
+} > "$OUTDIR/checks/github-templates.txt"
 
 {
   local_tag="$(git tag --list "v1.0.0" || true)"

@@ -1,0 +1,46 @@
+name: Feature request
+description: 新機能や改善提案
+title: "[Feature]: "
+labels: ["enhancement", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        v1.0.x は原則 bugfix と安全な docs/support 改善を中心に扱います。
+        新機能は v1.1.0 以降の候補として整理します。
+  - type: textarea
+    id: problem
+    attributes:
+      label: 解決したい課題
+      description: どんな運用上の問題を解きたいかを書いてください。
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: 提案内容
+      description: 期待する機能や挙動を書いてください。
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: 代替案
+      description: 現在の設定や運用で回避できることがあれば書いてください。
+  - type: dropdown
+    id: target-version
+    attributes:
+      label: 想定する扱い
+      options:
+        - "v1.1.0以降候補"
+        - "v1.0.xのbugfixではない"
+        - "docs/support改善かもしれない"
+    validations:
+      required: true
+  - type: checkboxes
+    id: secret-confirmation
+    attributes:
+      label: secret を貼らない確認
+      options:
+        - label: Discord bot token、Discord Webhook URL、password、session、cookie、secret を貼っていません。
+          required: true

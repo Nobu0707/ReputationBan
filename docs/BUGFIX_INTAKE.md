@@ -2,6 +2,8 @@
 
 この文書は ReputationBan v1.0.0 公開後の bug report 受付、triage、v1.0.1 候補整理のための checklist です。新機能追加は原則 v1.1.0 以降で扱います。
 
+Phase 35 以降は GitHub issue templates を使って、bug report、integration issue、support request、feature request を分けて受け付けます。公開Issueでは Webhook URL、bot token、secret、password、session ID、cookie を貼らないでください。
+
 ## 受付時の確認項目
 
 - Paper version
@@ -18,6 +20,7 @@
 - `/rep support bundle` の ZIP
 - Paper runtime smoke、integration runtime smoke、player report runtime smoke の結果
 - DiscordSRV token-configured runtime smoke の結果。未実施なら `NOT_RUN` として扱い、PASS にはしません。
+- 使用した GitHub issue template。bug report、integration issue、support request、feature request のどれかを記録します。
 
 Webhook URL、bot token、secret、password、session ID、private database、server log 全体は共有しないでください。必要な情報だけを redacted して添付します。
 

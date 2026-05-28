@@ -2,10 +2,28 @@
 
 この文書は ReputationBan v1.0.0 公開後に確認された bugfix 候補を整理するための一覧です。現時点では v1.0.1 の内容、tag、Release は未確定です。
 
-## 現時点の候補
+## Confirmed bug candidates
 
-- 未確定。実ユーザー報告または追加 runtime smoke の結果が入ったら追記します。
-- DiscordSRV token-configured smoke は Phase 34 で `NOT_RUN` として判断記録済みです。本番で DiscordSRV 通知や account link context を使う前の運用確認候補として残します。
+- none
+
+現時点で v1.0.1 に入れることが確定した bugfix はありません。実ユーザー報告または追加 runtime smoke の結果が入ったら追記します。
+
+## Operational verification candidates
+
+- DiscordSRV token-configured runtime smoke: `NOT_RUN` / `HOLD`
+- 詳細 judgment: `HOLD_FOR_DISCORDSRV_CONFIGURED_SMOKE`
+
+DiscordSRV token-configured smoke は Phase 34 で `NOT_RUN` として判断記録済みです。本番で DiscordSRV 通知や account link context を使う前の運用確認候補として残します。
+
+## Docs/support improvements
+
+- completed in Phase 35
+- GitHub issue templates、PR template、`SUPPORT.md`、`SECURITY.md`、`CONTRIBUTING.md`、`docs/phase-35.md` を追加済みです。
+
+## Feature requests
+
+- v1.1.0以降
+- v1.0.x は原則 bugfix 中心です。新機能、GUI、Discord button approval、Discord role 変更、Folia support、appeal workflow は v1.1.0 以降候補として扱います。
 
 ## DiscordSRV token-configured runtime smoke
 
@@ -31,4 +49,4 @@
 - `v1.0.0` tag は移動しません。
 - v1.0.0 GitHub Release assets は差し替えません。
 - v1.0.0 の version 表記は変更しません。
-- DB schema は Phase 33 では変更しません。
+- DB schema は Phase 35 では変更しません。

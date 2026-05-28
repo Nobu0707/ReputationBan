@@ -827,7 +827,39 @@
 - version bump、`v1.0.1` tag 作成、GitHub Release asset 差し替えは行わない。
 - `v1.0.0` tag は移動しない。
 
-## Phase 35以降: 外部連携・高度な悪用対策
+## Phase 35 / v1.0.0: Post-release support / GitHub issue templates / contribution docs
+
+目的: 公開済み v1.0.0 の状態を維持しながら、問い合わせ、不具合報告、optional integration 相談、保守開発を受けやすくする。
+
+実装範囲:
+
+- `.github/ISSUE_TEMPLATE/bug_report.yml`
+- `.github/ISSUE_TEMPLATE/integration_issue.yml`
+- `.github/ISSUE_TEMPLATE/support_request.yml`
+- `.github/ISSUE_TEMPLATE/feature_request.yml`
+- `.github/ISSUE_TEMPLATE/config.yml`
+- `.github/pull_request_template.md`
+- `SECURITY.md`
+- `SUPPORT.md`
+- `CONTRIBUTING.md`
+- `docs/phase-35.md`
+- `docs/V1_0_1_CANDIDATES.md` の整理
+- README、CHANGELOG、post-release monitoring、bugfix intake、release readiness の Phase 35 反映
+- `scripts/review_code.sh` の template/support docs checks
+- `scripts/make-review-archive.sh` の `checks/github-templates.txt`
+
+注意:
+
+- version bump は行わない。
+- `v1.0.1` tag は作成しない。
+- `v1.0.0` tag は移動しない。
+- GitHub Release asset は差し替えない。
+- Discord bot token、Webhook URL、secret、session、cookie、password は要求、表示、保存しない。
+- DiscordSRV configured smoke 未実施は `NOT_RUN` / `HOLD_FOR_DISCORDSRV_CONFIGURED_SMOKE` のまま扱い、PASS 扱いしない。
+- 新機能、DB schema 変更、runtime behavior 変更は行わない。
+- v1.0.x は bugfix 中心、feature requests は v1.1.0 以降候補として扱う。
+
+## Phase 36以降: 外部連携・高度な悪用対策
 
 実装候補:
 

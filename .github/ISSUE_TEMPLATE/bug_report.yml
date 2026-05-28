@@ -1,0 +1,126 @@
+name: Bug report
+description: ReputationBan v1.0.0 の不具合報告
+title: "[Bug]: "
+labels: ["bug", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        報告ありがとうございます。Webhook URL、Discord bot token、password、session、cookie、secret は絶対に貼らないでください。
+        support bundle を添付する場合も、共有前に `config-redacted.yml` を確認してください。
+  - type: textarea
+    id: summary
+    attributes:
+      label: 問題の概要
+      description: 何が起きているかを短く書いてください。
+      placeholder: 例: /reports approve 実行時にエラーが出る
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: 期待した動作
+      description: 本来どう動くべきかを書いてください。
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: 実際の動作
+      description: 実際に表示されたメッセージ、ログ、挙動を書いてください。
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: 再現手順
+      description: できるだけ最小の手順で書いてください。
+      placeholder: |
+        1. ...
+        2. ...
+        3. ...
+    validations:
+      required: true
+  - type: input
+    id: reputationban-version
+    attributes:
+      label: ReputationBan version
+      placeholder: "1.0.0"
+    validations:
+      required: true
+  - type: input
+    id: paper-version
+    attributes:
+      label: Paper version
+      placeholder: "PaperMC 26.1.2"
+    validations:
+      required: true
+  - type: input
+    id: java-version
+    attributes:
+      label: Java version
+      placeholder: "Java 25"
+    validations:
+      required: true
+  - type: checkboxes
+    id: integrations
+    attributes:
+      label: 使用している外部連携プラグイン
+      options:
+        - label: LuckPerms
+        - label: CoreProtect
+        - label: WorldGuard
+        - label: GriefPrevention
+        - label: PlaceholderAPI
+        - label: DiscordSRV
+  - type: textarea
+    id: config
+    attributes:
+      label: config.yml の関係する部分
+      description: Webhook URL、token、password、secret、session、cookie は伏せてください。
+      render: yaml
+  - type: dropdown
+    id: support-bundle
+    attributes:
+      label: support bundle を添付しましたか
+      options:
+        - "yes"
+        - "no"
+        - "not applicable"
+    validations:
+      required: true
+  - type: textarea
+    id: doctor
+    attributes:
+      label: /rep doctor の結果
+      description: secret や private path は必要に応じて伏せてください。
+      render: text
+  - type: textarea
+    id: integrations-result
+    attributes:
+      label: /rep integrations の結果
+      render: text
+  - type: textarea
+    id: runtime-smoke
+    attributes:
+      label: runtime smoke 結果
+      description: Paper / integration / player report / DiscordSRV configured smoke の結果を書いてください。未実施の DiscordSRV configured smoke は NOT_RUN/HOLD としてください。
+      placeholder: |
+        Paper runtime smoke:
+        Integration runtime smoke:
+        Player report runtime smoke:
+        DiscordSRV token-configured runtime smoke:
+      render: text
+  - type: textarea
+    id: logs
+    attributes:
+      label: ログ抜粋
+      description: 必要な範囲だけ貼ってください。ログ全体や secret は貼らないでください。
+      render: text
+  - type: checkboxes
+    id: secret-confirmation
+    attributes:
+      label: secret を貼らない確認
+      options:
+        - label: Discord bot token、Discord Webhook URL、password、session、cookie、secret を貼っていません。
+          required: true

@@ -1,0 +1,61 @@
+name: Support request
+description: 設定相談、運用相談、通報・スコア・BAN挙動の相談
+title: "[Support]: "
+labels: ["support", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        設定や運用の相談用です。Webhook URL、Discord bot token、password、session、cookie、secret は貼らないでください。
+  - type: textarea
+    id: goal
+    attributes:
+      label: やりたいこと
+      description: 実現したい運用や困っている場面を書いてください。
+    validations:
+      required: true
+  - type: textarea
+    id: current-config
+    attributes:
+      label: 現在の設定
+      description: 関係する部分だけ貼ってください。secret は伏せてください。
+      render: yaml
+  - type: textarea
+    id: problem
+    attributes:
+      label: 困っている点
+      description: どこで迷っているか、何が期待と違うかを書いてください。
+    validations:
+      required: true
+  - type: input
+    id: operation-size
+    attributes:
+      label: 想定運用人数
+      placeholder: "例: 同時接続20人、登録100人"
+  - type: dropdown
+    id: auto-ban
+    attributes:
+      label: 自動BANを有効にしているか
+      options:
+        - "yes"
+        - "no"
+        - "not sure"
+    validations:
+      required: true
+  - type: dropdown
+    id: support-bundle
+    attributes:
+      label: support bundle 有無
+      options:
+        - "attached"
+        - "not attached"
+        - "not applicable"
+    validations:
+      required: true
+  - type: checkboxes
+    id: secret-confirmation
+    attributes:
+      label: secret を貼らない確認
+      options:
+        - label: Discord bot token、Discord Webhook URL、password、session、cookie、secret を貼っていません。
+          required: true

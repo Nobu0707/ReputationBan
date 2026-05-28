@@ -2,6 +2,8 @@
 
 ## 1.0.0
 
+- Phase 35 で GitHub issue templates、PR template、`SECURITY.md`、`SUPPORT.md`、`CONTRIBUTING.md`、`docs/phase-35.md` を追加し、v1.0.0 公開後の support / bug report / integration issue / v1.0.1 intake の導線を整えました。
+- v1.0.1 candidates を整理し、confirmed bug candidates は none、DiscordSRV token-configured runtime smoke は `NOT_RUN` / `HOLD_FOR_DISCORDSRV_CONFIGURED_SMOKE` の運用確認候補、Phase 35 docs/support improvements は completed、feature requests は v1.1.0 以降候補として記録しました。`v1.0.0` tag、GitHub Release、Release assets、version は変更していません。
 - Phase 34 で DiscordSRV token-configured runtime smoke の実施可否を再判断し、token-configured environment または production-use decision が提供されていないため `NOT_RUN` / `HOLD_FOR_DISCORDSRV_CONFIGURED_SMOKE` として記録しました。未実施は PASS ではなく、v1.0.1 bugfix ではなく運用確認候補です。
 - `docs/phase-34.md` を追加し、post-release monitoring、bugfix intake、v1.0.1 candidates、release readiness、README に Phase 34 の判断を反映しました。`v1.0.0` tag、GitHub Release、Release assets、version は変更していません。
 - Phase 33 で DiscordSRV token-configured runtime smoke checklist、結果記録スクリプト、readiness check、review archive 収集を追加しました。未設定環境は `NOT_RUN` / `HOLD_FOR_DISCORDSRV_CONFIGURED_SMOKE` として扱い、PASS にはしません。

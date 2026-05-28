@@ -1,0 +1,85 @@
+name: Integration issue
+description: Optional integration に関する問題報告
+title: "[Integration]: "
+labels: ["integration", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        LuckPerms / CoreProtect / WorldGuard / GriefPrevention / PlaceholderAPI / DiscordSRV 連携の問題用です。
+        Discord bot token、DiscordSRV の bot token 値、Webhook URL、password、session、cookie、secret は貼らないでください。
+  - type: dropdown
+    id: integration
+    attributes:
+      label: 対象連携
+      options:
+        - LuckPerms
+        - CoreProtect
+        - WorldGuard
+        - GriefPrevention
+        - PlaceholderAPI
+        - DiscordSRV
+    validations:
+      required: true
+  - type: input
+    id: integration-version
+    attributes:
+      label: 連携プラグインの version
+      placeholder: "例: LuckPerms x.y.z"
+    validations:
+      required: true
+  - type: input
+    id: reputationban-version
+    attributes:
+      label: ReputationBan version
+      placeholder: "1.0.0"
+    validations:
+      required: true
+  - type: textarea
+    id: integrations
+    attributes:
+      label: /rep integrations の結果
+      render: text
+    validations:
+      required: true
+  - type: textarea
+    id: integrations-test
+    attributes:
+      label: /rep integrations test の結果
+      render: text
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: /reports evidence <id> の結果
+      description: Discord ID や個人情報が不要な場合は伏せてください。
+      render: text
+  - type: textarea
+    id: runtime-smoke
+    attributes:
+      label: runtime smoke 結果
+      description: integration runtime smoke と DiscordSRV token-configured runtime smoke の結果を書いてください。未実施は NOT_RUN/HOLD としてください。
+      render: text
+  - type: textarea
+    id: plugin-logs
+    attributes:
+      label: 外部連携プラグイン側のログ抜粋
+      description: 必要な範囲だけ貼ってください。secret は貼らないでください。
+      render: text
+  - type: dropdown
+    id: discordsrv-token-configured
+    attributes:
+      label: DiscordSRV の bot token configured?
+      description: DiscordSRV の場合だけ回答してください。token 値は貼らず yes/no だけにしてください。
+      options:
+        - "not DiscordSRV"
+        - "yes"
+        - "no"
+  - type: checkboxes
+    id: destructive-confirmation
+    attributes:
+      label: 安全確認
+      options:
+        - label: token、Webhook URL、password、session、cookie、secret を貼っていません。
+          required: true

@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: ReputationBan support bundle guide
+    url: https://github.com/Nobu0707/ReputationBan/blob/main/docs/SUPPORT_BUNDLE.md
+    about: 問題報告前にsupport bundleの作成方法を確認してください。
