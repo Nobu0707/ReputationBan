@@ -8,7 +8,9 @@ import dev.modplugin.reputationban.notification.DiscordWebhookConfig;
 import dev.modplugin.reputationban.notification.NotificationEventType;
 import dev.modplugin.reputationban.service.PunishmentService;
 import dev.modplugin.reputationban.service.ReportService;
+import dev.modplugin.reputationban.service.TargetProtectionService;
 import dev.modplugin.reputationban.util.CommandArgumentParser;
+import dev.modplugin.reputationban.util.StringLimits;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
@@ -16,8 +18,6 @@ import java.util.Arrays;
 import java.util.OptionalInt;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
-import org.bukkit.Bukkit;
-import org.bukkit.OfflinePlayer;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
@@ -31,11 +31,18 @@ public final class ReportsCommand implements CommandExecutor {
     private final ReputationBanPlugin plugin;
     private final ReportService reportService;
     private final PunishmentService punishmentService;
+    private final TargetProtectionService targetProtectionService;
 
-    public ReportsCommand(ReputationBanPlugin plugin, ReportService reportService, PunishmentService punishmentService) {
+    public ReportsCommand(
+            ReputationBanPlugin plugin,
+            ReportService reportService,
+            PunishmentService punishmentService,
+            TargetProtectionService targetProtectionService
+    ) {
         this.plugin = plugin;
         this.reportService = reportService;
         this.punishmentService = punishmentService;
+        this.targetProtectionService = targetProtectionService;
     }
 
     @Override
@@ -178,6 +185,11 @@ public final class ReportsCommand implements CommandExecutor {
             return;
         }
         String note = args.length >= 3 ? String.join(" ", Arrays.copyOfRange(args, 2, args.length)) : "";
+        if (StringLimits.exceeds(note, plugin.pluginConfig().maxReviewNoteLength())) {
+            sender.sendMessage(ReputationBanPlugin.PREFIX + "審査メモは"
+                    + plugin.pluginConfig().maxReviewNoteLength() + "文字以内で入力してください。");
+            return;
+        }
         UUID moderatorUuid = sender instanceof Player player ? player.getUniqueId() : CONSOLE_UUID;
         String moderatorName = sender.getName();
         boolean hasBanPermission = sender.hasPermission("reputationban.admin.ban");
@@ -220,14 +232,14 @@ public final class ReportsCommand implements CommandExecutor {
                     if (report.isEmpty()) {
                         return reportService.approveReport(id, moderatorUuid, moderatorName, note, hasBanPermission, false);
                     }
-                    return plugin.supplySync(() -> isTargetProtected(report.get().targetUuid()))
-                            .thenCompose(targetProtected -> reportService.approveReport(
+                    return targetProtectionService.check(report.get().targetUuid())
+                            .thenCompose(protection -> reportService.approveReport(
                                     id,
                                     moderatorUuid,
                                     moderatorName,
                                     note,
                                     hasBanPermission,
-                                    targetProtected
+                                    protection.protectedTarget()
                             ));
                 });
     }
@@ -390,17 +402,6 @@ public final class ReportsCommand implements CommandExecutor {
             sender.sendMessage(ReputationBanPlugin.PREFIX + "IDは数値で指定してください。");
             return null;
         }
-    }
-
-    private boolean isTargetProtected(UUID targetUuid) {
-        Player online = Bukkit.getPlayer(targetUuid);
-        if (online != null) {
-            return online.hasPermission("reputationban.bypass")
-                    || online.isOp()
-                    || plugin.integrationService().isLuckPermsBypassGroup(targetUuid);
-        }
-        OfflinePlayer offline = Bukkit.getOfflinePlayer(targetUuid);
-        return offline.isOp() || plugin.integrationService().isLuckPermsBypassGroup(targetUuid);
     }
 
     private record ReviewCompletion(ReportService.ReviewResult result, boolean banned, String moderatorName, String note) {

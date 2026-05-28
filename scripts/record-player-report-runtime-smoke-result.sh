@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-VERSION="1.0.0"
+VERSION="1.0.1"
 JAR="build/libs/ReputationBan-${VERSION}.jar"
 MANUAL_CONFIRMED_NOTE="User manually confirmed all Phase 26 player report runtime smoke checklist items passed."
 

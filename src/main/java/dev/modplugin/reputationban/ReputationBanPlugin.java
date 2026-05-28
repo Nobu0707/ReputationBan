@@ -23,6 +23,7 @@ import dev.modplugin.reputationban.service.PunishmentService;
 import dev.modplugin.reputationban.service.ReportService;
 import dev.modplugin.reputationban.service.ScoreService;
 import dev.modplugin.reputationban.service.SupportBundleService;
+import dev.modplugin.reputationban.service.TargetProtectionService;
 import dev.modplugin.reputationban.util.ScoreThresholdPolicy;
 import java.sql.SQLException;
 import java.util.List;
@@ -49,6 +50,7 @@ public final class ReputationBanPlugin extends JavaPlugin {
     private SupportBundleService supportBundleService;
     private NotificationService notificationService;
     private IntegrationService integrationService;
+    private TargetProtectionService targetProtectionService;
 
     @Override
     public void onEnable() {
@@ -69,7 +71,8 @@ public final class ReputationBanPlugin extends JavaPlugin {
         auditService = new AuditService(this, databaseManager, pluginConfig);
         scoreService = new ScoreService(databaseManager, auditService, pluginConfig);
         reportService = new ReportService(databaseManager, scoreService, auditService, pluginConfig);
-        punishmentService = new PunishmentService(this, databaseManager, auditService, pluginConfig);
+        targetProtectionService = new TargetProtectionService(this, pluginConfig);
+        punishmentService = new PunishmentService(this, databaseManager, auditService, targetProtectionService, pluginConfig);
         integrationService = new IntegrationService(this, this::pluginConfig, playerDataService, reportService, auditService);
         diagnosticService = new DiagnosticService(this, databaseManager, auditService, this::pluginConfig);
         supportBundleService = new SupportBundleService(this, databaseManager, auditService, this::pluginConfig);
@@ -81,15 +84,15 @@ public final class ReputationBanPlugin extends JavaPlugin {
         );
         registerCommand(
                 "rep",
-                new RepCommand(this, playerDataService, scoreService, punishmentService, auditService, diagnosticService, supportBundleService),
+                new RepCommand(this, playerDataService, scoreService, punishmentService, auditService, diagnosticService, supportBundleService, targetProtectionService),
                 new RepTabCompleter()
         );
         registerCommand(
                 "reportbad",
-                new ReportBadCommand(this, playerDataService, reportService, punishmentService),
+                new ReportBadCommand(this, playerDataService, reportService, punishmentService, targetProtectionService),
                 new ReportBadTabCompleter(this::pluginConfig)
         );
-        registerCommand("reports", new ReportsCommand(this, reportService, punishmentService), new ReportsTabCompleter());
+        registerCommand("reports", new ReportsCommand(this, reportService, punishmentService, targetProtectionService), new ReportsTabCompleter());
         startScoreRecoveryTask();
         integrationService.logStartupStatuses();
         getLogger().info("ReputationBan v" + getPluginMeta().getVersion() + " enabled.");
@@ -114,6 +117,7 @@ public final class ReputationBanPlugin extends JavaPlugin {
         auditService.updateConfig(pluginConfig);
         scoreService.updateConfig(pluginConfig);
         reportService.updateConfig(pluginConfig);
+        targetProtectionService.updateConfig(pluginConfig);
         punishmentService.updateConfig(pluginConfig);
         integrationService.reload();
         return issues;

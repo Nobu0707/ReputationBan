@@ -27,6 +27,7 @@ import dev.modplugin.reputationban.service.PlayerDataService;
 import dev.modplugin.reputationban.service.ReportService;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import java.util.function.Supplier;
 import org.bukkit.Location;
 import org.bukkit.command.CommandSender;
@@ -128,6 +129,9 @@ public final class IntegrationService {
                 "  applyWeightToDeduction=" + luckPermsConfig.applyWeightToDeduction(),
                 "  configuredGroups count=" + luckPermsConfig.groupWeights().size(),
                 "  bypassGroups count=" + luckPermsConfig.bypassGroups().size(),
+                "  offlineLookupEnabled=" + luckPermsConfig.offlineLookupEnabled(),
+                "  offlineLookupTimeoutMillis=" + luckPermsConfig.offlineLookupTimeoutMillis(),
+                "  offlineLookupFailClosedForBypass=" + luckPermsConfig.offlineLookupFailClosedForBypass(),
                 "",
                 "CoreProtect:",
                 "  configuredEnabled=" + coreProtect.configuredEnabled(),
@@ -327,6 +331,11 @@ public final class IntegrationService {
 
     public boolean isLuckPermsBypassGroup(UUID playerUuid) {
         return luckPermsTrust(playerUuid).bypassGroup();
+    }
+
+    public CompletableFuture<Boolean> loadLuckPermsBypassGroup(UUID playerUuid) {
+        return luckPermsIntegration.loadTrustForBypass(playerUuid, configSupplier.get())
+                .thenApply(LuckPermsTrustService::bypassGroup);
     }
 
     public void captureCoreProtectContext(

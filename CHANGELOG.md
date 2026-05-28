@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.0.1
+
+- Phase 37 で v1.0.1 hotfix candidate として、100人規模本番運用向けの production hardening を実装しました。
+- TargetProtectionService を追加し、OP、`reputationban.bypass`、LuckPerms bypass group の保護判定を `/reportbad`、`/reports approve`、BANしきい値を跨ぐ `/rep remove|set`、自動BAN直前で一元化しました。
+- LuckPerms bypass 判定は offline `loadUser(UUID)` を非同期 reflection で扱い、`integrations.luckperms.offline-lookup.timeout-millis` と `fail-closed-for-bypass` を追加しました。
+- DatabaseManager に `closed` flag、close 時の `awaitTermination`、SQLite `busy_timeout`、`synchronous = NORMAL`、追加 index を追加しました。
+- report reason、review note、audit reason、report_context summary の最大長を追加し、保存前の拒否または truncate を行います。
+- ScoreService の missing players row 不整合を防ぎ、Bukkit Profile BAN 成功後の DB record failure を SEVERE log と staff notification で検出しやすくしました。
+- `ReputationBan-1.0.1.jar` と `ReputationBan-1.0.1-release.zip` を hotfix candidate artifact として作成します。`v1.0.1` tag / GitHub Release はまだ作成しません。
+
 ## 1.0.0
 
 - Phase 36 で `docs/MAINTENANCE_BASELINE.md`、`docs/ISSUE_TRIAGE_GUIDE.md`、`docs/phase-36.md`、`scripts/check-maintenance-baseline.sh` を追加し、v1.0.0 公開後の maintenance baseline と issue/PR intake dry-run を記録しました。

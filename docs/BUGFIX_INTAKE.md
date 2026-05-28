@@ -1,6 +1,6 @@
-# Bugfix Intake / v1.0.0
+# Bugfix Intake / v1.0.1 hotfix candidate
 
-この文書は ReputationBan v1.0.0 公開後の bug report 受付、triage、v1.0.1 候補整理のための checklist です。新機能追加は原則 v1.1.0 以降で扱います。
+この文書は ReputationBan v1.0.0 公開後の bug report 受付、triage、v1.0.1 hotfix candidate 整理のための checklist です。新機能追加は原則 v1.1.0 以降で扱います。
 
 Phase 35 以降は GitHub issue templates を使って、bug report、integration issue、support request、feature request を分けて受け付けます。Phase 36 では issue/PR intake dry-run を行い、open issues / open PRs は none、confirmed bug candidates は none として baseline を作成しました。公開Issueでは Webhook URL、bot token、secret、password、session ID、cookie を貼らないでください。
 
@@ -44,7 +44,7 @@ Webhook URL、bot token、secret、password、session ID、private database、se
 - Phase 34 の DiscordSRV token-configured smoke は `NOT_RUN` です。token-configured environment または production-use decision が提供されていないためであり、v1.0.1 bugfix には昇格しません。
 - docs-only で誤解や危険な運用を防げる項目。
 
-Phase 36 baseline 時点では v1.0.1 confirmed bug candidates は none です。open issue または open PR が追加された場合は、再現条件、影響範囲、回避策、support bundle の有無を確認してから `docs/V1_0_1_CANDIDATES.md` に追記します。
+Phase 37 では、issue 起因ではなく production hardening review 起因の v1.0.1 hotfix candidate を実装しました。以後 open issue または open PR が追加された場合は、再現条件、影響範囲、回避策、support bundle の有無を確認してから `docs/V1_0_1_CANDIDATES.md` に追記します。
 
 ## Hotfixが必要な条件
 

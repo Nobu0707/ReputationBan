@@ -5,6 +5,7 @@ import dev.modplugin.reputationban.integration.ExternalIntegrationType;
 import dev.modplugin.reputationban.integration.IntegrationStatus;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -66,6 +67,34 @@ public final class LuckPermsIntegration {
         } catch (RuntimeException exception) {
             logger.log(Level.WARNING, "LuckPerms integration unavailable: " + exception.getMessage());
             return LuckPermsTrustService.unavailable(luckPermsConfig.defaultWeight());
+        }
+    }
+
+    public CompletableFuture<LuckPermsTrustService> loadTrustForBypass(UUID playerUuid, PluginConfig config) {
+        PluginConfig.LuckPermsIntegrationConfig luckPermsConfig = config.luckPermsIntegration();
+        if (!luckPermsConfig.enabled()) {
+            return CompletableFuture.completedFuture(LuckPermsTrustService.unavailable(luckPermsConfig.defaultWeight()));
+        }
+        try {
+            Optional<CompletableFuture<Optional<String>>> lookup = adapter.loadPrimaryGroup(playerUuid);
+            if (lookup.isEmpty()) {
+                return CompletableFuture.completedFuture(LuckPermsTrustService.unavailable(luckPermsConfig.defaultWeight()));
+            }
+            return lookup.get().thenApply(primaryGroupLookup -> primaryGroupLookup
+                    .map(primaryGroup -> new LuckPermsTrustService(
+                            primaryGroup,
+                            LuckPermsTrustPolicy.weightForGroup(
+                                    luckPermsConfig.useGroupWeight(),
+                                    luckPermsConfig.defaultWeight(),
+                                    luckPermsConfig.groupWeights(),
+                                    primaryGroup
+                            ),
+                            LuckPermsTrustPolicy.isBypassGroup(luckPermsConfig.bypassGroups(), primaryGroup)
+                    ))
+                    .orElseGet(() -> LuckPermsTrustService.unavailable(luckPermsConfig.defaultWeight())));
+        } catch (RuntimeException exception) {
+            logger.log(Level.WARNING, "LuckPerms offline lookup unavailable: " + exception.getMessage());
+            return CompletableFuture.completedFuture(LuckPermsTrustService.unavailable(luckPermsConfig.defaultWeight()));
         }
     }
 }

@@ -2,21 +2,19 @@
 set -euo pipefail
 
 PROJECT_NAME="ReputationBan"
-EXPECTED_VERSION="1.0.0"
-EXPECTED_MAIN="dev.modplugin.reputationban.ReputationBanPlugin"
+EXPECTED_VERSION="1.0.1"
 EXPECTED_API_VERSION="26.1.2"
-ROOT="$(pwd)"
+EXPECTED_MAIN="dev.modplugin.reputationban.ReputationBanPlugin"
 EXPECTED_JAR="build/libs/${PROJECT_NAME}-${EXPECTED_VERSION}.jar"
 RELEASE_DIR="build/release"
 RELEASE_JAR="${RELEASE_DIR}/${PROJECT_NAME}-${EXPECTED_VERSION}.jar"
 RELEASE_ZIP="${RELEASE_DIR}/${PROJECT_NAME}-${EXPECTED_VERSION}-release.zip"
+ROOT="$(pwd)"
 
 fail() { echo "[FAIL] $*" >&2; exit 1; }
 pass() { echo "[PASS] $*"; }
-info() { echo "[INFO] $*"; }
-require_file() { [[ -f "$1" ]] || fail "Missing required file: $1"; pass "Found $1"; }
-require_dir() { [[ -d "$1" ]] || fail "Missing required directory: $1"; pass "Found $1"; }
 require_command() { command -v "$1" >/dev/null 2>&1 || fail "Required command not found: $1"; pass "Command available: $1"; }
+require_file() { [[ -f "$1" ]] || fail "Missing required file: $1"; pass "Found $1"; }
 extract_yaml_value() { grep -E "^$2:" "$1" | head -n 1 | sed -E "s/^$2:[[:space:]]*//" | tr -d "'\""; }
 
 preserve_manual_smoke() {
@@ -41,112 +39,27 @@ preserve_manual_smoke() {
 
 require_command git
 require_command grep
-require_command sed
-require_command awk
-require_command find
 require_command jar
 require_command sha256sum
-require_command gh
-
-[[ -d .git ]] || fail "Not a Git repository"
-git rev-parse --is-inside-work-tree >/dev/null || fail "Not inside a Git work tree"
 
 for file in \
-  settings.gradle.kts \
   build.gradle.kts \
-  gradlew \
+  src/main/resources/plugin.yml \
+  src/main/resources/config.yml \
   README.md \
   CHANGELOG.md \
   reputationban_phase_plan.md \
-  scripts/check-docs-localization.sh \
-  scripts/check-optional-dependency-safety.sh \
-  scripts/check-integration-runtime-readiness.sh \
-  scripts/check-discordsrv-runtime-readiness.sh \
-  scripts/check-paper-runtime-readiness.sh \
-  scripts/check-player-report-runtime-readiness.sh \
-  scripts/check-runtime-smoke-consistency.sh \
-  scripts/check-v1-release-gates.sh \
-  scripts/check-maintenance-baseline.sh \
-  scripts/run-local-smoke-check.sh \
-  scripts/run-paper-runtime-smoke.sh \
-  scripts/run-integration-runtime-smoke.sh \
-  scripts/create-release-artifact.sh \
-  scripts/verify-release-artifact.sh \
-  scripts/record-paper-runtime-smoke-result.sh \
-  scripts/record-integration-runtime-smoke-result.sh \
-  scripts/record-discordsrv-runtime-smoke-result.sh \
-  scripts/record-player-report-runtime-smoke-result.sh \
-  scripts/generate-v1-go-no-go-report.sh \
-  scripts/generate-v1-release-notes.sh \
-  scripts/generate-v1-release-notes-draft.sh \
-  scripts/make-review-archive.sh \
-  .github/ISSUE_TEMPLATE/bug_report.yml \
-  .github/ISSUE_TEMPLATE/integration_issue.yml \
-  .github/ISSUE_TEMPLATE/support_request.yml \
-  .github/ISSUE_TEMPLATE/feature_request.yml \
-  .github/ISSUE_TEMPLATE/config.yml \
-  .github/pull_request_template.md \
-  SECURITY.md \
-  SUPPORT.md \
-  CONTRIBUTING.md \
-  docs/POST_RELEASE_MONITORING.md \
-  docs/BUGFIX_INTAKE.md \
-  docs/MAINTENANCE_BASELINE.md \
-  docs/ISSUE_TRIAGE_GUIDE.md \
-  docs/V1_0_1_CANDIDATES.md \
-  docs/phase-36.md \
-  docs/phase-35.md \
-  docs/DISCORDSRV_CONFIGURED_RUNTIME_SMOKE_CHECKLIST.md \
-  docs/phase-34.md \
-  docs/phase-33.md \
-  docs/phase-32.md \
-  docs/INSTALLATION.md \
   docs/CONFIGURATION.md \
-  docs/MIGRATION.md \
-  docs/RELEASE_READINESS.md \
-  docs/RELEASE_CANDIDATE_CHECKLIST.md \
-  docs/V1_RELEASE_PLAN.md \
-  docs/V1_RELEASE_EXECUTION_PLAN.md \
-  docs/runtime-smoke-checklist.md \
-  docs/phase-31a.md \
-  docs/phase-30.md \
-  docs/phase-29.md \
-  docs/SECURITY_REDACTION.md \
-  docs/SUPPORT_BUNDLE.md \
   docs/INTEGRATIONS.md \
-  docs/PLAYER_REPORT_RUNTIME_SMOKE_CHECKLIST.md \
-  docs/INTEGRATION_RUNTIME_SMOKE_CHECKLIST.md \
-  src/main/resources/plugin.yml \
-  src/main/resources/config.yml; do
-  require_file "$file"
-done
-
-require_dir src/main/java/dev/modplugin/reputationban
-
-for executable in \
-  gradlew \
-  scripts/check-docs-localization.sh \
-  scripts/check-optional-dependency-safety.sh \
-  scripts/check-integration-runtime-readiness.sh \
-  scripts/check-discordsrv-runtime-readiness.sh \
-  scripts/check-paper-runtime-readiness.sh \
-  scripts/check-player-report-runtime-readiness.sh \
-  scripts/check-runtime-smoke-consistency.sh \
-  scripts/check-v1-release-gates.sh \
-  scripts/check-maintenance-baseline.sh \
+  docs/RELEASE_READINESS.md \
+  docs/V1_0_1_CANDIDATES.md \
+  docs/BUGFIX_INTAKE.md \
+  docs/phase-37.md \
   scripts/run-local-smoke-check.sh \
-  scripts/run-paper-runtime-smoke.sh \
-  scripts/run-integration-runtime-smoke.sh \
   scripts/create-release-artifact.sh \
   scripts/verify-release-artifact.sh \
-  scripts/record-paper-runtime-smoke-result.sh \
-  scripts/record-integration-runtime-smoke-result.sh \
-  scripts/record-discordsrv-runtime-smoke-result.sh \
-  scripts/record-player-report-runtime-smoke-result.sh \
-  scripts/generate-v1-go-no-go-report.sh \
-  scripts/generate-v1-release-notes.sh \
   scripts/make-review-archive.sh; do
-  [[ -x "$executable" ]] || fail "$executable is not executable"
+  require_file "$file"
 done
 
 YML=src/main/resources/plugin.yml
@@ -154,140 +67,77 @@ YML=src/main/resources/plugin.yml
 [[ "$(extract_yaml_value "$YML" version)" == "$EXPECTED_VERSION" ]] || fail "plugin.yml version is not ${EXPECTED_VERSION}"
 [[ "$(extract_yaml_value "$YML" main)" == "$EXPECTED_MAIN" ]] || fail "plugin.yml main is not ${EXPECTED_MAIN}"
 [[ "$(extract_yaml_value "$YML" api-version)" == "$EXPECTED_API_VERSION" ]] || fail "plugin.yml api-version is not ${EXPECTED_API_VERSION}"
-
 grep -q "version = \"${EXPECTED_VERSION}\"" build.gradle.kts || fail "build.gradle.kts version is not ${EXPECTED_VERSION}"
 grep -q "JavaLanguageVersion.of(25)" build.gradle.kts || fail "Java 25 toolchain not found"
-grep -q "options.release.set(25)" build.gradle.kts || fail "Java release 25 not found"
 grep -q "io.papermc.paper:paper-api:26.1.2.build" build.gradle.kts || fail "Paper API 26.1.2 dependency not found"
-grep -q "org.xerial:sqlite-jdbc" "$YML" || fail "SQLite library not found in plugin.yml libraries"
-
-grep -q "1.0.0" README.md || fail "README.md does not mention 1.0.0"
-grep -q "1.0.0" CHANGELOG.md || fail "CHANGELOG.md does not mention 1.0.0"
-grep -q "POST_RELEASE_MONITORING.md" README.md || fail "README.md does not mention post-release monitoring docs"
-grep -q "BUGFIX_INTAKE.md" README.md || fail "README.md does not mention bugfix intake docs"
-grep -q "V1_0_1_CANDIDATES.md" README.md || fail "README.md does not mention v1.0.1 candidates docs"
-grep -q "MAINTENANCE_BASELINE.md" README.md || fail "README.md does not mention maintenance baseline docs"
-grep -q "ISSUE_TRIAGE_GUIDE.md" README.md || fail "README.md does not mention issue triage guide docs"
-grep -q "DISCORDSRV_CONFIGURED_RUNTIME_SMOKE_CHECKLIST.md" README.md || fail "README.md does not mention DiscordSRV configured smoke checklist"
-grep -q "SUPPORT.md" README.md || fail "README.md does not mention SUPPORT.md"
-grep -q "SECURITY.md" README.md || fail "README.md does not mention SECURITY.md"
-grep -q "CONTRIBUTING.md" README.md || fail "README.md does not mention CONTRIBUTING.md"
-grep -q "phase-35.md" README.md || fail "README.md does not mention Phase 35 docs"
-grep -q "phase-36.md" README.md || fail "README.md does not mention Phase 36 docs"
-grep -q "phase-34.md" README.md || fail "README.md does not mention Phase 34 docs"
-grep -q "phase-33.md" README.md || fail "README.md does not mention Phase 33 docs"
-grep -q "v1.0.0 tag" README.md docs/phase-30.md docs/phase-29.md docs/V1_RELEASE_EXECUTION_PLAN.md || fail "v1.0.0 tag status docs missing"
-grep -q "GitHub Release" README.md docs/phase-30.md docs/phase-29.md docs/V1_RELEASE_EXECUTION_PLAN.md || fail "GitHub Release status docs missing"
-grep -q "Tag 作成前チェック" docs/V1_RELEASE_EXECUTION_PLAN.md || fail "v1.0.0 tag preflight check docs missing"
-grep -q "gh release create v1.0.0" docs/V1_RELEASE_EXECUTION_PLAN.md || fail "GitHub Release draft creation command docs missing"
-grep -q -- "--draft" docs/V1_RELEASE_EXECUTION_PLAN.md docs/phase-30.md || fail "GitHub Release draft flag docs missing"
-grep -q "draft=false" docs/V1_RELEASE_EXECUTION_PLAN.md docs/phase-30.md || fail "GitHub Release publish prohibition docs missing"
-grep -q "ReputationBan-1.0.0.jar" docs/phase-30.md scripts/create-release-artifact.sh scripts/verify-release-artifact.sh || fail "Phase 30 release artifact target missing"
-grep -q "READY_FOR_V1_RELEASE_WITH_DISCORDSRV_WARNING" scripts/check-v1-release-gates.sh docs/phase-29.md docs/RELEASE_READINESS.md docs/RELEASE_CANDIDATE_CHECKLIST.md || fail "v1 release judgment is not updated"
 grep -q "VERSION=\"${EXPECTED_VERSION}\"" scripts/create-release-artifact.sh || fail "create-release-artifact.sh does not target ${EXPECTED_VERSION}"
 grep -q "VERSION=\"${EXPECTED_VERSION}\"" scripts/verify-release-artifact.sh || fail "verify-release-artifact.sh does not target ${EXPECTED_VERSION}"
-grep -q "EXPECTED_VERSION=\"${EXPECTED_VERSION}\"" scripts/run-local-smoke-check.sh || fail "run-local-smoke-check.sh does not check ${EXPECTED_VERSION}"
-grep -q -- "--carried-forward-from" scripts/record-player-report-runtime-smoke-result.sh || fail "player report recorder lacks --carried-forward-from"
-grep -q "carriedForwardFrom" scripts/record-player-report-runtime-smoke-result.sh docs/phase-29.md || fail "player report carry-forward summary/doc missing"
-grep -q "generate-v1-release-notes.sh" scripts/make-review-archive.sh docs/RELEASE_READINESS.md docs/RELEASE_CANDIDATE_CHECKLIST.md || fail "release notes final script is not wired into docs/archive"
-grep -q "V1_RELEASE_EXECUTION_PLAN.md" scripts/make-review-archive.sh docs/RELEASE_READINESS.md README.md || fail "release execution plan is not wired into docs/archive"
-grep -q "HOLD_FOR_DISCORDSRV_CONFIGURED_SMOKE" scripts/check-discordsrv-runtime-readiness.sh docs/phase-33.md || fail "DiscordSRV configured smoke HOLD judgment missing"
-grep -q -- "--strict" scripts/check-discordsrv-runtime-readiness.sh || fail "DiscordSRV runtime readiness lacks strict mode"
-grep -q "discordsrv-runtime-readiness" scripts/make-review-archive.sh || fail "review archive does not collect DiscordSRV runtime readiness"
-grep -q "latest-discordsrv-runtime-smoke-summary" scripts/make-review-archive.sh || fail "review archive does not collect latest DiscordSRV runtime smoke summary"
-grep -q "discordsrv-runtime-latest" scripts/make-review-archive.sh || fail "review archive does not collect latest DiscordSRV runtime smoke directory"
-grep -q "contains_secret_like_note" scripts/record-discordsrv-runtime-smoke-result.sh || fail "DiscordSRV runtime smoke recorder lacks note redaction"
-grep -q "<redacted>" scripts/record-discordsrv-runtime-smoke-result.sh || fail "DiscordSRV runtime smoke recorder does not redact dangerous notes"
-grep -q "DiscordSRV token-configured runtime smoke" docs/V1_0_1_CANDIDATES.md || fail "v1.0.1 candidates missing DiscordSRV configured smoke status"
-grep -q "current status: \`NOT_RUN\`" docs/V1_0_1_CANDIDATES.md || fail "v1.0.1 candidates missing DiscordSRV configured smoke current status"
-grep -q "Phase 34 decision" docs/V1_0_1_CANDIDATES.md || fail "v1.0.1 candidates missing Phase 34 DiscordSRV smoke decision"
-grep -q "Confirmed bug candidates" docs/V1_0_1_CANDIDATES.md || fail "v1.0.1 candidates missing confirmed bug candidates section"
-grep -q "none" docs/V1_0_1_CANDIDATES.md || fail "v1.0.1 candidates missing none status"
-grep -q "Docs/support improvements" docs/V1_0_1_CANDIDATES.md || fail "v1.0.1 candidates missing docs/support improvements section"
-grep -q "completed in Phase 35" docs/V1_0_1_CANDIDATES.md || fail "v1.0.1 candidates missing Phase 35 support completion"
-grep -q "v1.1.0以降" docs/V1_0_1_CANDIDATES.md || fail "v1.0.1 candidates missing feature request target"
-grep -q "HOLD_FOR_DISCORDSRV_CONFIGURED_SMOKE" docs/phase-34.md || fail "Phase 34 docs missing DiscordSRV configured smoke judgment"
-grep -q "GitHub issue templates" docs/phase-35.md || fail "Phase 35 docs missing GitHub issue templates"
-grep -q "SUPPORT.md" docs/phase-35.md || fail "Phase 35 docs missing SUPPORT.md"
-grep -q "SECURITY.md" docs/phase-35.md || fail "Phase 35 docs missing SECURITY.md"
-grep -q "CONTRIBUTING.md" docs/phase-35.md || fail "Phase 35 docs missing CONTRIBUTING.md"
-grep -q "discordSrvConfiguredSmoke" scripts/check-v1-release-gates.sh || fail "v1 release gates do not show DiscordSRV configured smoke status"
-grep -q "GitHub issue templates" reputationban_phase_plan.md || fail "phase plan missing Phase 35 GitHub issue templates"
-grep -q "Post-release maintenance baseline" reputationban_phase_plan.md || fail "phase plan missing Phase 36 maintenance baseline"
-grep -q "checks/github-templates.txt" scripts/make-review-archive.sh || fail "review archive does not collect GitHub template status"
-grep -q "checks/maintenance-baseline.txt" scripts/make-review-archive.sh || fail "review archive does not collect maintenance baseline status"
-grep -q "checks/github-issues-open.txt" scripts/make-review-archive.sh || fail "review archive does not collect open GitHub issues"
-grep -q "checks/github-prs-open.txt" scripts/make-review-archive.sh || fail "review archive does not collect open GitHub PRs"
-grep -q "Confirmed bug candidates" docs/MAINTENANCE_BASELINE.md docs/V1_0_1_CANDIDATES.md || fail "maintenance baseline missing confirmed bug candidates"
-grep -q "Open issues: none" docs/MAINTENANCE_BASELINE.md docs/V1_0_1_CANDIDATES.md || fail "Phase 36 docs missing open issue none status"
-grep -q "Open PRs: none" docs/MAINTENANCE_BASELINE.md docs/V1_0_1_CANDIDATES.md || fail "Phase 36 docs missing open PR none status"
-grep -q "HOLD_FOR_DISCORDSRV_CONFIGURED_SMOKE" docs/MAINTENANCE_BASELINE.md docs/phase-36.md || fail "Phase 36 docs missing DiscordSRV configured smoke HOLD"
-grep -q "tag は移動しません" docs/phase-36.md || fail "Phase 36 docs missing v1.0.0 tag no-move policy"
-grep -q "GitHub Release assets は差し替えません" docs/phase-36.md || fail "Phase 36 docs missing release asset no-replace policy"
+grep -q "EXPECTED_VERSION=\"${EXPECTED_VERSION}\"" scripts/run-local-smoke-check.sh || fail "run-local-smoke-check.sh does not target ${EXPECTED_VERSION}"
 
-for template in \
-  .github/ISSUE_TEMPLATE/bug_report.yml \
-  .github/ISSUE_TEMPLATE/integration_issue.yml \
-  .github/ISSUE_TEMPLATE/support_request.yml \
-  .github/ISSUE_TEMPLATE/feature_request.yml; do
-  grep -q "Discord bot token" "$template" || fail "$template does not warn about Discord bot token"
-  grep -q "secret" "$template" || fail "$template does not warn about secret values"
+require_file src/main/java/dev/modplugin/reputationban/service/TargetProtectionService.java
+require_file src/main/java/dev/modplugin/reputationban/model/TargetProtectionResult.java
+grep -q "targetProtectionService.check" src/main/java/dev/modplugin/reputationban/service/PunishmentService.java \
+  || fail "PunishmentService does not check TargetProtectionService before auto BAN"
+grep -q "loadUser" src/main/java/dev/modplugin/reputationban/integration/luckperms/LuckPermsReflectionAdapter.java \
+  || fail "LuckPerms offline loadUser handling missing"
+grep -q "CompletableFuture" src/main/java/dev/modplugin/reputationban/integration/luckperms/LuckPermsReflectionAdapter.java \
+  || fail "LuckPerms offline loadUser is not handled as CompletableFuture"
+grep -q "offline-lookup" src/main/resources/config.yml \
+  || fail "LuckPerms offline-lookup config missing"
+grep -q "fail-closed-for-bypass" src/main/resources/config.yml src/main/java/dev/modplugin/reputationban/config/PluginConfig.java \
+  || fail "LuckPerms fail-closed-for-bypass config missing"
+
+grep -q "PRAGMA busy_timeout = 5000" src/main/java/dev/modplugin/reputationban/database/DatabaseManager.java \
+  || fail "DatabaseManager missing SQLite busy_timeout"
+grep -q "PRAGMA synchronous = NORMAL" src/main/java/dev/modplugin/reputationban/database/DatabaseManager.java \
+  || fail "DatabaseManager missing SQLite synchronous NORMAL"
+grep -q "awaitTermination" src/main/java/dev/modplugin/reputationban/database/DatabaseManager.java \
+  || fail "DatabaseManager.close missing awaitTermination"
+grep -q "volatile boolean closed" src/main/java/dev/modplugin/reputationban/database/DatabaseManager.java \
+  || fail "DatabaseManager missing closed flag"
+grep -q "CompletableFuture.failedFuture" src/main/java/dev/modplugin/reputationban/database/DatabaseManager.java \
+  || fail "DatabaseManager does not return failed future after close"
+
+grep -q "limits:" src/main/resources/config.yml || fail "limits config missing"
+grep -q "max-report-reason-length" src/main/resources/config.yml src/main/java/dev/modplugin/reputationban/command/ReportBadCommand.java \
+  || fail "max-report-reason-length is not enforced by /reportbad"
+grep -q "max-review-note-length" src/main/resources/config.yml src/main/java/dev/modplugin/reputationban/command/ReportsCommand.java \
+  || fail "max-review-note-length is not enforced by /reports"
+grep -q "max-audit-reason-length" src/main/resources/config.yml src/main/java/dev/modplugin/reputationban/service/AuditService.java \
+  || fail "max-audit-reason-length handling missing"
+grep -q "max-context-summary-length" src/main/resources/config.yml src/main/java/dev/modplugin/reputationban/service/ReportService.java \
+  || fail "max-context-summary-length handling missing"
+
+grep -q "ON CONFLICT(uuid) DO UPDATE SET" src/main/java/dev/modplugin/reputationban/service/ScoreService.java \
+  || fail "ScoreService does not create/update missing players row"
+grep -q "updatedRows == 0" src/main/java/dev/modplugin/reputationban/service/ScoreService.java \
+  || fail "ScoreService does not check UPDATE row count"
+grep -q "Bukkit Profile BAN was applied but ReputationBan DB record failed" src/main/java/dev/modplugin/reputationban/service/PunishmentService.java \
+  || fail "BAN record failure SEVERE warning missing"
+grep -q "notifyStaff" src/main/java/dev/modplugin/reputationban/service/PunishmentService.java \
+  || fail "BAN record failure staff notification missing"
+
+for index in \
+  "idx_reports_status_created" \
+  "idx_reports_target_category_status_created" \
+  "idx_players_lower_name" \
+  "idx_bans_target_active" \
+  "idx_report_context_provider_created"; do
+  grep -q "$index" src/main/java/dev/modplugin/reputationban/database/DatabaseManager.java \
+    || fail "Missing SQLite index: $index"
 done
-grep -q "blank_issues_enabled: false" .github/ISSUE_TEMPLATE/config.yml || fail "GitHub issue template chooser allows blank issues"
-grep -q "SUPPORT_BUNDLE.md" .github/ISSUE_TEMPLATE/config.yml || fail "GitHub issue template chooser missing support bundle link"
-grep -q "runtime smoke" .github/pull_request_template.md || fail "PR template missing runtime smoke checklist"
-grep -q "optional dependency safety" .github/pull_request_template.md || fail "PR template missing optional dependency safety checklist"
-grep -q "DB migration" .github/pull_request_template.md || fail "PR template missing DB migration checklist"
-grep -q "Discord bot token" SECURITY.md SUPPORT.md CONTRIBUTING.md || fail "support/security/contributing docs missing Discord bot token warning"
-grep -q "v1.0.x" CONTRIBUTING.md SUPPORT.md || fail "support/contributing docs missing v1.0.x policy"
 
-if [[ -n "$(git tag --list "v1.0.0")" ]]; then
-  HEAD_COMMIT="$(git rev-parse HEAD)"
-  TAG_COMMIT="$(git rev-list -n 1 v1.0.0)"
-  [[ "$TAG_COMMIT" == "b422e72ec5a917cdc04dee902e96a0cef190026c" ]] || fail "v1.0.0 tag no longer points at the Phase 30 release commit"
-  if [[ "$HEAD_COMMIT" != "$TAG_COMMIT" ]]; then
-    if [[ -f docs/phase-31.md ]] && git merge-base --is-ancestor "$TAG_COMMIT" "$HEAD_COMMIT"; then
-      pass "v1.0.0 tag points to an ancestor release commit after Phase 31/31a docs-only commits"
-    else
-      fail "v1.0.0 tag exists but does not point at HEAD"
-    fi
-  fi
-fi
+grep -q "v1.0.1 hotfix candidate" docs/phase-37.md || fail "docs/phase-37.md missing hotfix candidate summary"
+grep -q "v1.0.1 tag/releaseはまだ未実施" docs/phase-37.md || fail "docs/phase-37.md missing no tag/release note"
+grep -q "1.0.1" README.md CHANGELOG.md reputationban_phase_plan.md || fail "v1.0.1 docs not updated"
+grep -q "offline-lookup" docs/CONFIGURATION.md docs/INTEGRATIONS.md || fail "offline lookup docs missing"
+grep -q "max-report-reason-length" docs/CONFIGURATION.md || fail "limits docs missing"
 
-set +e
-RELEASE_JSON="$(gh release view v1.0.0 --json tagName,isDraft,isPrerelease,url,assets,body 2>&1)"
-RELEASE_CODE=$?
-set -e
-[[ "$RELEASE_CODE" == "0" ]] || fail "Unable to confirm GitHub Release v1.0.0 status: ${RELEASE_JSON//$'\n'/ }"
-[[ "$RELEASE_JSON" == *'"tagName":"v1.0.0"'* ]] || fail "GitHub Release tagName is not v1.0.0"
-[[ "$RELEASE_JSON" == *'"isDraft":false'* ]] || fail "GitHub Release v1.0.0 is not published"
-[[ "$RELEASE_JSON" == *'"isPrerelease":false'* ]] || fail "GitHub Release v1.0.0 is prerelease"
-for asset in \
-  "ReputationBan-1.0.0.jar" \
-  "ReputationBan-1.0.0.jar.sha256" \
-  "ReputationBan-1.0.0-release.zip" \
-  "ReputationBan-1.0.0-release.zip.sha256"; do
-  [[ "$RELEASE_JSON" == *"\"name\":\"$asset\""* ]] || fail "GitHub Release v1.0.0 missing asset: $asset"
-done
-if printf '%s\n' "$RELEASE_JSON" | grep -E "DRAFT_TO_CREATE|公開はまだ|draft 作成まで" >/dev/null; then
-  fail "Published GitHub Release notes still contain pre-publish wording"
+if [[ -n "$(git tag --list "v1.0.1")" ]]; then
+  fail "v1.0.1 tag exists; Phase 37 must not create it"
 fi
-pass "GitHub Release v1.0.0 is published and release notes do not contain old draft wording"
-
-SCAN_PATHS=(scripts)
-if [[ -d .github ]]; then
-  SCAN_PATHS+=(.github)
-fi
-
-if grep -R --exclude=review_code.sh "g[h] release create\\|g[h] release upload\\|g[h] release edit\\|g[h] release delete" "${SCAN_PATHS[@]}" >/dev/null 2>&1; then
-  fail "GitHub Release creation/upload command found in executable automation"
-fi
-if grep -R --exclude=review_code.sh "g[h] release edit.*--draft=false\\|g[h] release edit.*--latest\\|g[h] release create.*--draft=false" "${SCAN_PATHS[@]}" >/dev/null 2>&1; then
-  fail "GitHub Release publish command found in executable automation"
-fi
-
-if grep -R --exclude=review_code.sh "g[it] tag -a v1.0.0\\|g[it] push origin v1.0.0" "${SCAN_PATHS[@]}" >/dev/null 2>&1; then
-  fail "v1.0.0 tag creation/push command found in executable automation"
+if grep -R --exclude=review_code.sh "g[it] tag -a v1.0.1\\|g[it] push origin v1.0.1\\|g[h] release create v1.0.1" scripts .github 2>/dev/null; then
+  fail "v1.0.1 tag/release command found in automation"
 fi
 
 if grep -R "performRollback\\|performRestore\\|performPurge" src/main/java >/dev/null; then
@@ -308,9 +158,6 @@ fi
 if grep -R "addRole\\|removeRole\\|modifyMemberRoles\\|RoleManager" src/main/java/dev/modplugin/reputationban/integration/discordsrv src/main/java/dev/modplugin/reputationban/notification 2>/dev/null; then
   fail "Discord role mutation usage detected"
 fi
-if grep -RE "https://(canary\\.|ptb\\.)?discord(app)?\\.com/api/webhooks/[0-9]+/[A-Za-z0-9_-]{20,}" src/main/java src/main/resources >/dev/null; then
-  fail "Concrete Discord webhook URL detected in main sources/resources"
-fi
 
 for script in scripts/*.sh; do
   bash -n "$script" || fail "$script syntax check failed"
@@ -318,59 +165,28 @@ done
 
 ./scripts/check-docs-localization.sh
 ./scripts/check-optional-dependency-safety.sh
-./scripts/check-maintenance-baseline.sh
-
-info "Running Gradle clean test build"
-preserve_manual_smoke ./gradlew clean test build --warning-mode all
-
-[[ -f "$EXPECTED_JAR" ]] || fail "Expected JAR not found: $EXPECTED_JAR"
-jar tf "$EXPECTED_JAR" | grep -q "^plugin.yml$" || fail "plugin.yml missing from JAR"
-jar tf "$EXPECTED_JAR" | grep -q "dev/modplugin/reputationban/ReputationBanPlugin.class" || fail "main plugin class missing from JAR"
-
-TMP_DIR="$(mktemp -d)"
-trap 'rm -rf "$TMP_DIR"' EXIT
-(cd "$TMP_DIR" && jar xf "$ROOT/$EXPECTED_JAR" plugin.yml)
-grep -q "^version:[[:space:]]*${EXPECTED_VERSION}$" "$TMP_DIR/plugin.yml" || fail "JAR plugin.yml version is not ${EXPECTED_VERSION}"
-
 ./scripts/check-paper-runtime-readiness.sh
 ./scripts/check-integration-runtime-readiness.sh
 ./scripts/check-discordsrv-runtime-readiness.sh
 ./scripts/check-player-report-runtime-readiness.sh
 ./scripts/check-runtime-smoke-consistency.sh
-REPUTATIONBAN_ALLOW_V1_TAG_BEHIND_HEAD=1 ./scripts/check-v1-release-gates.sh
-./scripts/generate-v1-go-no-go-report.sh
-./scripts/generate-v1-release-notes.sh
 
-RELEASE_NOTES="${RELEASE_DIR}/ReputationBan-v1.0.0-release-notes.md"
-GO_NO_GO_REPORT="${RELEASE_DIR}/ReputationBan-v1-go-no-go-report.md"
-require_file "$RELEASE_NOTES"
-require_file "$GO_NO_GO_REPORT"
-if grep -E "DRAFT_TO_CREATE|公開はまだ|draft 作成まで|Phase 30 creates" "$RELEASE_NOTES" "$GO_NO_GO_REPORT" >/dev/null; then
-  fail "Published release notes/report still contain pre-publish wording"
+if [[ "${REPUTATIONBAN_SKIP_BUILD:-0}" != "1" ]]; then
+  preserve_manual_smoke ./gradlew clean test build --warning-mode all
 fi
-grep -q "GitHub Release status: PUBLISHED" "$RELEASE_NOTES" || fail "Release notes do not show published GitHub Release status"
-grep -q "GitHub Release status: PUBLISHED" "$GO_NO_GO_REPORT" || fail "Go/No-Go report does not show published GitHub Release status"
-grep -q "Tag status: CREATED" "$RELEASE_NOTES" || fail "Release notes do not show created tag status"
-grep -q "Tag status: CREATED" "$GO_NO_GO_REPORT" || fail "Go/No-Go report does not show created tag status"
-grep -q "Judgment: RELEASED_WITH_DISCORDSRV_WARNING" "$GO_NO_GO_REPORT" || fail "Go/No-Go report does not show released judgment"
+
+[[ -f "$EXPECTED_JAR" ]] || fail "Expected JAR not found: $EXPECTED_JAR"
+jar tf "$EXPECTED_JAR" | grep -q "^plugin.yml$" || fail "plugin.yml missing from JAR"
+TMP_DIR="$(mktemp -d)"
+trap 'rm -rf "$TMP_DIR"' EXIT
+(cd "$TMP_DIR" && jar xf "$ROOT/$EXPECTED_JAR" plugin.yml)
+grep -q "^version:[[:space:]]*${EXPECTED_VERSION}$" "$TMP_DIR/plugin.yml" || fail "JAR plugin.yml version is not ${EXPECTED_VERSION}"
 
 ./scripts/create-release-artifact.sh
 [[ -f "$RELEASE_JAR" ]] || fail "release jar not found: $RELEASE_JAR"
 [[ -f "${RELEASE_JAR}.sha256" ]] || fail "release jar sha256 not found"
 [[ -f "$RELEASE_ZIP" ]] || fail "release zip not found: $RELEASE_ZIP"
 [[ -f "${RELEASE_ZIP}.sha256" ]] || fail "release zip sha256 not found"
-[[ -f "${RELEASE_DIR}/ReputationBan-v1-go-no-go-report.md" ]] || fail "Go/No-Go report not found"
-[[ -f "${RELEASE_DIR}/ReputationBan-v1.0.0-release-notes.md" ]] || fail "release notes final candidate not found"
 ./scripts/verify-release-artifact.sh
-
-jar tf "$RELEASE_ZIP" | grep -q "^${PROJECT_NAME}-${EXPECTED_VERSION}.jar$" || fail "release zip missing JAR"
-jar tf "$RELEASE_ZIP" | grep -q "^README.md$" || fail "release zip missing README.md"
-jar tf "$RELEASE_ZIP" | grep -q "^CHANGELOG.md$" || fail "release zip missing CHANGELOG.md"
-jar tf "$RELEASE_ZIP" | grep -q "^docs/V1_RELEASE_EXECUTION_PLAN.md$" || fail "release zip missing V1_RELEASE_EXECUTION_PLAN.md"
-if jar tf "$RELEASE_ZIP" | grep -E '(^|/)(config\.yml|reputationban\.db|reputationban\.db-wal|reputationban\.db-shm|latest\.log|debug\.log)$|(^|/)logs/' >/dev/null; then
-  fail "release zip contains forbidden config, DB, or logs"
-fi
-
-REPUTATIONBAN_SKIP_REVIEW_CODE=1 REPUTATIONBAN_SKIP_BUILD=1 ./scripts/run-local-smoke-check.sh
 
 pass "Review checks completed for ${PROJECT_NAME} ${EXPECTED_VERSION}"

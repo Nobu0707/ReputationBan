@@ -889,10 +889,36 @@
 - DiscordSRV configured smoke 未実施は `NOT_RUN` / `HOLD_FOR_DISCORDSRV_CONFIGURED_SMOKE` のまま扱い、confirmed bug にはしない。
 - 新機能、DB schema 変更、runtime behavior 変更は行わない。
 
-## Phase 37以降: 外部連携・高度な悪用対策
+## Phase 37 / v1.0.1: Production hardening for 100-player operation
+
+目的: v1.0.1 hotfix candidate として、100人規模本番運用に向けた安全性・一貫性・運用耐性だけを修正する。新機能追加は行わない。
+
+実装範囲:
+
+- version を `1.0.1` に更新する。
+- TargetProtectionService を追加し、OP、`reputationban.bypass`、LuckPerms bypass group の保護判定を一元化する。
+- LuckPerms offline `loadUser(UUID)` を bypass 判定に限って非同期 reflection で利用し、timeout と fail closed config を追加する。
+- PunishmentService の自動BAN直前に target protection を再確認する。
+- DatabaseManager close を `closed` flag、failed future、`awaitTermination`、`shutdownNow` fallback で hardening する。
+- SQLite `busy_timeout`、`synchronous = NORMAL`、100人規模向け追加 index を追加する。
+- report reason、review note、audit reason、report_context summary の最大長を追加する。
+- ScoreService の missing players row 不整合を防ぐ。
+- Bukkit Profile BAN 成功後の DB record failure を SEVERE log と staff notification で検出しやすくする。
+- review_code.sh、runtime smoke scripts、release artifact scripts を v1.0.1 に更新する。
+- `docs/phase-37.md`、README、CHANGELOG、configuration/integration/release docs、v1.0.1 candidates を更新する。
+
+注意:
+
+- `v1.0.1` tag は作成しない。
+- GitHub Release `v1.0.1` は作成しない。
+- v1.0.0 tag と公開済み assets は変更しない。
+- Player report runtime smoke は実プレイヤー2名以上が必要なため、Codex 環境で実施できない場合は `NOT_RUN` / `HOLD` とし、次Phaseで手動確認する。
+
+## Phase 38以降: 外部連携・高度な悪用対策
 
 実装候補:
 
+- v1.0.1 hotfix candidate の手動 player report runtime smoke 再確認
 - 管理GUI
 - 接触判定
 - 集団通報検知

@@ -5,11 +5,13 @@ import dev.modplugin.reputationban.config.PluginConfig;
 import dev.modplugin.reputationban.model.AuditEvent;
 import dev.modplugin.reputationban.model.AuditEventType;
 import dev.modplugin.reputationban.model.CommandActor;
+import dev.modplugin.reputationban.model.TargetProtectionResult;
 import dev.modplugin.reputationban.notification.DiscordWebhookConfig;
 import dev.modplugin.reputationban.notification.NotificationEventType;
 import dev.modplugin.reputationban.util.AuditMetadata;
 import dev.modplugin.reputationban.util.BanManagementPolicy;
 import dev.modplugin.reputationban.util.DurationParser;
+import dev.modplugin.reputationban.util.StringLimits;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -22,6 +24,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import io.papermc.paper.ban.BanListType;
 import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
@@ -32,17 +35,20 @@ public final class PunishmentService {
     private final ReputationBanPlugin plugin;
     private final dev.modplugin.reputationban.database.DatabaseManager database;
     private final AuditService auditService;
+    private final TargetProtectionService targetProtectionService;
     private volatile PluginConfig config;
 
     public PunishmentService(
             ReputationBanPlugin plugin,
             dev.modplugin.reputationban.database.DatabaseManager database,
             AuditService auditService,
+            TargetProtectionService targetProtectionService,
             PluginConfig config
     ) {
         this.plugin = plugin;
         this.database = database;
         this.auditService = auditService;
+        this.targetProtectionService = targetProtectionService;
         this.config = config;
     }
 
@@ -61,27 +67,50 @@ public final class PunishmentService {
             return CompletableFuture.completedFuture(false);
         }
 
-        CompletableFuture<Boolean> blockedCheck = new CompletableFuture<>();
-        plugin.runSync(() -> {
-            Player online = Bukkit.getPlayer(targetUuid);
-            if (online != null && (online.hasPermission("reputationban.bypass") || online.isOp())) {
-                blockedCheck.complete(true);
-                return;
-            }
-
-            OfflinePlayer offline = Bukkit.getOfflinePlayer(targetUuid);
-            blockedCheck.complete(offline.isBanned() || offline.isOp());
-        });
-
-        return blockedCheck.thenCompose(blocked -> {
+        String safeReason = StringLimits.truncate(reason, config.maxAuditReasonLength());
+        CompletableFuture<Boolean> alreadyBanned = plugin.supplySync(() -> Bukkit.getOfflinePlayer(targetUuid).isBanned());
+        return alreadyBanned.thenCompose(blocked -> {
             if (blocked) {
                 return CompletableFuture.completedFuture(false);
             }
-            return createBanPlan(targetUuid)
-                    .thenCompose(plan -> plugin.runSyncFuture(() -> applyBukkitBan(targetUuid, targetName, reason, plan.expiresAt()))
-                            .thenCompose(ignored -> recordBan(targetUuid, targetName, reason, plan))
-                            .thenApply(ignored -> true));
+            return targetProtectionService.check(targetUuid)
+                    .thenCompose(protection -> punishUnprotectedTarget(targetUuid, targetName, safeReason, protection));
         });
+    }
+
+    private CompletableFuture<Boolean> punishUnprotectedTarget(
+            UUID targetUuid,
+            String targetName,
+            String reason,
+            TargetProtectionResult protection
+    ) {
+        if (protection.protectedTarget()) {
+            return CompletableFuture.completedFuture(false);
+        }
+        return createBanPlan(targetUuid)
+                .thenCompose(plan -> plugin.runSyncFuture(() -> applyBukkitBan(targetUuid, targetName, reason, plan.expiresAt()))
+                        .thenCompose(ignored -> recordBan(targetUuid, targetName, reason, plan)
+                                .handle((recorded, throwable) -> {
+                                    if (throwable != null) {
+                                        warnBanRecordFailure(targetUuid, targetName, throwable);
+                                        throw new CompletionException(throwable);
+                                    }
+                                    return true;
+                                })));
+    }
+
+    private void warnBanRecordFailure(UUID targetUuid, String targetName, Throwable throwable) {
+        plugin.getLogger().log(
+                java.util.logging.Level.SEVERE,
+                "Bukkit Profile BAN was applied but ReputationBan DB record failed for targetUuid="
+                        + targetUuid + " targetName=" + targetName,
+                throwable
+        );
+        plugin.runSync(() -> plugin.notifyStaff(
+                NotificationEventType.AUTO_BAN,
+                "警告: Profile BANは適用済みですがDB記録に失敗しました: " + targetName + " (" + targetUuid + ")",
+                "**BAN記録失敗**\n対象: " + targetName + "\nUUID: " + targetUuid
+        ));
     }
 
     private CompletableFuture<BanPlan> createBanPlan(UUID targetUuid) {

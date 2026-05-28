@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-VERSION="1.0.0"
+VERSION="1.0.1"
 PROJECT_NAME="ReputationBan"
 JAR="build/libs/${PROJECT_NAME}-${VERSION}.jar"
 

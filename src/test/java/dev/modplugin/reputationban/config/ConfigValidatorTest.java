@@ -42,13 +42,14 @@ class ConfigValidatorTest {
     void detectsInvalidIntegrationValues() {
         ConfigValidationInput config = new ConfigValidationInput(
                 100, 100, 5, 1, 7, 300, 14, 5, 15, 60, 1, 0, 2, 100, 7, 50, 1000,
-                180, 90, 90, 0, 0, 5, "exports", 0.0D, Map.of("trusted", -1.0D), 0, 0, -1, -1,
+                180, 90, 90, 0, 0, 300, 300, 500, 1000, 5, "exports", 0.0D, 0, Map.of("trusted", -1.0D), 0, 0, -1, -1,
                 -1, List.of(), List.of(), List.of(), "Bad-Identifier", -1
         );
 
         List<ConfigValidationIssue> issues = ConfigValidator.validate(config, DATA_FOLDER);
 
         assertTrue(issues.stream().anyMatch(issue -> issue.path().equals("integrations.luckperms.default-weight")));
+        assertTrue(issues.stream().anyMatch(issue -> issue.path().equals("integrations.luckperms.offline-lookup.timeout-millis")));
         assertTrue(issues.stream().anyMatch(issue -> issue.path().equals("integrations.luckperms.group-weights.trusted")));
         assertTrue(issues.stream().anyMatch(issue -> issue.path().equals("integrations.coreprotect.minimum-api-version")));
         assertTrue(issues.stream().anyMatch(issue -> issue.path().equals("integrations.coreprotect.report-context.lookup-seconds")));
@@ -94,9 +95,14 @@ class ConfigValidatorTest {
                 90,
                 0,
                 0,
+                300,
+                300,
+                500,
+                1000,
                 5,
                 auditExportDirectory,
                 1.0D,
+                1500,
                 Map.of("default", 1.0D),
                 11,
                 3600,

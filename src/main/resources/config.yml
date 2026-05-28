@@ -86,6 +86,12 @@ retention:
   score-history-days: 0
   bans-days: 0
 
+limits:
+  max-report-reason-length: 300
+  max-review-note-length: 300
+  max-audit-reason-length: 500
+  max-context-summary-length: 1000
+
 ban:
   enabled: true
   threshold: 0
@@ -137,6 +143,12 @@ integrations:
     bypass-groups:
       - admin
       - owner
+    offline-lookup:
+      enabled: true
+      timeout-millis: 1500
+      # true は LuckPerms offline lookup 失敗時に対象を保護扱いにする本番安全側設定です。
+      # 誤設定や連携障害でBAN回避が起きうるため、運用方針に合わせて false へ変更できます。
+      fail-closed-for-bypass: true
 
   coreprotect:
     enabled: true

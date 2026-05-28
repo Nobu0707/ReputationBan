@@ -1,6 +1,6 @@
 # Configuration
 
-このドキュメントでは ReputationBan 1.0.0 の主な `config.yml` セクションを説明します。YAML key は変更しないでください。
+このドキュメントでは ReputationBan 1.0.1 の主な `config.yml` セクションを説明します。YAML key は変更しないでください。
 
 ## Score
 
@@ -72,9 +72,18 @@
 
 `retention` settings は audit events、rejected reports、cancelled reports、score history、bans の cleanup を制御します。`score-history-days` と `bans-days` はデフォルト `0` で、削除しない設定です。
 
+## Limits
+
+- `limits.max-report-reason-length`: `/reportbad` reason の最大長です。超過時は拒否します。
+- `limits.max-review-note-length`: `/reports approve|reject` note の最大長です。超過時は拒否します。
+- `limits.max-audit-reason-length`: audit reason、score history reason、BAN reason の保存前 truncate 上限です。
+- `limits.max-context-summary-length`: `report_context.summary` の保存前 truncate 上限です。
+
 ## Integrations
 
-`integrations.luckperms` は LuckPerms が導入されている場合だけ有効になります。`default-weight` と `group-weights` は `/reportbad` の通報者重みとして `report_context` と audit metadata に記録されます。Phase 16 では `apply-weight-to-deduction` が `false` の既定で、減点量へは反映しません。`bypass-groups` は既存の `reputationban.bypass` と OP 保護に加える補助保護です。
+`integrations.luckperms` は LuckPerms が導入されている場合だけ有効になります。`default-weight` と `group-weights` は `/reportbad` の通報者重みとして `report_context` と audit metadata に記録されます。`apply-weight-to-deduction` は `false` の既定で、減点量へは反映しません。`bypass-groups` は既存の `reputationban.bypass` と OP 保護に加える補助保護です。
+
+`integrations.luckperms.offline-lookup.enabled` が true の場合、保護判定に限り LuckPerms `loadUser(UUID)` を非同期に使い、未ロードの offline user も bypass group 判定します。`timeout-millis` は待機上限です。`fail-closed-for-bypass: true` は lookup failure/timeout 時に対象を保護扱いにする本番安全側設定ですが、連携障害時に BAN 回避が起きる可能性があります。
 
 `integrations.coreprotect` は CoreProtect が導入され、API version が `minimum-api-version` 以上の場合だけ有効になります。`report-context` は対象 category、lookup 秒数、半径、最大件数、block-break / block-place の action を制御します。保存するのは審査補助の短い証拠サマリーで、rollback、restore、purge は実行しません。
 

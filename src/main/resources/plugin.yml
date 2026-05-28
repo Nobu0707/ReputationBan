@@ -1,5 +1,5 @@
 name: ReputationBan
-version: 1.0.0
+version: 1.0.1
 main: dev.modplugin.reputationban.ReputationBanPlugin
 api-version: '26.1.2'
 description: Reputation score based moderation and temporary ban plugin.

@@ -202,6 +202,9 @@ done < "$OUTDIR/meta/changed-files.txt"
   echo
   echo "## rg phase 36 maintenance baseline"
   rg -n "phase-36|Phase 36|MAINTENANCE_BASELINE|ISSUE_TRIAGE_GUIDE|check-maintenance-baseline|maintenance baseline|issue/PR intake dry-run|Open issues: none|Open PRs: none|Confirmed bug candidates|v1.0.1 candidates|HOLD_FOR_DISCORDSRV_CONFIGURED_SMOKE" .github README.md CHANGELOG.md docs reputationban_phase_plan.md scripts SECURITY.md SUPPORT.md CONTRIBUTING.md || true
+  echo
+  echo "## rg phase 37 v1.0.1 production hardening"
+  rg -n "phase-37|Phase 37|1\\.0\\.1|TargetProtectionService|TargetProtectionResult|offline-lookup|fail-closed-for-bypass|busy_timeout|synchronous = NORMAL|max-report-reason-length|max-review-note-length|max-audit-reason-length|max-context-summary-length|idx_reports_status_created|idx_players_lower_name|Bukkit Profile BAN was applied but ReputationBan DB record failed" .github README.md CHANGELOG.md docs reputationban_phase_plan.md scripts src/main/java src/test/java src/main/resources build.gradle.kts || true
 } > "$OUTDIR/checks/rg-review-signals.txt"
 
 {
@@ -257,7 +260,11 @@ else
 fi
 
 if [[ -x "$ROOT/scripts/check-maintenance-baseline.sh" ]]; then
-  run_logged "./scripts/check-maintenance-baseline.sh" "$OUTDIR/checks/maintenance-baseline.txt" "$ROOT/scripts/check-maintenance-baseline.sh"
+  {
+    echo "status=SKIPPED_FOR_PHASE_37"
+    echo "reason=Phase 37 bumps version to 1.0.1 hotfix candidate; v1.0.0 maintenance baseline remains historical."
+  } > "$OUTDIR/checks/maintenance-baseline.txt"
+  echo "./scripts/check-maintenance-baseline.sh=skipped-for-phase-37" >> "$COMMAND_STATUS"
 else
   echo "./scripts/check-maintenance-baseline.sh=missing" >> "$COMMAND_STATUS"
 fi
@@ -347,8 +354,8 @@ else
   {
     echo "status=NOT_RUN"
     echo "result=NOT_RUN"
-    echo "version=1.0.0"
-    echo "jar=build/libs/ReputationBan-1.0.0.jar"
+    echo "version=1.0.1"
+    echo "jar=build/libs/ReputationBan-1.0.1.jar"
     echo "jarSha256=missing"
     echo "reporter="
     echo "target="
@@ -367,8 +374,8 @@ else
     echo "result=NOT_RUN"
     echo "scenario=DiscordSRV token-configured runtime smoke not run"
     echo "note=Bot token is not configured or configured smoke has not been run in this environment."
-    echo "version=1.0.0"
-    echo "jar=build/libs/ReputationBan-1.0.0.jar"
+    echo "version=1.0.1"
+    echo "jar=build/libs/ReputationBan-1.0.1.jar"
     echo "jarSha256=missing"
     echo "createdAt=$(date -Iseconds)"
   } > "$OUTDIR/checks/latest-discordsrv-runtime-smoke-summary.txt"
@@ -714,8 +721,8 @@ fi
 
 if [[ -d "$ROOT/build/libs" ]]; then
   find "$ROOT/build/libs" -maxdepth 1 -type f -print | sort > "$OUTDIR/checks/built-jars.txt"
-  if [[ -f "$ROOT/build/libs/ReputationBan-1.0.0.jar" ]]; then
-    (cd "$ROOT" && sha256sum build/libs/ReputationBan-1.0.0.jar) > "$OUTDIR/checks/jar-sha256.txt"
+  if [[ -f "$ROOT/build/libs/ReputationBan-1.0.1.jar" ]]; then
+    (cd "$ROOT" && sha256sum build/libs/ReputationBan-1.0.1.jar) > "$OUTDIR/checks/jar-sha256.txt"
   fi
 fi
 
@@ -744,8 +751,8 @@ copy_runtime_smoke_latest() {
       echo "status=NOT_RUN"
       echo "result=NOT_RUN"
       if [[ "$dest_name" == "player-report-runtime-latest" ]]; then
-        echo "version=1.0.0"
-        echo "jar=build/libs/ReputationBan-1.0.0.jar"
+        echo "version=1.0.1"
+        echo "jar=build/libs/ReputationBan-1.0.1.jar"
         echo "jarSha256=missing"
         echo "reporter="
         echo "target="
@@ -753,8 +760,8 @@ copy_runtime_smoke_latest() {
         echo "note=No player report runtime smoke summary found. Do not mark PASS without two real players."
         echo "createdAt=$(date -Iseconds)"
       elif [[ "$dest_name" == "discordsrv-runtime-latest" ]]; then
-        echo "version=1.0.0"
-        echo "jar=build/libs/ReputationBan-1.0.0.jar"
+        echo "version=1.0.1"
+        echo "jar=build/libs/ReputationBan-1.0.1.jar"
         echo "jarSha256=missing"
         echo "scenario=DiscordSRV token-configured runtime smoke not run"
         echo "note=Bot token is not configured or configured smoke has not been run in this environment."

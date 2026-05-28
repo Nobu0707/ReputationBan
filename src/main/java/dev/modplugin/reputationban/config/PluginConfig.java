@@ -54,6 +54,10 @@ public final class PluginConfig {
     private final int retentionCancelledReportsDays;
     private final int retentionScoreHistoryDays;
     private final int retentionBansDays;
+    private final int maxReportReasonLength;
+    private final int maxReviewNoteLength;
+    private final int maxAuditReasonLength;
+    private final int maxContextSummaryLength;
     private final String databaseFile;
     private final Map<String, ReportCategory> categories;
     private final LuckPermsIntegrationConfig luckPermsIntegration;
@@ -105,6 +109,10 @@ public final class PluginConfig {
         retentionCancelledReportsDays = config.getInt("retention.cancelled-reports-days", 90);
         retentionScoreHistoryDays = config.getInt("retention.score-history-days", 0);
         retentionBansDays = config.getInt("retention.bans-days", 0);
+        maxReportReasonLength = config.getInt("limits.max-report-reason-length", 300);
+        maxReviewNoteLength = config.getInt("limits.max-review-note-length", 300);
+        maxAuditReasonLength = config.getInt("limits.max-audit-reason-length", 500);
+        maxContextSummaryLength = config.getInt("limits.max-context-summary-length", 1000);
         databaseFile = config.getString("database.file", "reputationban.db");
         categories = loadCategories(config);
         luckPermsIntegration = loadLuckPermsIntegration(config);
@@ -166,7 +174,10 @@ public final class PluginConfig {
                 config.getBoolean("integrations.luckperms.apply-weight-to-deduction", false),
                 config.getDouble("integrations.luckperms.default-weight", 1.0D),
                 Collections.unmodifiableMap(weights),
-                Set.copyOf(bypassGroups)
+                Set.copyOf(bypassGroups),
+                config.getBoolean("integrations.luckperms.offline-lookup.enabled", true),
+                config.getInt("integrations.luckperms.offline-lookup.timeout-millis", 1500),
+                config.getBoolean("integrations.luckperms.offline-lookup.fail-closed-for-bypass", true)
         );
     }
 
@@ -421,6 +432,22 @@ public final class PluginConfig {
         return retentionBansDays;
     }
 
+    public int maxReportReasonLength() {
+        return maxReportReasonLength;
+    }
+
+    public int maxReviewNoteLength() {
+        return maxReviewNoteLength;
+    }
+
+    public int maxAuditReasonLength() {
+        return maxAuditReasonLength;
+    }
+
+    public int maxContextSummaryLength() {
+        return maxContextSummaryLength;
+    }
+
     public String databaseFile() {
         return databaseFile;
     }
@@ -459,7 +486,10 @@ public final class PluginConfig {
             boolean applyWeightToDeduction,
             double defaultWeight,
             Map<String, Double> groupWeights,
-            Set<String> bypassGroups
+            Set<String> bypassGroups,
+            boolean offlineLookupEnabled,
+            int offlineLookupTimeoutMillis,
+            boolean offlineLookupFailClosedForBypass
     ) {
     }
 

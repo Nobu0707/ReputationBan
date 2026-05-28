@@ -13,6 +13,7 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.logging.Level;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -21,6 +22,7 @@ public final class DatabaseManager implements AutoCloseable {
     private final JavaPlugin plugin;
     private final PluginConfig config;
     private final ExecutorService executor;
+    private volatile boolean closed;
     private Connection connection;
 
     public DatabaseManager(JavaPlugin plugin, PluginConfig config) {
@@ -44,6 +46,8 @@ public final class DatabaseManager implements AutoCloseable {
         try (Statement statement = connection.createStatement()) {
             statement.execute("PRAGMA journal_mode=WAL");
             statement.execute("PRAGMA foreign_keys=ON");
+            statement.execute("PRAGMA busy_timeout = 5000");
+            statement.execute("PRAGMA synchronous = NORMAL");
         } catch (SQLException exception) {
             plugin.getLogger().log(Level.WARNING, "SQLite PRAGMA setup failed; continuing with default settings.", exception);
         }
@@ -152,6 +156,11 @@ public final class DatabaseManager implements AutoCloseable {
         execute("CREATE INDEX IF NOT EXISTS idx_audit_events_actor_created ON audit_events(actor_uuid, created_at)");
         execute("CREATE INDEX IF NOT EXISTS idx_audit_events_type_created ON audit_events(event_type, created_at)");
         execute("CREATE INDEX IF NOT EXISTS idx_report_context_report_created ON report_context(report_id, created_at)");
+        execute("CREATE INDEX IF NOT EXISTS idx_reports_status_created ON reports(status, created_at)");
+        execute("CREATE INDEX IF NOT EXISTS idx_reports_target_category_status_created ON reports(target_uuid, category, status, created_at)");
+        execute("CREATE INDEX IF NOT EXISTS idx_players_lower_name ON players(lower(name))");
+        execute("CREATE INDEX IF NOT EXISTS idx_bans_target_active ON bans(target_uuid, unbanned_at, expires_at)");
+        execute("CREATE INDEX IF NOT EXISTS idx_report_context_provider_created ON report_context(provider, created_at)");
         migratePlayersTable();
         migrateBansTable();
     }
@@ -197,8 +206,14 @@ public final class DatabaseManager implements AutoCloseable {
     }
 
     public <T> CompletableFuture<T> supplyAsync(SqlFunction<Connection, T> operation) {
+        if (closed) {
+            return CompletableFuture.failedFuture(new DatabaseException("Database manager is closed"));
+        }
         return CompletableFuture.supplyAsync(() -> {
             try {
+                if (closed) {
+                    throw new DatabaseException("Database manager is closed");
+                }
                 return operation.apply(connection);
             } catch (SQLException exception) {
                 throw new DatabaseException(exception);
@@ -223,7 +238,17 @@ public final class DatabaseManager implements AutoCloseable {
 
     @Override
     public void close() {
+        closed = true;
         executor.shutdown();
+        try {
+            if (!executor.awaitTermination(5, TimeUnit.SECONDS)) {
+                plugin.getLogger().warning("Database executor did not stop within 5 seconds; forcing shutdown.");
+                executor.shutdownNow();
+            }
+        } catch (InterruptedException exception) {
+            Thread.currentThread().interrupt();
+            executor.shutdownNow();
+        }
         if (connection != null) {
             try {
                 connection.close();
@@ -244,6 +269,10 @@ public final class DatabaseManager implements AutoCloseable {
     }
 
     public static final class DatabaseException extends RuntimeException {
+        public DatabaseException(String message) {
+            super(message);
+        }
+
         public DatabaseException(Throwable cause) {
             super(cause);
         }

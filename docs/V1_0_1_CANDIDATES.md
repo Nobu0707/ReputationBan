@@ -1,12 +1,21 @@
 # v1.0.1 Candidates
 
-この文書は ReputationBan v1.0.0 公開後に確認された bugfix 候補を整理するための一覧です。現時点では v1.0.1 の内容、tag、Release は未確定です。
+この文書は ReputationBan v1.0.0 公開後に確認された bugfix 候補を整理するための一覧です。Phase 37 では v1.0.1 hotfix candidate の実装内容を固定しましたが、tag と GitHub Release は未作成です。
 
 ## Confirmed bug candidates
 
-- none
+- Phase 37 production hardening
 
-現時点で v1.0.1 に入れることが確定した bugfix はありません。実ユーザー報告または追加 runtime smoke の結果が入ったら追記します。
+v1.0.1 hotfix candidate には新機能を入れず、100人規模運用前に必要な保護判定、SQLite hardening、文字列長制限、score mutation 一貫性、BAN DB/Bukkit 不整合検出、追加 index を入れます。
+
+## Phase 37 Hotfix Candidate
+
+- Version: `1.0.1`
+- Artifact: `ReputationBan-1.0.1.jar`
+- Release artifact: `ReputationBan-1.0.1-release.zip`
+- `v1.0.1` tag: NOT_CREATED
+- GitHub Release `v1.0.1`: NOT_CREATED
+- Player report runtime smoke: code changed; Codex-only run is `NOT_RUN` unless a real two-player environment is available.
 
 ## Phase 36 Intake Baseline
 

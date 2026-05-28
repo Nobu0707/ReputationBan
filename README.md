@@ -2,9 +2,9 @@
 
 ReputationBan は、通報とスタッフ操作をもとにプレイヤーの評判スコアを管理する PaperMC 向け moderation プラグインです。データは SQLite に保存し、未処理通報の審査、監査ログ、バックアップ、support bundle、設定に基づく Profile BAN を扱います。
 
-現在のバージョン: `1.0.0`
+現在のバージョン: `1.0.1`
 
-v1.0.0 は GitHub Release 公開済みです。`v1.0.0` annotated tag は Phase 30 commit `b422e72ec5a917cdc04dee902e96a0cef190026c` を指し、GitHub Release は `draft=false`、`prerelease=false` として公開されています。Release assets は `ReputationBan-1.0.0.jar`、JAR sha256、`ReputationBan-1.0.0-release.zip`、release zip sha256 の4件です。DiscordSRV は bot token 未設定時に WARN として扱い、ReputationBan 本体や他連携の release gate は止めません。Phase 34 では DiscordSRV token-configured runtime smoke を実施できる環境情報がないため `NOT_RUN` / `HOLD_FOR_DISCORDSRV_CONFIGURED_SMOKE` として記録しました。Phase 35 では GitHub issue templates、PR template、`SUPPORT.md`、`SECURITY.md`、`CONTRIBUTING.md` を追加し、公開後サポートと v1.0.1 intake の導線を整えました。Phase 36 では maintenance baseline と issue/PR intake dry-run を追加し、open issues / open PRs は none、confirmed bug candidates は none として記録しました。
+v1.0.0 は GitHub Release 公開済みです。Phase 37 では v1.0.1 hotfix candidate として、100人規模運用向けの安全性・一貫性・運用耐性だけを hardening しました。`v1.0.1` tag と GitHub Release はまだ作成していません。
 
 ## 対象環境
 
@@ -40,6 +40,7 @@ v1.0.0 は GitHub Release 公開済みです。`v1.0.0` annotated tag は Phase 
 - [Support policy](SUPPORT.md)
 - [Security policy](SECURITY.md)
 - [Contribution guide](CONTRIBUTING.md)
+- [Phase 37 notes](docs/phase-37.md)
 - [Phase 36 notes](docs/phase-36.md)
 - [Phase 35 notes](docs/phase-35.md)
 - [Phase 34 notes](docs/phase-34.md)
@@ -71,6 +72,7 @@ v1.0.0 は GitHub Release 公開済みです。`v1.0.0` annotated tag は Phase 
 - `/rep backup` による SQLite backup。
 - `/rep support bundle` によるシークレットを伏せた診断 ZIP 作成。
 - LuckPerms、CoreProtect、WorldGuard、GriefPrevention、PlaceholderAPI、DiscordSRV の任意連携。未導入でも単体動作します。
+- LuckPerms bypass group は offline lookup に対応し、未ロードの保護対象も設定に応じて fail closed で守れます。
 - PlaceholderAPI 対応プラグインから `%reputationban_score%` などで評判状態を参照できます。
 - 任意の Discord Webhook 通知。URL は表示、ログ、監査、CSV、support bundle、review archive に出さない方針です。
 
@@ -126,7 +128,7 @@ v1.0.0 は GitHub Release 公開済みです。`v1.0.0` annotated tag は Phase 
 - `reputationban.admin.diagnostics`: `/rep doctor` と support bundle を使えます。
 - `reputationban.admin.integrations`: `/rep integrations` と `/rep integrations test` を使えます。
 - `reputationban.notify`: staff notification を受け取れます。
-- `reputationban.bypass`: online 中の通報、減点、自動 BAN 対象から除外されます。
+- `reputationban.bypass`: online 中の通報、減点、自動 BAN 対象から除外されます。OP と LuckPerms bypass group も TargetProtectionService で保護します。
 - `reputationban.admin`: 主な admin 権限をまとめて付与します。
 
 ## 安全上の注意
@@ -144,7 +146,7 @@ v1.0.0 は GitHub Release 公開済みです。`v1.0.0` annotated tag は Phase 
 ./scripts/review_code.sh
 ```
 
-JAR は `build/libs/ReputationBan-1.0.0.jar` に生成されます。
+JAR は `build/libs/ReputationBan-1.0.1.jar` に生成されます。
 
 ## Support And Contribution
 
@@ -154,15 +156,15 @@ v1.0.x は原則 bugfix と安全な docs/support 改善を中心に扱います
 
 ## 現在の位置づけ
 
-v1.0.0 は first stable release として公開済みです。Release URL は <https://github.com/Nobu0707/ReputationBan/releases/tag/v1.0.0> です。Paper runtime smoke、integration runtime smoke、player report runtime smoke の主要 gate は PASS/READY で揃い、`scripts/check-runtime-smoke-consistency.sh` で整合確認済みです。
+v1.0.0 は first stable release として公開済みです。Release URL は <https://github.com/Nobu0707/ReputationBan/releases/tag/v1.0.0> です。v1.0.1 は Phase 37 時点では hotfix candidate artifact であり、正式 tag / GitHub Release 公開は未実施です。
 
-Phase 31 では GitHub Release draft を確認し、`draft=false` へ変更して公開しました。Phase 31a では公開済み GitHub Release 本文と生成済み release notes / Go-No-Go report を `PUBLISHED` 状態へ揃えました。Phase 32 では v1.0.0 公開後監視、bugfix intake、v1.0.1 candidates docs を追加しました。Phase 33 では DiscordSRV token-configured runtime smoke の intake を追加しました。Phase 34 では token-configured smoke を実施できる環境情報がないため `NOT_RUN` として判断記録しました。Phase 35 では issue templates と support/security/contribution docs を追加しました。Phase 36 では v1.0.0 maintenance baseline、issue triage guide、issue/PR intake dry-run を追加し、open issues / open PRs / confirmed bug candidates が none であることを記録しました。DiscordSRV は bot token 未設定時 WARN 扱いのため、本番で DiscordSRV 通知や account link を使う場合は token 設定済み環境で追加確認してください。
+Phase 37 では TargetProtectionService、LuckPerms offline bypass protection、DatabaseManager shutdown hardening、SQLite busy_timeout、文字列長制限、missing players row 修正、追加 index、v1.0.1 artifact scripts を追加しました。Paper runtime smoke と integration runtime smoke は再実行対象です。Player report runtime smoke は実プレイヤー確認が必要なため、Codex 環境で実施できない場合は `NOT_RUN` / `HOLD` として Phase 38 で手動再確認します。
 
 ## 現在の制限
 
 - GUI menus、Discord ボタン承認、Discord role 変更、Discord から Minecraft コマンドを実行する機能は未実装です。
 - WorldGuard region/flag の作成、変更、削除は行いません。
 - GriefPrevention claim/trust の作成、変更、削除は行いません。
-- LuckPerms が無い場合、offline bypass detection は OP 状態に限定されます。online players の `reputationban.bypass` は保護されます。
+- LuckPerms が無い場合、offline bypass detection は OP 状態に限定されます。`integrations.luckperms.offline-lookup.fail-closed-for-bypass: true` では lookup 失敗時も保護扱いになります。
 - appeal と automatic unban workflow は後続フェーズに残しています。
 - Folia support は含みません。

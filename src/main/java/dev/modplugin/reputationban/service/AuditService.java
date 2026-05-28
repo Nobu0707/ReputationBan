@@ -10,6 +10,7 @@ import dev.modplugin.reputationban.util.CsvEscaper;
 import dev.modplugin.reputationban.util.Redactor;
 import dev.modplugin.reputationban.util.RetentionPolicy;
 import dev.modplugin.reputationban.util.SafePathResolver;
+import dev.modplugin.reputationban.util.StringLimits;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -278,7 +279,8 @@ public final class AuditService {
         ));
     }
 
-    private static void insertEvent(Connection connection, AuditEvent event) throws SQLException {
+    private void insertEvent(Connection connection, AuditEvent event) throws SQLException {
+        AuditEvent safeEvent = withLimitedReason(event);
         try (PreparedStatement insert = connection.prepareStatement("""
                 INSERT INTO audit_events (
                   event_type, actor_uuid, actor_name, target_uuid, target_name, report_id, ban_id,
@@ -286,22 +288,46 @@ public final class AuditService {
                 )
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """)) {
-            insert.setString(1, event.eventType().databaseValue());
-            setUuid(insert, 2, event.actorUuid());
-            insert.setString(3, event.actorName());
-            setUuid(insert, 4, event.targetUuid());
-            insert.setString(5, event.targetName());
-            setLong(insert, 6, event.reportId());
-            setLong(insert, 7, event.banId());
-            setLong(insert, 8, event.scoreHistoryId());
-            setInteger(insert, 9, event.oldScore());
-            setInteger(insert, 10, event.newScore());
-            setInteger(insert, 11, event.delta());
-            insert.setString(12, event.reason());
-            insert.setString(13, event.metadata());
-            insert.setLong(14, event.createdAt());
+            insert.setString(1, safeEvent.eventType().databaseValue());
+            setUuid(insert, 2, safeEvent.actorUuid());
+            insert.setString(3, safeEvent.actorName());
+            setUuid(insert, 4, safeEvent.targetUuid());
+            insert.setString(5, safeEvent.targetName());
+            setLong(insert, 6, safeEvent.reportId());
+            setLong(insert, 7, safeEvent.banId());
+            setLong(insert, 8, safeEvent.scoreHistoryId());
+            setInteger(insert, 9, safeEvent.oldScore());
+            setInteger(insert, 10, safeEvent.newScore());
+            setInteger(insert, 11, safeEvent.delta());
+            insert.setString(12, safeEvent.reason());
+            insert.setString(13, safeEvent.metadata());
+            insert.setLong(14, safeEvent.createdAt());
             insert.executeUpdate();
         }
+    }
+
+    private AuditEvent withLimitedReason(AuditEvent event) {
+        String safeReason = StringLimits.truncate(event.reason(), config.maxAuditReasonLength());
+        if (safeReason == event.reason()) {
+            return event;
+        }
+        return new AuditEvent(
+                event.id(),
+                event.eventType(),
+                event.actorUuid(),
+                event.actorName(),
+                event.targetUuid(),
+                event.targetName(),
+                event.reportId(),
+                event.banId(),
+                event.scoreHistoryId(),
+                event.oldScore(),
+                event.newScore(),
+                event.delta(),
+                safeReason,
+                event.metadata(),
+                event.createdAt()
+        );
     }
 
     private static List<AuditEvent> list(Connection connection, String sql, int limit) throws SQLException {

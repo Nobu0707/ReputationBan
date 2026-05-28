@@ -43,8 +43,18 @@ public final class ConfigValidator {
         retention(config.retentionCancelledReportsDays(), issues, "retention.cancelled-reports-days");
         retention(config.retentionScoreHistoryDays(), issues, "retention.score-history-days");
         retention(config.retentionBansDays(), issues, "retention.bans-days");
+        require(config.maxReportReasonLength() >= config.minReasonLength(), issues, "limits.max-report-reason-length",
+                "limits.max-report-reason-length must be greater than or equal to rating.min-reason-length");
+        require(config.maxReviewNoteLength() >= 0, issues, "limits.max-review-note-length",
+                "limits.max-review-note-length must be 0 or greater");
+        require(config.maxAuditReasonLength() >= 0, issues, "limits.max-audit-reason-length",
+                "limits.max-audit-reason-length must be 0 or greater");
+        require(config.maxContextSummaryLength() >= 0, issues, "limits.max-context-summary-length",
+                "limits.max-context-summary-length must be 0 or greater");
         require(config.luckPermsDefaultWeight() > 0.0D, issues, "integrations.luckperms.default-weight",
                 "integrations.luckperms.default-weight must be greater than 0");
+        require(config.luckPermsOfflineLookupTimeoutMillis() >= 1, issues, "integrations.luckperms.offline-lookup.timeout-millis",
+                "integrations.luckperms.offline-lookup.timeout-millis must be at least 1");
         for (java.util.Map.Entry<String, Double> entry : config.luckPermsGroupWeights().entrySet()) {
             require(entry.getValue() != null && entry.getValue() > 0.0D, issues,
                     "integrations.luckperms.group-weights." + entry.getKey(),

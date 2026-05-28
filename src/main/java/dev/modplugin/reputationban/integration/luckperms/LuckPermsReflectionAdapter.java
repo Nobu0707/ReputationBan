@@ -4,6 +4,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import java.util.function.BooleanSupplier;
 import org.bukkit.Bukkit;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -59,6 +60,33 @@ public final class LuckPermsReflectionAdapter {
             return Optional.empty();
         }
         Object user = invoke(userManager, "getUser", UUID.class, playerUuid);
+        if (user == null) {
+            return Optional.empty();
+        }
+        Object primaryGroup = invoke(user, "getPrimaryGroup");
+        if (!(primaryGroup instanceof String value) || value.isBlank()) {
+            return Optional.empty();
+        }
+        return Optional.of(value);
+    }
+
+    public Optional<CompletableFuture<Optional<String>>> loadPrimaryGroup(UUID playerUuid) {
+        Optional<Object> api = api();
+        if (api.isEmpty()) {
+            return Optional.empty();
+        }
+        Object userManager = invoke(api.get(), "getUserManager");
+        if (userManager == null) {
+            return Optional.empty();
+        }
+        Object future = invoke(userManager, "loadUser", UUID.class, playerUuid);
+        if (!(future instanceof CompletableFuture<?> completableFuture)) {
+            return Optional.empty();
+        }
+        return Optional.of(completableFuture.thenApply(this::primaryGroupFromUser));
+    }
+
+    private Optional<String> primaryGroupFromUser(Object user) {
         if (user == null) {
             return Optional.empty();
         }

@@ -11,6 +11,7 @@ import dev.modplugin.reputationban.util.AuditMetadata;
 import dev.modplugin.reputationban.util.ReporterPenalty;
 import dev.modplugin.reputationban.util.ReviewApprovalGate;
 import dev.modplugin.reputationban.util.ScoreMath;
+import dev.modplugin.reputationban.util.StringLimits;
 import dev.modplugin.reputationban.util.ThresholdReportPolicy;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -69,6 +70,7 @@ public final class ReportService {
         long sameTargetCutoff = now - Duration.ofDays(config.sameTargetCooldownDays()).toMillis();
         long dayCutoff = now - Duration.ofDays(1).toMillis();
         long weekCutoff = now - Duration.ofDays(7).toMillis();
+        String safeReason = StringLimits.truncate(reason, config.maxReportReasonLength());
 
         return database.supplyAsync(connection -> {
             Long reportBanUntil = getReportBannedUntil(connection, reporterUuid);
@@ -97,7 +99,7 @@ public final class ReportService {
                         targetUuid,
                         targetName,
                         category,
-                        reason,
+                        safeReason,
                         "pending",
                         0,
                         now
@@ -109,7 +111,7 @@ public final class ReportService {
                         targetName,
                         reportId,
                         category,
-                        reason,
+                        safeReason,
                         "pending",
                         0,
                         0,
@@ -129,7 +131,7 @@ public final class ReportService {
                         targetUuid,
                         targetName,
                         category,
-                        reason,
+                        safeReason,
                         now,
                         integrationMetadata
                 );
@@ -142,7 +144,7 @@ public final class ReportService {
                     targetUuid,
                     targetName,
                     category,
-                    reason,
+                    safeReason,
                     now,
                     integrationMetadata
             );
@@ -529,7 +531,8 @@ public final class ReportService {
 
     public CompletableFuture<Void> saveReportContext(long reportId, String provider, String summary, String metadata) {
         long now = System.currentTimeMillis();
-        return database.runAsync(connection -> insertReportContext(connection, reportId, provider, summary, metadata, now));
+        String safeSummary = StringLimits.truncate(summary, config.maxContextSummaryLength());
+        return database.runAsync(connection -> insertReportContext(connection, reportId, provider, safeSummary, metadata, now));
     }
 
     public CompletableFuture<ReviewResult> approveReport(
@@ -541,6 +544,7 @@ public final class ReportService {
             boolean targetProtected
     ) {
         long now = System.currentTimeMillis();
+        String safeNote = StringLimits.truncate(note, config.maxReviewNoteLength());
         return database.supplyAsync(connection -> {
             boolean previousAutoCommit = connection.getAutoCommit();
             connection.setAutoCommit(false);
@@ -572,13 +576,13 @@ public final class ReportService {
                     connection.rollback();
                     return ReviewResult.failed("この承認は対象をBANしきい値以下にするため、reputationban.admin.ban 権限が必要です。");
                 }
-                updateReportReview(connection, id, "approved", deduction, moderatorUuid, moderatorName, note, now);
+                updateReportReview(connection, id, "approved", deduction, moderatorUuid, moderatorName, safeNote, now);
                 ScoreService.ScoreChange change = scoreService.mutateScoreInTransaction(
                         connection,
                         report.targetUuid(),
                         report.targetName(),
                         ScoreService.ScoreMutation.delta(-deduction),
-                        "Approved report #" + id + ": " + category.key() + " / " + moderatorName + " / " + normalizeNote(note),
+                        "Approved report #" + id + ": " + category.key() + " / " + moderatorName + " / " + normalizeNote(safeNote),
                         "report_review",
                         id,
                         now
@@ -595,7 +599,7 @@ public final class ReportService {
                         change.oldScore(),
                         change.newScore(),
                         change.delta(),
-                        normalizeNote(note),
+                        normalizeNote(safeNote),
                         AuditMetadata.create().put("category", category.key()).toJson(),
                         now
                 ));
@@ -612,6 +616,7 @@ public final class ReportService {
 
     public CompletableFuture<ReviewResult> rejectReport(long id, UUID moderatorUuid, String moderatorName, String note) {
         long now = System.currentTimeMillis();
+        String safeNote = StringLimits.truncate(note, config.maxReviewNoteLength());
         return database.supplyAsync(connection -> {
             boolean previousAutoCommit = connection.getAutoCommit();
             connection.setAutoCommit(false);
@@ -627,7 +632,7 @@ public final class ReportService {
                     return ReviewResult.failed("この通報は既に処理済みです。");
                 }
 
-                updateReportReview(connection, id, "rejected", report.deduction(), moderatorUuid, moderatorName, note, now);
+                updateReportReview(connection, id, "rejected", report.deduction(), moderatorUuid, moderatorName, safeNote, now);
                 FalseReportPenalty penalty = incrementFalseReportPenalty(connection, report.reporterUuid(), now);
                 auditService.recordEventInTransaction(connection, AuditEvent.create(
                         AuditEventType.REPORT_REJECTED,
@@ -641,7 +646,7 @@ public final class ReportService {
                         null,
                         null,
                         null,
-                        normalizeNote(note),
+                        normalizeNote(safeNote),
                         AuditMetadata.create()
                                 .put("reporterUuid", report.reporterUuid())
                                 .put("reporterName", report.reporterName())

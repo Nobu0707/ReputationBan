@@ -7,6 +7,7 @@ import dev.modplugin.reputationban.model.AuditEventType;
 import dev.modplugin.reputationban.util.AuditMetadata;
 import dev.modplugin.reputationban.util.ScoreMath;
 import dev.modplugin.reputationban.util.ScoreRecoveryPolicy;
+import dev.modplugin.reputationban.util.StringLimits;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -112,6 +113,7 @@ public final class ScoreService {
         int requestedScore = mutation.type() == ScoreMutation.Type.DELTA ? oldScore + mutation.value() : mutation.value();
         int newScore = ScoreMath.clampToMax(requestedScore, config.maxScore());
         int delta = newScore - oldScore;
+        String safeReason = StringLimits.truncate(reason, config.maxAuditReasonLength());
 
         try (PreparedStatement update = connection.prepareStatement("""
                 UPDATE players
@@ -121,7 +123,10 @@ public final class ScoreService {
             update.setInt(1, newScore);
             update.setString(2, targetName);
             update.setString(3, targetUuid.toString());
-            update.executeUpdate();
+            int updatedRows = update.executeUpdate();
+            if (updatedRows == 0) {
+                insertMissingPlayerRow(connection, targetUuid, targetName, newScore, now);
+            }
         }
 
         long scoreHistoryId;
@@ -136,7 +141,7 @@ public final class ScoreService {
             insert.setInt(3, oldScore);
             insert.setInt(4, newScore);
             insert.setInt(5, delta);
-            insert.setString(6, reason);
+            insert.setString(6, safeReason);
             insert.setString(7, sourceType);
             if (sourceId == null) {
                 insert.setNull(8, Types.INTEGER);
@@ -159,6 +164,31 @@ public final class ScoreService {
                 scoreHistoryId,
                 ScoreMath.crossedThresholdDownward(oldScore, newScore, config.banThreshold())
         );
+    }
+
+    private static void insertMissingPlayerRow(
+            Connection connection,
+            UUID targetUuid,
+            String targetName,
+            int score,
+            long now
+    ) throws SQLException {
+        try (PreparedStatement insert = connection.prepareStatement("""
+                INSERT INTO players (uuid, name, score, ban_count, false_report_count, first_seen, last_seen)
+                VALUES (?, ?, ?, 0, 0, ?, ?)
+                ON CONFLICT(uuid) DO UPDATE SET
+                  score = excluded.score,
+                  name = excluded.name,
+                  first_seen = COALESCE(players.first_seen, excluded.first_seen),
+                  last_seen = excluded.last_seen
+                """)) {
+            insert.setString(1, targetUuid.toString());
+            insert.setString(2, targetName);
+            insert.setInt(3, score);
+            insert.setLong(4, now);
+            insert.setLong(5, now);
+            insert.executeUpdate();
+        }
     }
 
     public CompletableFuture<List<ScoreHistoryEntry>> history(UUID targetUuid, int limit) {

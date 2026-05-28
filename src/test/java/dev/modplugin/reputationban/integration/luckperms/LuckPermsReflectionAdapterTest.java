@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import org.junit.jupiter.api.Test;
 
 class LuckPermsReflectionAdapterTest {
@@ -37,6 +38,18 @@ class LuckPermsReflectionAdapterTest {
         Optional<String> primaryGroup = adapter.primaryGroup(UUID.randomUUID());
 
         assertTrue(primaryGroup.isEmpty());
+    }
+
+    @Test
+    void offlineLoadUserReturnsPrimaryGroup() {
+        LuckPermsReflectionAdapter adapter = adapter(serviceClass ->
+                new FakeRegistration(new FakeLuckPermsApi(new FakeUserManager(new FakeUser("owner")))));
+
+        Optional<CompletableFuture<Optional<String>>> primaryGroup = adapter.loadPrimaryGroup(UUID.randomUUID());
+
+        assertTrue(primaryGroup.isPresent());
+        assertTrue(primaryGroup.get().join().isPresent());
+        assertTrue(primaryGroup.get().join().get().equals("owner"));
     }
 
     private LuckPermsReflectionAdapter adapter(LuckPermsReflectionAdapter.ServiceRegistrationLookup lookup) {
@@ -82,6 +95,10 @@ class LuckPermsReflectionAdapterTest {
 
         public FakeUser getUser(UUID ignored) {
             return user;
+        }
+
+        public CompletableFuture<FakeUser> loadUser(UUID ignored) {
+            return CompletableFuture.completedFuture(user);
         }
     }
 
