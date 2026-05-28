@@ -688,7 +688,35 @@
 - CoreProtect rollback、restore、purge、LuckPerms 書き込み、WorldGuard region/flag 変更、GriefPrevention claim/trust 変更は引き続き行わない。
 - Discord から Minecraft コマンドを実行する機能、Discord role 変更、Discord button 承認は行わない。
 
-## Phase 30以降: 外部連携・高度な悪用対策
+## Phase 30 / v1.0.0: v1.0.0 tag / GitHub Release draft preparation
+
+目的: Phase 29 の v1.0.0 final artifact を確認し、`v1.0.0` annotated tag と GitHub Release draft を作成して、公開直前状態まで進める。
+
+実装範囲:
+
+- version 1.0.0 の維持
+- `docs/phase-30.md`
+- `docs/V1_RELEASE_EXECUTION_PLAN.md` の Phase 30 tag/draft 手順化
+- `scripts/review_code.sh` の Phase 30 release draft preparation checks
+- `scripts/check-v1-release-gates.sh` の tag 作成後 HEAD 一致許容
+- `scripts/make-review-archive.sh` の `checks/v1-tag-status.txt`
+- `scripts/make-review-archive.sh` の `checks/github-release-draft-status.txt`
+- `scripts/make-review-archive.sh` の `checks/release-draft-assets.txt`
+- `build/release/ReputationBan-v1-go-no-go-report.md`
+- `build/release/ReputationBan-v1.0.0-release-notes.md`
+- `v1.0.0` annotated tag 作成と push
+- GitHub Release draft 作成
+
+注意:
+
+- GitHub Release 公開、`draft=false` への変更、v1.0.1 以降への version bump は行わない。
+- GitHub Release draft には JAR、JAR sha256、release zip、release zip sha256 を添付する。
+- DiscordSRV unavailable は WARN とし、ReputationBan 本体と他連携の release gate は止めない。
+- Java runtime behavior、DB schema、`/reportbad`、`/reports evidence`、`report_context` 生成は変更しない。
+- CoreProtect rollback、restore、purge、LuckPerms 書き込み、WorldGuard region/flag 変更、GriefPrevention claim/trust 変更は引き続き行わない。
+- Discord から Minecraft コマンドを実行する機能、Discord role 変更、Discord button 承認は行わない。
+
+## Phase 31以降: 外部連携・高度な悪用対策
 
 実装候補:
 

@@ -84,6 +84,7 @@ for file in \
   docs/V1_RELEASE_PLAN.md \
   docs/V1_RELEASE_EXECUTION_PLAN.md \
   docs/runtime-smoke-checklist.md \
+  docs/phase-30.md \
   docs/phase-29.md \
   docs/SECURITY_REDACTION.md \
   docs/SUPPORT_BUNDLE.md \
@@ -134,8 +135,13 @@ grep -q "org.xerial:sqlite-jdbc" "$YML" || fail "SQLite library not found in plu
 
 grep -q "1.0.0" README.md || fail "README.md does not mention 1.0.0"
 grep -q "1.0.0" CHANGELOG.md || fail "CHANGELOG.md does not mention 1.0.0"
-grep -q "v1.0.0 tag" README.md docs/phase-29.md docs/V1_RELEASE_EXECUTION_PLAN.md || fail "v1.0.0 tag status docs missing"
-grep -q "GitHub Release" README.md docs/phase-29.md docs/V1_RELEASE_EXECUTION_PLAN.md || fail "GitHub Release status docs missing"
+grep -q "v1.0.0 tag" README.md docs/phase-30.md docs/phase-29.md docs/V1_RELEASE_EXECUTION_PLAN.md || fail "v1.0.0 tag status docs missing"
+grep -q "GitHub Release" README.md docs/phase-30.md docs/phase-29.md docs/V1_RELEASE_EXECUTION_PLAN.md || fail "GitHub Release status docs missing"
+grep -q "Tag 作成前チェック" docs/V1_RELEASE_EXECUTION_PLAN.md || fail "v1.0.0 tag preflight check docs missing"
+grep -q "gh release create v1.0.0" docs/V1_RELEASE_EXECUTION_PLAN.md || fail "GitHub Release draft creation command docs missing"
+grep -q -- "--draft" docs/V1_RELEASE_EXECUTION_PLAN.md docs/phase-30.md || fail "GitHub Release draft flag docs missing"
+grep -q "draft=false" docs/V1_RELEASE_EXECUTION_PLAN.md docs/phase-30.md || fail "GitHub Release publish prohibition docs missing"
+grep -q "ReputationBan-1.0.0.jar" docs/phase-30.md scripts/create-release-artifact.sh scripts/verify-release-artifact.sh || fail "Phase 30 release artifact target missing"
 grep -q "READY_FOR_V1_RELEASE_WITH_DISCORDSRV_WARNING" scripts/check-v1-release-gates.sh docs/phase-29.md docs/RELEASE_READINESS.md docs/RELEASE_CANDIDATE_CHECKLIST.md || fail "v1 release judgment is not updated"
 grep -q "VERSION=\"${EXPECTED_VERSION}\"" scripts/create-release-artifact.sh || fail "create-release-artifact.sh does not target ${EXPECTED_VERSION}"
 grep -q "VERSION=\"${EXPECTED_VERSION}\"" scripts/verify-release-artifact.sh || fail "verify-release-artifact.sh does not target ${EXPECTED_VERSION}"
@@ -146,14 +152,24 @@ grep -q "generate-v1-release-notes.sh" scripts/make-review-archive.sh docs/RELEA
 grep -q "V1_RELEASE_EXECUTION_PLAN.md" scripts/make-review-archive.sh docs/RELEASE_READINESS.md README.md || fail "release execution plan is not wired into docs/archive"
 
 if [[ -n "$(git tag --list "v1.0.0")" ]]; then
-  fail "v1.0.0 tag already exists; Phase 29 must not create or keep this tag"
+  HEAD_COMMIT="$(git rev-parse HEAD)"
+  TAG_COMMIT="$(git rev-list -n 1 v1.0.0)"
+  [[ "$HEAD_COMMIT" == "$TAG_COMMIT" ]] || fail "v1.0.0 tag exists but does not point at HEAD"
 fi
 
-if grep -R --exclude=review_code.sh "g[h] release create\\|g[h] release upload\\|g[h] release edit\\|g[h] release delete" scripts .github 2>/dev/null; then
+SCAN_PATHS=(scripts)
+if [[ -d .github ]]; then
+  SCAN_PATHS+=(.github)
+fi
+
+if grep -R --exclude=review_code.sh "g[h] release create\\|g[h] release upload\\|g[h] release edit\\|g[h] release delete" "${SCAN_PATHS[@]}" >/dev/null 2>&1; then
   fail "GitHub Release creation/upload command found in executable automation"
 fi
+if grep -R --exclude=review_code.sh "g[h] release edit.*--draft=false\\|g[h] release edit.*--latest\\|g[h] release create.*--draft=false" "${SCAN_PATHS[@]}" >/dev/null 2>&1; then
+  fail "GitHub Release publish command found in executable automation"
+fi
 
-if grep -R --exclude=review_code.sh "g[it] tag -a v1.0.0\\|g[it] push origin v1.0.0" scripts .github 2>/dev/null; then
+if grep -R --exclude=review_code.sh "g[it] tag -a v1.0.0\\|g[it] push origin v1.0.0" "${SCAN_PATHS[@]}" >/dev/null 2>&1; then
   fail "v1.0.0 tag creation/push command found in executable automation"
 fi
 

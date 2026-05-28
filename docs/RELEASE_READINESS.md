@@ -1,6 +1,6 @@
 # Release Readiness
 
-1.0.0 の v1.0.0 final artifact readiness として、次の項目を確認してください。Phase 29 では `v1.0.0` tag 作成と GitHub Release 公開はまだ行いません。
+1.0.0 の v1.0.0 final artifact / release draft readiness として、次の項目を確認してください。Phase 30 では `v1.0.0` annotated tag と GitHub Release draft を作成します。GitHub Release 公開、`draft=false` への変更、v1.0.1 以降への version bump はまだ行いません。
 
 - `./gradlew clean test build --warning-mode all` が成功します。
 - `./scripts/review_code.sh` が成功します。
@@ -18,7 +18,7 @@
 - `./scripts/run-local-smoke-check.sh` が成功します。
 - `./scripts/create-release-artifact.sh` が成功します。
 - `./scripts/verify-release-artifact.sh` が成功します。
-- `./scripts/make-review-archive.sh "Phase 29"` が archive を作成し、`checks/docs-localization.txt`、`checks/optional-dependency-safety.txt`、`checks/paper-runtime-smoke-auto.txt`、`checks/paper-runtime-readiness.txt`、`checks/integration-runtime-smoke-auto.txt`、`checks/integration-runtime-readiness.txt`、`checks/player-report-runtime-readiness.txt`、`checks/runtime-smoke-consistency.txt`、`checks/v1-release-gates.txt`、`checks/generate-v1-go-no-go-report.txt`、`checks/generate-v1-release-notes.txt`、`checks/integration-runtime-smoke-helper-syntax.txt`、`checks/latest-paper-runtime-smoke-summary.txt`、`checks/latest-integration-runtime-smoke-summary.txt`、`checks/latest-player-report-runtime-smoke-summary.txt`、`runtime-smoke/paper-runtime-latest/`、`runtime-smoke/integration-runtime-latest/`、`runtime-smoke/player-report-runtime-latest/summary.txt`、`runtime-smoke/player-report-runtime-latest/manual-checklist.txt`、`release-prep/ReputationBan-v1-go-no-go-report.md`、`release-prep/ReputationBan-v1.0.0-release-notes.md`、`release-prep/V1_RELEASE_EXECUTION_PLAN.md` を含みます。
+- `./scripts/make-review-archive.sh "Phase 30"` が archive を作成し、`checks/docs-localization.txt`、`checks/optional-dependency-safety.txt`、`checks/paper-runtime-smoke-auto.txt`、`checks/paper-runtime-readiness.txt`、`checks/integration-runtime-smoke-auto.txt`、`checks/integration-runtime-readiness.txt`、`checks/player-report-runtime-readiness.txt`、`checks/runtime-smoke-consistency.txt`、`checks/v1-release-gates.txt`、`checks/generate-v1-go-no-go-report.txt`、`checks/generate-v1-release-notes.txt`、`checks/v1-tag-status.txt`、`checks/github-release-draft-status.txt`、`checks/release-draft-assets.txt`、`checks/integration-runtime-smoke-helper-syntax.txt`、`checks/latest-paper-runtime-smoke-summary.txt`、`checks/latest-integration-runtime-smoke-summary.txt`、`checks/latest-player-report-runtime-smoke-summary.txt`、`runtime-smoke/paper-runtime-latest/`、`runtime-smoke/integration-runtime-latest/`、`runtime-smoke/player-report-runtime-latest/summary.txt`、`runtime-smoke/player-report-runtime-latest/manual-checklist.txt`、`release-prep/ReputationBan-v1-go-no-go-report.md`、`release-prep/ReputationBan-v1.0.0-release-notes.md`、`release-prep/V1_RELEASE_EXECUTION_PLAN.md`、存在する場合は `release-prep/V1_GITHUB_RELEASE_DRAFT_MANUAL.md` を含みます。
 - `bash -n scripts/run-paper-runtime-smoke.sh` が成功します。
 - `bash -n scripts/check-paper-runtime-readiness.sh` が成功します。
 - `bash -n scripts/run-paper-runtime-smoke-helper.sh` が成功します。
@@ -69,7 +69,7 @@
 - release ZIP には `docs/INTEGRATIONS.md` が含まれます。
 - release ZIP には `docs/INTEGRATION_RUNTIME_SMOKE_CHECKLIST.md` が含まれます。
 - release ZIP には `docs/V1_RELEASE_PLAN.md`、`docs/V1_RELEASE_EXECUTION_PLAN.md`、`docs/RELEASE_READINESS.md`、`docs/RELEASE_CANDIDATE_CHECKLIST.md` が含まれます。
-- Go/No-Go report、release notes final candidate、release execution plan は review archive の `release-prep/` に収集します。
+- Go/No-Go report、release notes final candidate、release execution plan、必要時の manual draft instructions は review archive の `release-prep/` に収集します。
 - release ZIP 内の README.md と docs/INSTALLATION.md が日本語ドキュメントとして読めることを確認します。
 - release ZIP に live `config.yml`、SQLite DB files、logs は含まれません。
 - Paper runtime smoke を自動または手動実施した場合は `scripts/run-paper-runtime-smoke.sh` または `scripts/record-paper-runtime-smoke-result.sh` で結果を記録します。未実施の場合は PASS 扱いにせず、readiness check では `paper runtime smoke: NOT_RUN` と `judgment: HOLD_FOR_PAPER_RUNTIME_SMOKE`、review archive に `status=NOT_RUN` として残します。

@@ -159,6 +159,9 @@ done < "$OUTDIR/meta/changed-files.txt"
   echo
   echo "## rg phase 29 v1 final artifact preparation"
   rg -n "check-v1-release-gates|generate-v1-go-no-go-report|generate-v1-release-notes|READY_FOR_V1_RELEASE|READY_FOR_V1_RELEASE_WITH_DISCORDSRV_WARNING|V1_RELEASE_PLAN|V1_RELEASE_EXECUTION_PLAN|ReputationBan-v1-go-no-go-report|ReputationBan-v1\\.0\\.0-release-notes|v1 release gates|Go/No-Go|Tag status|GitHub Release status|carriedForwardFrom" README.md CHANGELOG.md docs reputationban_phase_plan.md scripts build.gradle.kts src/main/resources/plugin.yml || true
+  echo
+  echo "## rg phase 30 v1 tag and GitHub Release draft preparation"
+  rg -n "phase-30|Phase 30|v1\\.0\\.0 tag|GitHub Release draft|draft=false|release-draft command|v1-tag-status|github-release-draft-status|release-draft-assets|V1_GITHUB_RELEASE_DRAFT_MANUAL|CREATED_MATCHES_HEAD" README.md CHANGELOG.md docs reputationban_phase_plan.md scripts build.gradle.kts src/main/resources/plugin.yml || true
 } > "$OUTDIR/checks/rg-review-signals.txt"
 
 {
@@ -329,6 +332,83 @@ if [[ -x "$ROOT/scripts/generate-v1-release-notes-draft.sh" ]]; then
   run_logged "./scripts/generate-v1-release-notes-draft.sh" "$OUTDIR/checks/generate-v1-release-notes-draft.txt" "$ROOT/scripts/generate-v1-release-notes-draft.sh"
 fi
 
+{
+  local_tag="$(git tag --list "v1.0.0" || true)"
+  head_commit="$(git rev-parse HEAD)"
+  if [[ -n "$local_tag" ]]; then
+    local_tag_commit="$(git rev-list -n 1 v1.0.0)"
+  else
+    local_tag_commit=""
+  fi
+  remote_line="$(git ls-remote --tags origin "refs/tags/v1.0.0^{}" 2>/dev/null | tail -n 1 || true)"
+  if [[ -z "$remote_line" ]]; then
+    remote_line="$(git ls-remote --tags origin "refs/tags/v1.0.0" 2>/dev/null | tail -n 1 || true)"
+  fi
+  remote_tag_commit="$(printf '%s\n' "$remote_line" | awk '{print $1}')"
+  echo "headCommit=$head_commit"
+  echo "localTag=${local_tag:-missing}"
+  echo "localTagCommit=${local_tag_commit:-missing}"
+  echo "remoteTag=$([[ -n "$remote_tag_commit" ]] && echo "v1.0.0" || echo "missing")"
+  echo "remoteTagCommit=${remote_tag_commit:-missing}"
+  if [[ -n "$local_tag_commit" && "$local_tag_commit" == "$head_commit" && -n "$remote_tag_commit" && "$remote_tag_commit" == "$head_commit" ]]; then
+    echo "matchesHead=true"
+  else
+    echo "matchesHead=false"
+  fi
+} > "$OUTDIR/checks/v1-tag-status.txt"
+
+{
+  echo "ReputationBan-1.0.0.jar"
+  echo "ReputationBan-1.0.0.jar.sha256"
+  echo "ReputationBan-1.0.0-release.zip"
+  echo "ReputationBan-1.0.0-release.zip.sha256"
+} > "$OUTDIR/checks/release-draft-assets.txt"
+
+{
+  if command -v gh >/dev/null 2>&1; then
+    echo "ghAvailable=true"
+    set +e
+    release_json="$(gh release view v1.0.0 --json tagName,name,isDraft,isPrerelease,url,assets 2>&1)"
+    release_code=$?
+    set -e
+    if [[ "$release_code" == "0" ]]; then
+      echo "releaseExists=true"
+      echo "isDraft=$([[ "$release_json" == *'"isDraft":true'* ]] && echo true || echo false)"
+      echo "isPrerelease=$([[ "$release_json" == *'"isPrerelease":true'* ]] && echo true || echo false)"
+      url="$(printf '%s\n' "$release_json" | sed -n 's/.*"url":"\([^"]*\)".*/\1/p')"
+      echo "url=${url:-unknown}"
+      for asset in \
+        "ReputationBan-1.0.0.jar" \
+        "ReputationBan-1.0.0.jar.sha256" \
+        "ReputationBan-1.0.0-release.zip" \
+        "ReputationBan-1.0.0-release.zip.sha256"; do
+        if [[ "$release_json" == *"\"name\":\"$asset\""* ]]; then
+          echo "asset:${asset}=present"
+        else
+          echo "asset:${asset}=missing"
+        fi
+      done
+    else
+      echo "releaseExists=unknown"
+      echo "isDraft=unknown"
+      echo "isPrerelease=unknown"
+      echo "url=unknown"
+      echo "ghError=${release_json//$'\n'/ }"
+      if [[ -f "$ROOT/docs/V1_GITHUB_RELEASE_DRAFT_MANUAL.md" ]]; then
+        echo "manualDraftInstructions=docs/V1_GITHUB_RELEASE_DRAFT_MANUAL.md"
+      fi
+    fi
+  else
+    echo "ghAvailable=false"
+    echo "releaseExists=unknown"
+    if [[ -f "$ROOT/docs/V1_GITHUB_RELEASE_DRAFT_MANUAL.md" ]]; then
+      echo "manualDraftInstructions=docs/V1_GITHUB_RELEASE_DRAFT_MANUAL.md"
+    else
+      echo "manualDraftInstructions=missing"
+    fi
+  fi
+} > "$OUTDIR/checks/github-release-draft-status.txt"
+
 if [[ -x "$ROOT/scripts/run-local-smoke-check.sh" ]]; then
   run_logged "local-smoke-check" "$OUTDIR/checks/local-smoke-check.txt" env REPUTATIONBAN_SKIP_REVIEW_CODE=1 REPUTATIONBAN_SKIP_BUILD=1 "$ROOT/scripts/run-local-smoke-check.sh"
 else
@@ -351,7 +431,8 @@ for release_prep_file in \
   "$ROOT/build/release/ReputationBan-v1-go-no-go-report.md" \
   "$ROOT/build/release/ReputationBan-v1.0.0-release-notes.md" \
   "$ROOT/build/release/ReputationBan-v1.0.0-release-notes-draft.md" \
-  "$ROOT/docs/V1_RELEASE_EXECUTION_PLAN.md"; do
+  "$ROOT/docs/V1_RELEASE_EXECUTION_PLAN.md" \
+  "$ROOT/docs/V1_GITHUB_RELEASE_DRAFT_MANUAL.md"; do
   if [[ -f "$release_prep_file" ]]; then
     cp "$release_prep_file" "$OUTDIR/release-prep/"
   fi

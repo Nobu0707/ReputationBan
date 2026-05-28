@@ -63,9 +63,9 @@ DISCORDSRV="$(gate_value discordSrv)"
 if [[ -z "$(git tag --list "v1.0.0")" ]]; then
   TAG_STATUS="NOT_CREATED"
 else
-  TAG_STATUS="CREATED"
+  TAG_STATUS="$(gate_value v1Tag)"
 fi
-GITHUB_RELEASE_STATUS="NOT_CREATED"
+GITHUB_RELEASE_STATUS="DRAFT_TO_CREATE"
 
 if [[ "$JUDGMENT" == "READY_FOR_V1_RELEASE" && "$DISCORDSRV" == WARNING_* ]]; then
   JUDGMENT="READY_FOR_V1_RELEASE_WITH_DISCORDSRV_WARNING"
@@ -85,7 +85,7 @@ cat > "$REPORT" <<REPORT
 - Judgment: ${JUDGMENT:-HOLD_FOR_V1_RELEASE}
 - Tag status: ${TAG_STATUS}
 - GitHub Release status: ${GITHUB_RELEASE_STATUS}
-- Next action: User approval required for v1.0.0 tag and GitHub Release.
+- Next action: Phase 30 creates the v1.0.0 tag and GitHub Release draft; publish still requires a later explicit approval.
 
 ## Gate結果
 
@@ -127,7 +127,7 @@ ${JUDGMENT:-HOLD_FOR_V1_RELEASE}
 
 - Tag status: ${TAG_STATUS}
 - GitHub Release status: ${GITHUB_RELEASE_STATUS}
-- Next action: User approval required for v1.0.0 tag and GitHub Release.
+- Next action: Confirm GitHub Release draft assets and keep the release unpublished until explicit approval.
 
 ## v1 release gates output
 

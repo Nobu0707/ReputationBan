@@ -39,7 +39,7 @@ JUDGMENT="$(gate_value judgment)"
 DISCORDSRV="$(gate_value discordSrv)"
 TAG_STATUS="NOT_CREATED"
 if [[ -n "$(git tag --list "v1.0.0")" ]]; then
-  TAG_STATUS="CREATED"
+  TAG_STATUS="$(gate_value v1Tag)"
 fi
 
 cat > "$NOTES" <<NOTES
@@ -104,8 +104,8 @@ DiscordSRV は bot token 未設定または API unavailable の場合、\`${DISC
 - \`config.yml\` の既存値を確認し、自動BANや Discord webhook を有効化する前に test server で確認してください。
 - support bundle 共有前に \`config-redacted.yml\` と同梱物を確認してください。
 - v1.0.0 tag status: ${TAG_STATUS}
-- GitHub Release status: NOT_CREATED
-- Phase 29 では tag 作成と GitHub Release 公開は行っていません。次Phaseでユーザー承認後に実施します。
+- GitHub Release status: DRAFT_TO_CREATE
+- Phase 30 では GitHub Release draft 作成まで行い、公開はまだ行いません。
 NOTES
 
 echo "Generated $NOTES"

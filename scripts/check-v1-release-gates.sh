@@ -17,6 +17,7 @@ Usage:
   ./scripts/check-v1-release-gates.sh --strict --require-discordsrv
 
 Checks the v1.0.0 release review gates without creating a v1.0.0 tag or GitHub Release.
+If v1.0.0 already exists, it must point at HEAD.
 USAGE
 }
 
@@ -100,8 +101,20 @@ destructive_integration_scan() {
   fi
 }
 
-v1_tag_not_created() {
-  [[ -z "$(git tag --list "v1.0.0")" ]]
+v1_tag_is_safe() {
+  local head tag_commit
+  if [[ -z "$(git tag --list "v1.0.0")" ]]; then
+    echo "v1Tag=NOT_CREATED"
+    return 0
+  fi
+  head="$(git rev-parse HEAD)"
+  tag_commit="$(git rev-list -n 1 v1.0.0)"
+  if [[ "$head" == "$tag_commit" ]]; then
+    echo "v1Tag=CREATED_MATCHES_HEAD"
+    return 0
+  fi
+  echo "v1Tag=FAIL_POINTS_TO_${tag_commit}"
+  return 1
 }
 
 discordsrv_state() {
@@ -136,10 +149,7 @@ FAILED=0
 echo "v1 release gates:"
 echo "version=$VERSION"
 
-if v1_tag_not_created; then
-  echo "v1Tag=NOT_CREATED"
-else
-  echo "v1Tag=FAIL_ALREADY_EXISTS"
+if ! v1_tag_is_safe; then
   FAILED=1
 fi
 
